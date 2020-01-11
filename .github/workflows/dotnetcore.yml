@@ -1,17 +1,6 @@
-name: .NET Core
-
-on: [push]
-
-jobs:
-  build:
-
-    runs-on: ubuntu-latest
-
-    steps:
-    - uses: actions/checkout@v1
-    - name: Setup .NET Core
-      uses: actions/setup-dotnet@v1
-      with:
-        dotnet-version: 2.2.108
-    - name: Build with dotnet
-      run: dotnet build --configuration Release
+- name: Build
+  uses: actions/setup-dotnet@v1.4.0
+  with:
+    # SDK version to use. Example: 2.2.104
+    dotnet-version: 3.1.100
+- run: dotnet build src/CodeIndex.Consol/CodeIndex.Consol.csproj
