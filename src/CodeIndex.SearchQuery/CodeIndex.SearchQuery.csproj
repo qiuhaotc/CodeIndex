@@ -1,0 +1,15 @@
+<Project Sdk="Microsoft.NET.Sdk">
+
+  <PropertyGroup>
+    <TargetFramework>netstandard2.0</TargetFramework>
+  </PropertyGroup>
+
+  <ItemGroup>
+    <PackageReference Include="Lucene.Net" Version="4.8.0-beta00007" />
+  </ItemGroup>
+
+  <ItemGroup>
+    <ProjectReference Include="..\CodeIndex.Common\CodeIndex.Common.csproj" />
+  </ItemGroup>
+
+</Project>
