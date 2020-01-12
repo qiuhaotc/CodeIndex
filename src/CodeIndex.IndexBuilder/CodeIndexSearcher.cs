@@ -13,6 +13,18 @@ namespace CodeIndex.IndexBuilder
     {
         public static ConcurrentDictionary<string, DirectoryReader> DirectoryReadersPool { get; set; } = new ConcurrentDictionary<string, DirectoryReader>();
 
+        public static Document[] Search(string path, DirectoryReader reader, Query query, int maxResults)
+        {
+            path.RequireNotNullOrEmpty(nameof(path));
+            reader.RequireNotNull(nameof(reader));
+            query.RequireNotNull(nameof(query));
+            maxResults.RequireRange(nameof(maxResults), int.MaxValue, 1);
+
+            var searcher = new IndexSearcher(reader);
+            var hits = searcher.Search(query, maxResults).ScoreDocs;
+            return hits.Select(hit => searcher.Doc(hit.Doc)).ToArray();
+        }
+
         public static Document[] Search(string path, Query query, int maxResults)
         {
             path.RequireNotNullOrEmpty(nameof(path));
@@ -23,6 +35,16 @@ namespace CodeIndex.IndexBuilder
             {
                 reader = DirectoryReader.Open(FSDirectory.Open(path));
                 DirectoryReadersPool.TryAdd(path, reader);
+            }
+            else
+            {
+                var tempReader = DirectoryReader.OpenIfChanged(reader);
+                if(tempReader != null)
+                {
+                    reader.Dispose();
+                    DirectoryReadersPool.TryUpdate(path, tempReader, reader);
+                    reader = tempReader;
+                }
             }
 
             var searcher = new IndexSearcher(reader);

@@ -8,5 +8,6 @@ namespace CodeIndex.Common
         public string FileExtension { get; set; }
         public string FilePath { get; set; }
         public string Content { get; set; }
+        public DateTime IndexDate { get; set; }
     }
 }
