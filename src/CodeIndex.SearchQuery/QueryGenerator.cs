@@ -20,15 +20,19 @@ namespace CodeIndex.SearchQuery
                     case SearchType.Content:
                         query.Add(new TermQuery(new Term(nameof(CodeSource.Content), item.SearchText)), Occur.MUST);
                         break;
+
                     case SearchType.FileExtension:
                         query.Add(new TermQuery(new Term(nameof(CodeSource.FileExtension), item.SearchText)), Occur.MUST);
                         break;
+
                     case SearchType.FileName:
                         query.Add(new TermQuery(new Term(nameof(CodeSource.FileName), item.SearchText)), Occur.MUST);
                         break;
+
                     case SearchType.FilePath:
                         query.Add(new TermQuery(new Term(nameof(CodeSource.FilePath), item.SearchText)), Occur.MUST);
                         break;
+
                     default:
                         throw new ArgumentException(nameof(item.SearchType));
                 }

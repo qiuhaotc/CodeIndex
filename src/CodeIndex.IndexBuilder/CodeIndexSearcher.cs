@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using System.Linq;
 using CodeIndex.Common;
 using Lucene.Net.Documents;
@@ -31,7 +30,7 @@ namespace CodeIndex.IndexBuilder
             query.RequireNotNull(nameof(query));
             maxResults.RequireRange(nameof(maxResults), int.MaxValue, 1);
 
-            if(!DirectoryReadersPool.TryGetValue(path, out var reader))
+            if (!DirectoryReadersPool.TryGetValue(path, out var reader))
             {
                 reader = DirectoryReader.Open(FSDirectory.Open(path));
                 DirectoryReadersPool.TryAdd(path, reader);
@@ -39,7 +38,7 @@ namespace CodeIndex.IndexBuilder
             else
             {
                 var tempReader = DirectoryReader.OpenIfChanged(reader);
-                if(tempReader != null)
+                if (tempReader != null)
                 {
                     reader.Dispose();
                     DirectoryReadersPool.TryUpdate(path, tempReader, reader);

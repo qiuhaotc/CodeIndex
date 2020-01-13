@@ -3,15 +3,19 @@ Microsoft Visual Studio Solution File, Format Version 12.00
 # Visual Studio Version 16
 VisualStudioVersion = 16.0.29613.14
 MinimumVisualStudioVersion = 10.0.40219.1
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeIndex.Test", "CodeIndex.Test\CodeIndex.Test.csproj", "{5532620B-E050-4322-9648-C426133BAED8}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CodeIndex.Test", "CodeIndex.Test\CodeIndex.Test.csproj", "{5532620B-E050-4322-9648-C426133BAED8}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeIndex.IndexBuilder", "CodeIndex.IndexBuilder\CodeIndex.IndexBuilder.csproj", "{CD4F91D2-5DC7-4323-A532-20BAD3C48305}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CodeIndex.IndexBuilder", "CodeIndex.IndexBuilder\CodeIndex.IndexBuilder.csproj", "{CD4F91D2-5DC7-4323-A532-20BAD3C48305}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeIndex.Common", "CodeIndex.Common\CodeIndex.Common.csproj", "{131A96A0-CC06-4785-8BA8-B693932BF366}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CodeIndex.Common", "CodeIndex.Common\CodeIndex.Common.csproj", "{131A96A0-CC06-4785-8BA8-B693932BF366}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeIndex.SearchQuery", "CodeIndex.SearchQuery\CodeIndex.SearchQuery.csproj", "{0B84BCBC-ED1D-480A-8BE1-8E903C76D2B2}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CodeIndex.SearchQuery", "CodeIndex.SearchQuery\CodeIndex.SearchQuery.csproj", "{0B84BCBC-ED1D-480A-8BE1-8E903C76D2B2}"
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CodeIndex.Consol", "CodeIndex.Consol\CodeIndex.Consol.csproj", "{83F3BFE0-27E6-4D23-B921-7A278EB18365}"
+EndProject
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CodeIndex.Files", "CodeIndex.Files\CodeIndex.Files.csproj", "{1EA9D97D-DA58-4D51-9DC9-7203686DD9C1}"
+EndProject
+Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeIndex.MaintainIndex", "CodeIndex.MaintainIndex\CodeIndex.MaintainIndex.csproj", "{89461D8B-5365-4DAA-9984-1B820C4FF963}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
@@ -39,6 +43,14 @@ Global
 		{83F3BFE0-27E6-4D23-B921-7A278EB18365}.Debug|Any CPU.Build.0 = Debug|Any CPU
 		{83F3BFE0-27E6-4D23-B921-7A278EB18365}.Release|Any CPU.ActiveCfg = Release|Any CPU
 		{83F3BFE0-27E6-4D23-B921-7A278EB18365}.Release|Any CPU.Build.0 = Release|Any CPU
+		{1EA9D97D-DA58-4D51-9DC9-7203686DD9C1}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{1EA9D97D-DA58-4D51-9DC9-7203686DD9C1}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{1EA9D97D-DA58-4D51-9DC9-7203686DD9C1}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{1EA9D97D-DA58-4D51-9DC9-7203686DD9C1}.Release|Any CPU.Build.0 = Release|Any CPU
+		{89461D8B-5365-4DAA-9984-1B820C4FF963}.Debug|Any CPU.ActiveCfg = Debug|Any CPU
+		{89461D8B-5365-4DAA-9984-1B820C4FF963}.Debug|Any CPU.Build.0 = Debug|Any CPU
+		{89461D8B-5365-4DAA-9984-1B820C4FF963}.Release|Any CPU.ActiveCfg = Release|Any CPU
+		{89461D8B-5365-4DAA-9984-1B820C4FF963}.Release|Any CPU.Build.0 = Release|Any CPU
 	EndGlobalSection
 	GlobalSection(SolutionProperties) = preSolution
 		HideSolutionNode = FALSE

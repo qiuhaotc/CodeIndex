@@ -13,26 +13,26 @@ namespace CodeIndex.Test
         public void TestSearch_NewReader()
         {
             CodeIndexBuilder.BuildIndex(TempIndexDir, true, true, new CodeSource
-                {
-                    FileName = "Dummy File 1",
-                    FileExtension = "cs",
-                    FilePath = @"C:\Dummy File 1.cs",
-                    Content = "Test Content" + Environment.NewLine + "A New Line For Test"
-                },
-                new CodeSource
-                {
-                    FileName = "Dummy File 2",
-                    FileExtension = "cs",
-                    FilePath = @"C:\Dummy File 2.cs",
-                    Content = "Test Content" + Environment.NewLine + "A New Line For Test"
-                },
-                new CodeSource
-                {
-                    FileName = "Dummy File 2",
-                    FileExtension = "xml",
-                    FilePath = @"C:\Dummy File.xml",
-                    Content = "Test Content" + Environment.NewLine + "A New Line For Test"
-                });
+            {
+                FileName = "Dummy File 1",
+                FileExtension = "cs",
+                FilePath = @"C:\Dummy File 1.cs",
+                Content = "Test Content" + Environment.NewLine + "A New Line For Test"
+            },
+            new CodeSource
+            {
+                FileName = "Dummy File 2",
+                FileExtension = "cs",
+                FilePath = @"C:\Dummy File 2.cs",
+                Content = "Test Content" + Environment.NewLine + "A New Line For Test"
+            },
+            new CodeSource
+            {
+                FileName = "Dummy File 2",
+                FileExtension = "xml",
+                FilePath = @"C:\Dummy File.xml",
+                Content = "Test Content" + Environment.NewLine + "A New Line For Test"
+            });
 
             CodeIndexBuilder.CloseIndexWriterAndCommitChange(TempIndexDir);
 
@@ -53,20 +53,20 @@ namespace CodeIndex.Test
                 FilePath = @"C:\Dummy File 1.cs",
                 Content = "Test Content" + Environment.NewLine + "A New Line For Test"
             },
-               new CodeSource
-               {
-                   FileName = "Dummy File 2",
-                   FileExtension = "cs",
-                   FilePath = @"C:\Dummy File 2.cs",
-                   Content = "Test Content" + Environment.NewLine + "A New Line For Test"
-               },
-               new CodeSource
-               {
-                   FileName = "Dummy File 2",
-                   FileExtension = "xml",
-                   FilePath = @"C:\Dummy File.xml",
-                   Content = "Test Content" + Environment.NewLine + "A New Line For Test"
-               });
+            new CodeSource
+            {
+                FileName = "Dummy File 2",
+                FileExtension = "cs",
+                FilePath = @"C:\Dummy File 2.cs",
+                Content = "Test Content" + Environment.NewLine + "A New Line For Test"
+            },
+            new CodeSource
+            {
+                FileName = "Dummy File 2",
+                FileExtension = "xml",
+                FilePath = @"C:\Dummy File.xml",
+                Content = "Test Content" + Environment.NewLine + "A New Line For Test"
+            });
 
             var reader = CodeIndexBuilder.IndexWritesPool[TempIndexDir].GetReader(true);
             var results = CodeIndexSearcher.Search(TempIndexDir, reader, new TermQuery(new Term(nameof(CodeSource.FileExtension), "xml")), 10);

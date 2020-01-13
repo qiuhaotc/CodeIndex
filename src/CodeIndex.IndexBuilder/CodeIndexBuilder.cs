@@ -1,5 +1,4 @@
-﻿using System;
-using System.Collections.Concurrent;
+﻿using System.Collections.Concurrent;
 using CodeIndex.Common;
 using Lucene.Net.Analysis.Standard;
 using Lucene.Net.Documents;

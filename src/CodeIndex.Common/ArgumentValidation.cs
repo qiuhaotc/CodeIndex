@@ -32,7 +32,7 @@ namespace CodeIndex.Common
 
         public static void RequireRange(this int value, string argumentName, int maxValue, int minValue)
         {
-            if (value> maxValue || value < minValue)
+            if (value > maxValue || value < minValue)
             {
                 throw new ArgumentException($"The value should in range ({minValue} - {maxValue})", argumentName);
             }
