@@ -6,7 +6,6 @@ using Lucene.Net.Index;
 using Lucene.Net.Search;
 using Lucene.Net.Store;
 using Lucene.Net.Util;
-using static CodeIndex.Common.ArgumentValidation;
 
 namespace CodeIndex.IndexBuilder
 {
@@ -97,7 +96,7 @@ namespace CodeIndex.IndexBuilder
 
         static string ToStringSafe(this string value)
         {
-            return value?.ToString() ?? string.Empty;
+            return value ?? string.Empty;
         }
 
         static Document GetDocumentFromSource(CodeSource source)

@@ -19,6 +19,7 @@
   <ItemGroup>
     <ProjectReference Include="..\CodeIndex.Files\CodeIndex.Files.csproj" />
     <ProjectReference Include="..\CodeIndex.IndexBuilder\CodeIndex.IndexBuilder.csproj" />
+    <ProjectReference Include="..\CodeIndex.MaintainIndex\CodeIndex.MaintainIndex.csproj" />
   </ItemGroup>
 
 </Project>

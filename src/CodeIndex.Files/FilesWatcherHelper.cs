@@ -25,6 +25,9 @@ namespace CodeIndex.Files
             watcher.Deleted += onchangedHandler;
             watcher.Renamed += onRenameHandler;
 
+            // Include Sub Dir
+            watcher.IncludeSubdirectories = true;
+
             // Begin watching.
             watcher.EnableRaisingEvents = true;
 
