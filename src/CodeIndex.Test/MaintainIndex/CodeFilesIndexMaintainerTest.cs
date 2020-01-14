@@ -43,5 +43,8 @@ namespace CodeIndex.Test
                 Assert.AreEqual("1234556789", index[0].Get(nameof(CodeSource.Content)));
             }
         }
+
+        // TODO: Test False Tolerance
+        // TODO: Test Directoy Change
     }
 }

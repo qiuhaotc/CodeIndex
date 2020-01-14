@@ -13,9 +13,12 @@ namespace CodeIndex.Files
 
             var watcher = new FileSystemWatcher();
             watcher.Path = path;
-            watcher.NotifyFilter = NotifyFilters.LastWrite
-                                 | NotifyFilters.FileName
-                                 | NotifyFilters.DirectoryName;
+            watcher.NotifyFilter = NotifyFilters.DirectoryName |
+                NotifyFilters.LastAccess |
+                NotifyFilters.LastWrite |
+                NotifyFilters.FileName |
+                NotifyFilters.Size |
+                NotifyFilters.Attributes;
 
             watcher.Filter = "*.*";
 

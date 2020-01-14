@@ -44,8 +44,23 @@ namespace CodeIndex.Test
 
                 File.AppendAllText(Path.Combine(TempDir, "SubDir", "AAA.cs"), "AA BB");
                 Thread.Sleep(waitMS);
-                Assert.AreEqual(5, changeHit);
+                Assert.AreEqual(6, changeHit, "One for folder, one for file");
                 Assert.AreEqual(1, renameHit);
+
+                Directory.Move(Path.Combine(TempDir, "SubDir"), Path.Combine(TempDir, "SubDir2"));
+                Thread.Sleep(waitMS);
+                Assert.AreEqual(6, changeHit);
+                Assert.AreEqual(2, renameHit);
+
+                Directory.CreateDirectory(Path.Combine(TempDir, "SubDir3"));
+                Thread.Sleep(waitMS);
+                Assert.AreEqual(7, changeHit);
+                Assert.AreEqual(2, renameHit);
+
+                File.Create(Path.Combine(TempDir, "CCCC")).Close();
+                Thread.Sleep(waitMS);
+                Assert.AreEqual(8, changeHit);
+                Assert.AreEqual(2, renameHit);
             }
 
             void OnRenameHandler(object sender, RenamedEventArgs e)
