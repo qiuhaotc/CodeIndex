@@ -1,11 +1,6 @@
-﻿using System;
-using System.Collections.Generic;
-using System.Text;
-
-namespace CodeIndex.MaintainIndex
+﻿namespace CodeIndex.MaintainIndex
 {
     public class IndexInitializer
     {
-        
     }
 }

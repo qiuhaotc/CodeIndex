@@ -24,8 +24,8 @@ namespace CodeIndex.MaintainIndex
             this.excludedPaths = excludedPaths;
             FileSystemWatcher = FilesWatcherHelper.StartWatch(watchPath, OnFileChange, RenamedEventHandler);
             tokenSource = new CancellationTokenSource();
-            
-            Task.Run(() => 
+
+            Task.Run(() =>
             {
                 RetryAllFailed(tokenSource.Token);
             }, tokenSource.Token);
@@ -181,14 +181,13 @@ namespace CodeIndex.MaintainIndex
             pendingRetryCodeSource.Enqueue(pendingRetrySource);
         }
 
-
         ConcurrentQueue<PendingRetrySource> pendingRetryCodeSource = new ConcurrentQueue<PendingRetrySource>();
 
         bool IsFile(string path)
         {
             return File.Exists(path);
         }
-        
+
         bool IsDirectory(string path)
         {
             return Directory.Exists(path);
@@ -207,9 +206,11 @@ namespace CodeIndex.MaintainIndex
                             case WatcherChangeTypes.Changed:
                                 UpdateIndex(pendingRetrySource.FilePath, pendingRetrySource);
                                 break;
+
                             case WatcherChangeTypes.Created:
                                 CreateNewIndex(pendingRetrySource.FilePath, pendingRetrySource);
                                 break;
+
                             case WatcherChangeTypes.Renamed:
                                 FileRenamed(pendingRetrySource.FilePath, pendingRetrySource.OldPath, pendingRetrySource);
                                 break;
