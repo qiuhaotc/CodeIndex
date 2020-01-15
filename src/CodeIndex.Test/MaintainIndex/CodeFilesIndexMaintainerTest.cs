@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using System.Threading;
 using CodeIndex.Common;
 using CodeIndex.IndexBuilder;
@@ -14,7 +15,7 @@ namespace CodeIndex.Test
         [Test]
         public void TestMaintainerIndex()
         {
-            var waitMS = 10000;
+            var waitMS = 1000;
             var watchPath = Path.Combine(TempDir, "SubDir");
             Directory.CreateDirectory(watchPath);
             Directory.CreateDirectory(Path.Combine(watchPath, "FolderA"));
@@ -29,11 +30,11 @@ namespace CodeIndex.Test
             File.AppendAllText(fileBPath, "this is a content for test, that's it\r\na new line;");
 
             CodeIndexBuilder.BuildIndex(TempIndexDir, true, true,
-                CodeSource.GetCodeSource(new DirectoryInfo(fileAPath)),
-                CodeSource.GetCodeSource(new DirectoryInfo(fileBPath)));
+                CodeSource.GetCodeSource(new FileInfo(fileAPath), "12345"),
+                CodeSource.GetCodeSource(new FileInfo(fileBPath), "this is a content for test, that's it\r\na new line;"));
             CodeIndexBuilder.CloseIndexWriterAndCommitChange(TempIndexDir);
 
-            using (var maintainer = new CodeFilesIndexMaintainer(watchPath, TempIndexDir, new[] {"dll"}, new[] {""}))
+            using (var maintainer = new CodeFilesIndexMaintainer(watchPath, TempIndexDir, new[] { "dll" }, Array.Empty<string>()))
             {
                 File.AppendAllText(fileAPath, "56789");
                 Thread.Sleep(waitMS);

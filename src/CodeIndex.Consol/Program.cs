@@ -14,6 +14,8 @@ namespace CodeIndex
             Console.ReadLine();
             Console.WriteLine("Stop");
             maintainer.Dispose();
+
+            // TODO: Add Log Support
         }
     }
 }

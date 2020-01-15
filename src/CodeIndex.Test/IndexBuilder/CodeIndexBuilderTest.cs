@@ -38,6 +38,29 @@ namespace CodeIndex.Test
         }
 
         [Test]
+        public void TestBuildIndex_DeleteOldIndexWithSamePath()
+        {
+            BuildIndex();
+            CodeIndexBuilder.CloseIndexWriterAndCommitChange(TempIndexDir);
+
+            var result = CodeIndexSearcher.Search(TempIndexDir, new TermQuery(new Term(nameof(CodeSource.FileName), "Dummy File")), 10);
+            Assert.AreEqual("Test Content" + Environment.NewLine + "A New Line For Test", result.Single().Get(nameof(CodeSource.Content)));
+
+            CodeIndexBuilder.BuildIndex(TempIndexDir, true, true, new CodeSource
+            {
+                FileName = "Dummy File New",
+                FileExtension = "cs",
+                FilePath = @"C:\Dummy File.cs",
+                Content = "ABC",
+                IndexDate = new DateTime(2020, 1, 1)
+            });
+            CodeIndexBuilder.CloseIndexWriterAndCommitChange(TempIndexDir);
+
+            result = CodeIndexSearcher.Search(TempIndexDir, new TermQuery(new Term(nameof(CodeSource.FileName), "Dummy File New")), 10);
+            Assert.AreEqual("ABC", result.Single().Get(nameof(CodeSource.Content)));
+        }
+
+        [Test]
         public void TestDeleteIndex()
         {
             BuildIndex();
@@ -67,14 +90,14 @@ namespace CodeIndex.Test
             var result = CodeIndexSearcher.Search(TempIndexDir, new TermQuery(new Term(nameof(CodeSource.FilePath), @"D:\DDDD\A new Name.cs")), 10);
             Assert.That(result.Length, Is.EqualTo(1));
 
-            CodeIndexBuilder.UpdateIndex(TempIndexDir, new Term(nameof(CodeSource.FilePath), @"d:\dddd\a new name.cs"), new CodeSource()
+            CodeIndexBuilder.UpdateIndex(TempIndexDir, new Term(nameof(CodeSource.FilePath), @"d:\dddd\a new name.cs"), CodeIndexBuilder.GetDocumentFromSource(new CodeSource()
             {
                 Content = "AAA",
                 FileExtension = "CCC",
                 FilePath = "BBB",
                 FileName = "DDD",
                 IndexDate = new DateTime(1999, 12, 31)
-            });
+            }));
             CodeIndexBuilder.CloseIndexWriterAndCommitChange(TempIndexDir);
 
             result = CodeIndexSearcher.Search(TempIndexDir, new TermQuery(new Term(nameof(CodeSource.FilePath), @"d:\dddd\a new name.cs")), 10);
@@ -99,6 +122,31 @@ namespace CodeIndex.Test
 
             Assert.AreSame(index1, index2);
             Assert.AreSame(CodeIndexBuilder.IndexWritesPool[TempIndexDir], index1);
+        }
+
+        [Test]
+        public void TestIndexExists()
+        {
+            Assert.IsFalse(CodeIndexBuilder.IndexExists(TempIndexDir));
+
+            BuildIndex();
+
+            Assert.IsFalse(CodeIndexBuilder.IndexExists(TempIndexDir));
+
+            CodeIndexBuilder.CloseIndexWriterAndCommitChange(TempIndexDir);
+
+            Assert.IsTrue(CodeIndexBuilder.IndexExists(TempIndexDir));
+        }
+
+        [Test]
+        public void TestDeleteIndexFolder()
+        {
+            BuildIndex();
+            CodeIndexBuilder.CloseIndexWriterAndCommitChange(TempIndexDir);
+            Assert.IsTrue(CodeIndexBuilder.IndexExists(TempIndexDir));
+
+            CodeIndexBuilder.DeleteAllIndex(TempIndexDir);
+            Assert.IsFalse(CodeIndexBuilder.IndexExists(TempIndexDir));
         }
 
         void BuildIndex()

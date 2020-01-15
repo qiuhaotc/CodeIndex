@@ -11,15 +11,15 @@ namespace CodeIndex.Common
         public string Content { get; set; }
         public DateTime IndexDate { get; set; }
 
-        public static CodeSource GetCodeSource(DirectoryInfo directoryInfo)
+        public static CodeSource GetCodeSource(FileInfo fileInfo, string content)
         {
             return new CodeSource
             {
-                FileExtension = directoryInfo.Extension,
-                FileName = directoryInfo.Name,
-                FilePath = directoryInfo.FullName,
+                FileExtension = fileInfo.Extension,
+                FileName = fileInfo.Name,
+                FilePath = fileInfo.FullName,
                 IndexDate = DateTime.UtcNow,
-                Content = File.ReadAllText(directoryInfo.FullName)
+                Content = content
             };
         }
     }

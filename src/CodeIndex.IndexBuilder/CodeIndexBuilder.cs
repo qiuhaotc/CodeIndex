@@ -19,9 +19,15 @@ namespace CodeIndex.IndexBuilder
             luceneIndex.RequireNotNullOrEmpty(nameof(luceneIndex));
             codeSources.RequireContainsElement(nameof(codeSources));
             var indexWriter = CreateOrGetIndexWriter(luceneIndex);
+            var indexExist = IndexExists(luceneIndex);
 
             foreach (var source in codeSources)
             {
+                if (indexExist)
+                {
+                    DeleteIndex(luceneIndex, new Term(nameof(CodeSource.FilePath), source.FilePath));
+                }
+
                 var doc = GetDocumentFromSource(source);
                 indexWriter.AddDocument(doc);
             }
@@ -47,14 +53,24 @@ namespace CodeIndex.IndexBuilder
             indexWriter.DeleteDocuments(terms);
         }
 
-        public static void UpdateIndex(string luceneIndex, Term term, CodeSource codeSources)
+        public static void UpdateIndex(string luceneIndex, Term term, Document document)
         {
             luceneIndex.RequireNotNullOrEmpty(nameof(luceneIndex));
             term.RequireNotNull(nameof(term));
-            codeSources.RequireNotNull(nameof(codeSources));
+            document.RequireNotNull(nameof(document));
 
             var indexWriter = CreateOrGetIndexWriter(luceneIndex);
-            indexWriter.UpdateDocument(term, GetDocumentFromSource(codeSources));
+            indexWriter.UpdateDocument(term, document);
+        }
+
+        public static bool IndexExists(string luceneIndex)
+        {
+            return DirectoryReader.IndexExists(FSDirectory.Open(luceneIndex));
+        }
+
+        public static void DeleteAllIndex(string luceneIndex)
+        {
+            System.IO.Directory.Delete(luceneIndex, true);
         }
 
         public static void CloseIndexWriterAndCommitChange(string luceneIndex)
@@ -99,7 +115,7 @@ namespace CodeIndex.IndexBuilder
             return value ?? string.Empty;
         }
 
-        static Document GetDocumentFromSource(CodeSource source)
+        public static Document GetDocumentFromSource(CodeSource source)
         {
             return new Document
             {
