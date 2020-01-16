@@ -1,7 +1,7 @@
 ﻿using System;
 using CodeIndex.MaintainIndex;
 
-namespace CodeIndex
+namespace CodeIndex.ConsoleApp
 {
     class Program
     {

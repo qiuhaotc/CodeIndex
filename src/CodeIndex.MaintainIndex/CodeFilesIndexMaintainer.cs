@@ -145,7 +145,7 @@ namespace CodeIndex.MaintainIndex
                     if (fileInfo.Exists)
                     {
                         var content = File.ReadAllText(fullPath, FilesEncodingHelper.GetEncoding(fullPath));
-                        // TODO: When Date Not Chaneg, Not Update
+                        // TODO: When Date Not Change, Not Update
                         CodeIndexBuilder.BuildIndex(indexPath, false, false, CodeSource.GetCodeSource(fileInfo, content));
                     }
                 }
