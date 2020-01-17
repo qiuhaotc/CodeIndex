@@ -2,6 +2,7 @@ using System;
 using System.Linq;
 using CodeIndex.Common;
 using CodeIndex.IndexBuilder;
+using CodeIndex.Search;
 using Lucene.Net.Analysis.Standard;
 using Lucene.Net.Index;
 using Lucene.Net.QueryParsers.Classic;
@@ -96,7 +97,8 @@ namespace CodeIndex.Test
                 FileExtension = "CCC",
                 FilePath = "BBB",
                 FileName = "DDD",
-                IndexDate = new DateTime(1999, 12, 31)
+                IndexDate = new DateTime(1999, 12, 31),
+                LastWriteTimeUtc = new DateTime(2000, 1, 1)
             }));
             CodeIndexBuilder.CloseIndexWriterAndCommitChange(TempIndexDir);
 
@@ -110,6 +112,7 @@ namespace CodeIndex.Test
             Assert.AreEqual(@"BBB", result[0].Get(nameof(CodeSource.FilePath)));
             Assert.AreEqual("AAA", result[0].Get(nameof(CodeSource.Content)));
             Assert.AreEqual(new DateTime(1999, 12, 31).Ticks, result[0].GetField(nameof(CodeSource.IndexDate)).GetInt64Value());
+            Assert.AreEqual(new DateTime(2000, 1, 1).Ticks, result[0].GetField(nameof(CodeSource.LastWriteTimeUtc)).GetInt64Value());
         }
 
         [Test]
@@ -143,10 +146,12 @@ namespace CodeIndex.Test
         {
             BuildIndex();
             CodeIndexBuilder.CloseIndexWriterAndCommitChange(TempIndexDir);
-            Assert.IsTrue(CodeIndexBuilder.IndexExists(TempIndexDir));
+            Assert.AreEqual(1, CodeIndexSearcher.Search(TempIndexDir, new TermQuery(new Term(nameof(CodeSource.FileName), "Dummy File")), 10).Length);
+            Assert.AreEqual(1, CodeIndexSearcher.Search(TempIndexDir, new TermQuery(new Term(nameof(CodeSource.FileName), "A new File")), 10).Length);
 
             CodeIndexBuilder.DeleteAllIndex(TempIndexDir);
-            Assert.IsFalse(CodeIndexBuilder.IndexExists(TempIndexDir));
+            Assert.AreEqual(0, CodeIndexSearcher.Search(TempIndexDir, new TermQuery(new Term(nameof(CodeSource.FileName), "Dummy File")), 10).Length);
+            Assert.AreEqual(0, CodeIndexSearcher.Search(TempIndexDir, new TermQuery(new Term(nameof(CodeSource.FileName), "A new File")), 10).Length);
         }
 
         void BuildIndex()

@@ -1,6 +1,7 @@
 ﻿using System;
 using CodeIndex.Common;
 using CodeIndex.IndexBuilder;
+using CodeIndex.Search;
 using Lucene.Net.Index;
 using Lucene.Net.Search;
 using NUnit.Framework;

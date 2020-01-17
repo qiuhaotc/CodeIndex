@@ -1,0 +1,87 @@
+﻿@page "/"
+@inject HttpClient Client
+
+<h1>Lucene Search Test Page</h1>
+<div class="input-group mb-3">
+    <div class="input-group-prepend">
+        <span class="input-group-text" id="basic-addon1">Search Query</span>
+    </div>
+    <input type="text" class="form-control" placeholder="Put Your Search Query Here" aria-label="Put Your Search Query Here" @bind-value="@SearchQuery" />
+</div>
+<div class="input-group mb-3">
+    <button type="button" class="btn btn-primary" @onclick="SearchLuceneIndex">Search</button>
+</div>
+<div class="input-group mb-3">
+    @if (!FetchResult?.Status?.Success ?? false)
+    {
+        <div class="alert alert-danger" role="alert">
+            @FetchResult.Status.StatusDesc
+        </div>
+    }
+    else if (FetchResult?.Status?.Success ?? false)
+    {
+        <div class="alert alert-success" role="alert">
+            Post Success, Find Results: @FetchResult?.Result?.Count()
+        </div>
+    }
+    else
+    {
+        <div class="alert alert-info" role="alert">
+            Waiting For Search
+        </div>
+    }
+</div>
+<table class="table">
+    <thead>
+        <tr>
+            <th scope="col">File Name</th>
+            <th scope="col">File Extension</th>
+            <th scope="col">File Path</th>
+            <th scope="col">Index Date</th>
+            <th scope="col">Last Write Time Utc</th>
+            <th scope="col">Content</th>
+        </tr>
+    </thead>
+    <tbody>
+        @if (FetchResult?.Result != null && FetchResult.Result.Any())
+        {
+            foreach (var item in FetchResult.Result)
+            {
+                <tr>
+                    <td>@item.FileName</td>
+                    <td>@item.FileExtension</td>
+                    <td>@item.FilePath</td>
+                    <td>@item.IndexDate</td>
+                    <td>@item.LastWriteTimeUtc</td>
+                    <td>@item.Content.SubStringSafe(0, 30)</td>
+                </tr>
+            }
+        }
+        else
+        {
+            <tr>
+                <td colspan="6" class="text-center">Empty</td>
+            </tr>
+        }
+    </tbody>
+</table>
+
+@code {
+    public string SearchQuery { get; set; }
+
+    public FetchResult<IEnumerable<CodeSource>> FetchResult { get; set; }
+
+    bool IsSearching;
+
+    private async Task SearchLuceneIndex()
+    {
+        if (IsSearching)
+        {
+            return;
+        }
+
+        IsSearching = true;
+        FetchResult = await Client.GetJsonAsync<FetchResult<IEnumerable<CodeSource>>>("api/lucene/GetCodeSources?searchStr=" + System.Web.HttpUtility.UrlEncode(SearchQuery));
+        IsSearching = false;
+    }
+}

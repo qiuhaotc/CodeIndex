@@ -1,14 +1,19 @@
 ﻿using System;
 using CodeIndex.Common;
+using CodeIndex.IndexBuilder;
+using Lucene.Net.Analysis.Standard;
 using Lucene.Net.Index;
+using Lucene.Net.QueryParsers.Classic;
 using Lucene.Net.Search;
 
-namespace CodeIndex.SearchQuery
+namespace CodeIndex.Search
 {
     public class QueryGenerator
     {
         public Query GetQuery(SearchCandidate[] searchCandidates)
         {
+            searchCandidates.RequireContainsElement(nameof(searchCandidates));
+
             // search with a phrase
             var query = new BooleanQuery();
             foreach (var item in searchCandidates)
@@ -40,5 +45,14 @@ namespace CodeIndex.SearchQuery
 
             return query;
         }
+
+        public Query GetQueryFromStr(string searchStr)
+        {
+            searchStr.RequireNotNullOrEmpty(nameof(searchStr));
+
+            return Parser.Parse(searchStr);
+        }
+
+        QueryParser Parser { get; set; } = new QueryParser(CodeIndexBuilder.AppLuceneVersion, nameof(CodeSource.Content), new StandardAnalyzer(CodeIndexBuilder.AppLuceneVersion));
     }
 }

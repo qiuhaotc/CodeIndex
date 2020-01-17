@@ -70,7 +70,12 @@ namespace CodeIndex.IndexBuilder
 
         public static void DeleteAllIndex(string luceneIndex)
         {
-            System.IO.Directory.Delete(luceneIndex, true);
+            if (IndexExists(luceneIndex))
+            {
+                var indexWriter = CreateOrGetIndexWriter(luceneIndex);
+                indexWriter.DeleteAll();
+                indexWriter.Commit();
+            }
         }
 
         public static void CloseIndexWriterAndCommitChange(string luceneIndex)
@@ -124,7 +129,8 @@ namespace CodeIndex.IndexBuilder
                 new StringField(nameof(source.FileExtension), source.FileExtension.ToStringSafe(), Field.Store.YES),
                 new StringField(nameof(source.FilePath), source.FilePath.ToStringSafe(), Field.Store.YES),
                 new TextField(nameof(source.Content), source.Content.ToStringSafe(), Field.Store.YES),
-                new Int64Field(nameof(source.IndexDate), source.IndexDate.Ticks, Field.Store.YES)
+                new Int64Field(nameof(source.IndexDate), source.IndexDate.Ticks, Field.Store.YES),
+                new Int64Field(nameof(source.LastWriteTimeUtc), source.LastWriteTimeUtc.Ticks, Field.Store.YES)
             };
         }
     }

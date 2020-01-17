@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using CodeIndex.IndexBuilder;
+using CodeIndex.Search;
 using NUnit.Framework;
 
 namespace CodeIndex.Test
