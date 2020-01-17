@@ -10,6 +10,7 @@ namespace CodeIndex.Common
         public string FilePath { get; set; }
         public string Content { get; set; }
         public DateTime IndexDate { get; set; }
+        public DateTime LastWriteTimeUtc { get; set; }
 
         public static CodeSource GetCodeSource(FileInfo fileInfo, string content)
         {
@@ -19,7 +20,8 @@ namespace CodeIndex.Common
                 FileName = fileInfo.Name,
                 FilePath = fileInfo.FullName,
                 IndexDate = DateTime.UtcNow,
-                Content = content
+                Content = content,
+                LastWriteTimeUtc = fileInfo.LastWriteTimeUtc
             };
         }
     }
