@@ -1,7 +1,6 @@
 ﻿using System;
 using CodeIndex.Common;
 using CodeIndex.IndexBuilder;
-using Lucene.Net.Analysis.Standard;
 using Lucene.Net.Index;
 using Lucene.Net.QueryParsers.Classic;
 using Lucene.Net.Search;
@@ -53,6 +52,6 @@ namespace CodeIndex.Search
             return Parser.Parse(searchStr);
         }
 
-        QueryParser Parser { get; set; } = new QueryParser(CodeIndexBuilder.AppLuceneVersion, nameof(CodeSource.Content), new StandardAnalyzer(CodeIndexBuilder.AppLuceneVersion));
+        QueryParser Parser = LucenePool.GetStandardParser();
     }
 }

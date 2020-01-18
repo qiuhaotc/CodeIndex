@@ -13,21 +13,28 @@ namespace CodeIndex.MaintainIndex
 {
     public class CodeFilesIndexMaintainer : IDisposable
     {
-        public CodeFilesIndexMaintainer(string watchPath, string indexPath, string[] excludedExtensions, string[] excludedPaths)
+        public CodeFilesIndexMaintainer(string watchPath, string luceneIndex, string[] excludedExtensions, string[] excludedPaths, int saveIntervalSeconds = 300)
         {
             watchPath.RequireNotNullOrEmpty(nameof(watchPath));
             excludedExtensions.RequireNotNull(nameof(watchPath));
             excludedPaths.RequireNotNull(nameof(excludedPaths));
+            saveIntervalSeconds.RequireRange(nameof(saveIntervalSeconds), 3600, 1);
 
-            this.indexPath = indexPath;
+            this.luceneIndex = luceneIndex;
             this.excludedExtensions = excludedExtensions;
             this.excludedPaths = excludedPaths;
+            this.saveIntervalSeconds = saveIntervalSeconds;
             FileSystemWatcher = FilesWatcherHelper.StartWatch(watchPath, OnFileChange, RenamedEventHandler);
             tokenSource = new CancellationTokenSource();
 
             Task.Run(() =>
             {
                 RetryAllFailed(tokenSource.Token);
+            }, tokenSource.Token);
+
+            Task.Run(() =>
+            {
+                SaveLuceneResultsWhenNeeded(tokenSource.Token);
             }, tokenSource.Token);
         }
 
@@ -36,14 +43,16 @@ namespace CodeIndex.MaintainIndex
             FileSystemWatcher.EnableRaisingEvents = false;
             FileSystemWatcher.Dispose();
             tokenSource.Cancel();
+            LucenePool.SaveLuceneResultsAndCloseIndexWriter(luceneIndex);
         }
 
-        public FileSystemWatcher FileSystemWatcher { get; private set; }
+        FileSystemWatcher FileSystemWatcher { get; set; }
         const int WaitMilliseconds = 100;
 
-        string indexPath;
+        string luceneIndex;
         string[] excludedExtensions;
         string[] excludedPaths;
+        int saveIntervalSeconds;
         CancellationTokenSource tokenSource;
 
         void OnFileChange(object sender, FileSystemEventArgs e)
@@ -61,11 +70,11 @@ namespace CodeIndex.MaintainIndex
                         break;
 
                     case WatcherChangeTypes.Deleted:
-                        CodeIndexBuilder.DeleteIndex(indexPath, new Term(nameof(CodeSource.FilePath), e.FullPath));
+                        CodeIndexBuilder.DeleteIndex(luceneIndex, new Term(nameof(CodeSource.FilePath), e.FullPath));
                         break;
                 }
 
-                CodeIndexBuilder.CloseIndexWriterAndCommitChange(indexPath);
+                pendingChanges++;
             }
         }
 
@@ -80,7 +89,7 @@ namespace CodeIndex.MaintainIndex
                         break;
                 }
 
-                CodeIndexBuilder.CloseIndexWriterAndCommitChange(indexPath);
+                pendingChanges++;
             }
         }
 
@@ -101,7 +110,7 @@ namespace CodeIndex.MaintainIndex
                     if (fileInfo.Exists)
                     {
                         var content = File.ReadAllText(fullPath, FilesEncodingHelper.GetEncoding(fullPath));
-                        CodeIndexBuilder.BuildIndex(indexPath, false, false, CodeSource.GetCodeSource(fileInfo, content));
+                        CodeIndexBuilder.BuildIndex(luceneIndex, false, false, false, CodeSource.GetCodeSource(fileInfo, content));
                     }
                 }
                 catch (IOException)
@@ -123,7 +132,7 @@ namespace CodeIndex.MaintainIndex
                         var content = File.ReadAllText(fullPath, FilesEncodingHelper.GetEncoding(fullPath));
                         // TODO: When Date Not Change, Not Update
                         var document = CodeIndexBuilder.GetDocumentFromSource(CodeSource.GetCodeSource(fileInfo, content));
-                        CodeIndexBuilder.UpdateIndex(indexPath, new Term(nameof(CodeSource.FilePath), fullPath), document);
+                        CodeIndexBuilder.UpdateIndex(luceneIndex, new Term(nameof(CodeSource.FilePath), fullPath), document);
                     }
                 }
                 catch (IOException)
@@ -137,7 +146,7 @@ namespace CodeIndex.MaintainIndex
         {
             if (IsFile(fullPath))
             {
-                CodeIndexBuilder.DeleteIndex(indexPath, new Term(nameof(CodeSource.FilePath), oldFullPath));
+                CodeIndexBuilder.DeleteIndex(luceneIndex, new Term(nameof(CodeSource.FilePath), oldFullPath));
 
                 var fileInfo = new FileInfo(fullPath);
                 try
@@ -146,7 +155,7 @@ namespace CodeIndex.MaintainIndex
                     {
                         var content = File.ReadAllText(fullPath, FilesEncodingHelper.GetEncoding(fullPath));
                         // TODO: When Date Not Change, Not Update
-                        CodeIndexBuilder.BuildIndex(indexPath, false, false, CodeSource.GetCodeSource(fileInfo, content));
+                        CodeIndexBuilder.BuildIndex(luceneIndex, false, false, false, CodeSource.GetCodeSource(fileInfo, content));
                     }
                 }
                 catch (IOException)
@@ -178,10 +187,10 @@ namespace CodeIndex.MaintainIndex
                 pendingRetrySource.LastRetryUTCDate = DateTime.UtcNow;
             }
 
-            pendingRetryCodeSource.Enqueue(pendingRetrySource);
+            pendingRetryCodeSources.Enqueue(pendingRetrySource);
         }
 
-        ConcurrentQueue<PendingRetrySource> pendingRetryCodeSource = new ConcurrentQueue<PendingRetrySource>();
+        ConcurrentQueue<PendingRetrySource> pendingRetryCodeSources = new ConcurrentQueue<PendingRetrySource>();
 
         bool IsFile(string path)
         {
@@ -197,29 +206,61 @@ namespace CodeIndex.MaintainIndex
         {
             while (!cancellationToken.IsCancellationRequested)
             {
-                if (pendingRetryCodeSource.TryDequeue(out var pendingRetrySource))
+                if (pendingRetryCodeSources.TryDequeue(out var pendingRetrySource))
                 {
                     if (pendingRetrySource.RetryTimes <= 10) // Always Failed, Stop Retry
                     {
-                        switch (pendingRetrySource.ChangesType)
+                        Task.Run(() =>
                         {
-                            case WatcherChangeTypes.Changed:
-                                UpdateIndex(pendingRetrySource.FilePath, pendingRetrySource);
-                                break;
+                            if (pendingRetrySource.LastRetryUTCDate > DateTime.UtcNow.AddSeconds(-10)) // Failed In 10 Seconds
+                            {
+                                Thread.Sleep(10000);
+                            }
 
-                            case WatcherChangeTypes.Created:
-                                CreateNewIndex(pendingRetrySource.FilePath, pendingRetrySource);
-                                break;
+                            switch (pendingRetrySource.ChangesType)
+                            {
+                                case WatcherChangeTypes.Changed:
+                                    UpdateIndex(pendingRetrySource.FilePath, pendingRetrySource);
+                                    break;
 
-                            case WatcherChangeTypes.Renamed:
-                                FileRenamed(pendingRetrySource.FilePath, pendingRetrySource.OldPath, pendingRetrySource);
-                                break;
-                        }
+                                case WatcherChangeTypes.Created:
+                                    CreateNewIndex(pendingRetrySource.FilePath, pendingRetrySource);
+                                    break;
+
+                                case WatcherChangeTypes.Renamed:
+                                    FileRenamed(pendingRetrySource.FilePath, pendingRetrySource.OldPath, pendingRetrySource);
+                                    break;
+                            }
+                        }, cancellationToken);
                     }
+
+                    // TODO: Add Log
                 }
                 else
                 {
                     Thread.Sleep(10000); // Sleep 10 seconds when nothing need to requeue
+                }
+            }
+        }
+
+        int pendingChanges = 0;
+        DateTime lastSaveDate = DateTime.UtcNow;
+
+        void SaveLuceneResultsWhenNeeded(CancellationToken token)
+        {
+            while (!token.IsCancellationRequested)
+            {
+                token.ThrowIfCancellationRequested();
+
+                if (pendingChanges > 100 || (DateTime.UtcNow - lastSaveDate).Seconds >= saveIntervalSeconds)
+                {
+                    LucenePool.SaveLuceneResultsAndCloseIndexWriter(luceneIndex);
+                    pendingChanges = 0;
+                    lastSaveDate = DateTime.UtcNow;
+                }
+                else
+                {
+                    Thread.Sleep(saveIntervalSeconds * 100); //  Sleep when nothing need to save
                 }
             }
         }

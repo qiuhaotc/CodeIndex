@@ -16,7 +16,7 @@ namespace CodeIndex.Test
         [Test]
         public void TestMaintainerIndex()
         {
-            var waitMS = 1000;
+            var waitMS = 2000;
             var watchPath = Path.Combine(TempDir, "SubDir");
             Directory.CreateDirectory(watchPath);
             Directory.CreateDirectory(Path.Combine(watchPath, "FolderA"));
@@ -30,15 +30,15 @@ namespace CodeIndex.Test
             File.Create(fileBPath).Close();
             File.AppendAllText(fileBPath, "this is a content for test, that's it\r\na new line;");
 
-            CodeIndexBuilder.BuildIndex(TempIndexDir, true, true,
+            CodeIndexBuilder.BuildIndex(TempIndexDir, true, true, true,
                 CodeSource.GetCodeSource(new FileInfo(fileAPath), "12345"),
                 CodeSource.GetCodeSource(new FileInfo(fileBPath), "this is a content for test, that's it\r\na new line;"));
-            CodeIndexBuilder.CloseIndexWriterAndCommitChange(TempIndexDir);
+            LucenePool.SaveLuceneResultsAndCloseIndexWriter(TempIndexDir);
 
-            using (var maintainer = new CodeFilesIndexMaintainer(watchPath, TempIndexDir, new[] { "dll" }, Array.Empty<string>()))
+            using (var maintainer = new CodeFilesIndexMaintainer(watchPath, TempIndexDir, new[] { "dll" }, Array.Empty<string>(), 1))
             {
                 File.AppendAllText(fileAPath, "56789");
-                Thread.Sleep(waitMS);
+                Thread.Sleep(waitMS); // wait task finish saving
 
                 var index = CodeIndexSearcher.Search(TempIndexDir, new TermQuery(new Term(nameof(CodeSource.FileName), "AAA.cs")), 10);
                 Assert.AreEqual(1, index.Length);

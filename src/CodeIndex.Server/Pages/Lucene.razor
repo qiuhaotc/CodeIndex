@@ -1,5 +1,6 @@
 ﻿@page "/"
 @inject HttpClient Client
+@inject CodeIndex.Common.Storage Storage
 
 <h1>Lucene Search Test Page</h1>
 <div class="input-group mb-3">
@@ -53,7 +54,9 @@
                     <td>@item.FilePath</td>
                     <td>@item.IndexDate</td>
                     <td>@item.LastWriteTimeUtc</td>
-                    <td>@item.Content.SubStringSafe(0, 30)</td>
+                    <td>
+                        <a href="/Details/@item.CodePK">@item.Content.SubStringSafe(0, 30)</a>
+                    </td>
                 </tr>
             }
         }
@@ -73,6 +76,16 @@
 
     bool IsSearching;
 
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        SearchQuery = Storage.GetValue("LuceneSearchQuery")?.ToString();
+        if (!string.IsNullOrEmpty(SearchQuery))
+        {
+            await SearchLuceneIndex();
+        }
+    }
+
     private async Task SearchLuceneIndex()
     {
         if (IsSearching)
@@ -80,6 +93,7 @@
             return;
         }
 
+        Storage.SetOrUpdate("LuceneSearchQuery", SearchQuery);
         IsSearching = true;
         FetchResult = await Client.GetJsonAsync<FetchResult<IEnumerable<CodeSource>>>("api/lucene/GetCodeSources?searchStr=" + System.Web.HttpUtility.UrlEncode(SearchQuery));
         IsSearching = false;

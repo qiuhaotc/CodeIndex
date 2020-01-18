@@ -1,9 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using CodeIndex.Common;
-using CodeIndex.IndexBuilder;
 using CodeIndex.Search;
 using Lucene.Net.Index;
+using Lucene.Net.Store;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 
@@ -19,7 +19,6 @@ namespace CodeIndex.Server.Controllers
         }
 
         static QueryGenerator generator = new QueryGenerator();
-        static IndexWriter indexWriter;
         IConfiguration config;
 
         [HttpGet]
@@ -29,12 +28,8 @@ namespace CodeIndex.Server.Controllers
             FetchResult<IEnumerable<CodeSource>> result;
             try
             {
-                if(indexWriter == null)
-                {
-                    indexWriter = CodeIndexBuilder.CreateOrGetIndexWriter(config["LuncenIndex"]);
-                }
-
-                var reader = indexWriter.GetReader(false);
+                var directory = FSDirectory.Open(config["LuncenIndex"]);
+                var reader = DirectoryReader.Open(directory);
                 var query = generator.GetQueryFromStr(searchStr);
                 var codeSources = CodeIndexSearcher.SearchCode(config["LuncenIndex"], reader, query, 100);
                 reader.Dispose();

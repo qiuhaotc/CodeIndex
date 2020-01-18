@@ -23,8 +23,8 @@ namespace CodeIndex.MaintainIndex
                 Directory.CreateDirectory(luceneIndex);
             }
 
-            CodeIndexBuilder.BuildIndex(luceneIndex, true, true, FilesFetcher.FetchAllFiles(codeFolder, Array.Empty<string>(), Array.Empty<string>()).Select(u => CodeSource.GetCodeSource(u, File.ReadAllText(u.FullName, FilesEncodingHelper.GetEncoding(u.FullName)))).ToArray());
-            CodeIndexBuilder.CloseIndexWriterAndCommitChange(luceneIndex);
+            CodeIndexBuilder.BuildIndex(luceneIndex, true, true, true, FilesFetcher.FetchAllFiles(codeFolder, Array.Empty<string>(), Array.Empty<string>()).Select(u => CodeSource.GetCodeSource(u, File.ReadAllText(u.FullName, FilesEncodingHelper.GetEncoding(u.FullName)))).ToArray());
+            LucenePool.SaveLuceneResultsAndCloseIndexWriter(luceneIndex);
         }
     }
 }

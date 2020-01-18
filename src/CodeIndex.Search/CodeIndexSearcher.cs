@@ -78,6 +78,7 @@ namespace CodeIndex.Search
         {
             return new CodeSource
             {
+                CodePK = document.Get(nameof(CodeSource.CodePK)),
                 Content = document.Get(nameof(CodeSource.Content)),
                 FileExtension = document.Get(nameof(CodeSource.FileExtension)),
                 FileName = document.Get(nameof(CodeSource.FileName)),

@@ -1,26 +1,20 @@
-﻿using System.Collections.Concurrent;
+﻿using System.Collections.Generic;
 using CodeIndex.Common;
-using Lucene.Net.Analysis.Standard;
 using Lucene.Net.Documents;
 using Lucene.Net.Index;
 using Lucene.Net.Search;
 using Lucene.Net.Store;
-using Lucene.Net.Util;
 
 namespace CodeIndex.IndexBuilder
 {
     public static class CodeIndexBuilder
     {
-        public const LuceneVersion AppLuceneVersion = LuceneVersion.LUCENE_48;
-        public static ConcurrentDictionary<string, IndexWriter> IndexWritesPool { get; set; } = new ConcurrentDictionary<string, IndexWriter>();
-
-        public static void BuildIndex(string luceneIndex, bool triggerMerge, bool applyAllDeletes, params CodeSource[] codeSources)
+        public static void BuildIndex(string luceneIndex, bool triggerMerge, bool applyAllDeletes, bool needFlush, params CodeSource[] codeSources)
         {
             luceneIndex.RequireNotNullOrEmpty(nameof(luceneIndex));
             codeSources.RequireContainsElement(nameof(codeSources));
-            var indexWriter = CreateOrGetIndexWriter(luceneIndex);
             var indexExist = IndexExists(luceneIndex);
-
+            var documents = new List<Document>();
             foreach (var source in codeSources)
             {
                 if (indexExist)
@@ -29,10 +23,10 @@ namespace CodeIndex.IndexBuilder
                 }
 
                 var doc = GetDocumentFromSource(source);
-                indexWriter.AddDocument(doc);
+                documents.Add(doc);
             }
 
-            indexWriter.Flush(triggerMerge: triggerMerge, applyAllDeletes: applyAllDeletes);
+            LucenePool.BuildIndex(luceneIndex, triggerMerge, applyAllDeletes, documents, needFlush);
         }
 
         public static void DeleteIndex(string luceneIndex, params Query[] searchQueries)
@@ -40,8 +34,7 @@ namespace CodeIndex.IndexBuilder
             luceneIndex.RequireNotNullOrEmpty(nameof(luceneIndex));
             searchQueries.RequireContainsElement(nameof(searchQueries));
 
-            var indexWriter = CreateOrGetIndexWriter(luceneIndex);
-            indexWriter.DeleteDocuments(searchQueries);
+            LucenePool.DeleteIndex(luceneIndex, searchQueries);
         }
 
         public static void DeleteIndex(string luceneIndex, params Term[] terms)
@@ -49,8 +42,7 @@ namespace CodeIndex.IndexBuilder
             luceneIndex.RequireNotNullOrEmpty(nameof(luceneIndex));
             terms.RequireContainsElement(nameof(terms));
 
-            var indexWriter = CreateOrGetIndexWriter(luceneIndex);
-            indexWriter.DeleteDocuments(terms);
+            LucenePool.DeleteIndex(luceneIndex, terms);
         }
 
         public static void UpdateIndex(string luceneIndex, Term term, Document document)
@@ -59,60 +51,24 @@ namespace CodeIndex.IndexBuilder
             term.RequireNotNull(nameof(term));
             document.RequireNotNull(nameof(document));
 
-            var indexWriter = CreateOrGetIndexWriter(luceneIndex);
-            indexWriter.UpdateDocument(term, document);
+            LucenePool.UpdateIndex(luceneIndex, term, document);
         }
 
         public static bool IndexExists(string luceneIndex)
         {
+            luceneIndex.RequireNotNullOrEmpty(nameof(luceneIndex));
+
             return DirectoryReader.IndexExists(FSDirectory.Open(luceneIndex));
         }
 
         public static void DeleteAllIndex(string luceneIndex)
         {
+            luceneIndex.RequireNotNullOrEmpty(nameof(luceneIndex));
+
             if (IndexExists(luceneIndex))
             {
-                var indexWriter = CreateOrGetIndexWriter(luceneIndex);
-                indexWriter.DeleteAll();
-                indexWriter.Commit();
+                LucenePool.DeleteAllIndex(luceneIndex);
             }
-        }
-
-        public static void CloseIndexWriterAndCommitChange(string luceneIndex)
-        {
-            if (IndexWritesPool.TryRemove(luceneIndex, out var indexWriter))
-            {
-                indexWriter.Dispose();
-            }
-        }
-
-        public static void ClearIndexWritesPool()
-        {
-            foreach (var item in IndexWritesPool)
-            {
-                item.Value.Dispose();
-            }
-
-            IndexWritesPool.Clear();
-        }
-
-        public static IndexWriter CreateOrGetIndexWriter(string luceneIndex)
-        {
-            IndexWriter indexWriter;
-
-            if (!IndexWritesPool.TryGetValue(luceneIndex, out indexWriter))
-            {
-                var dir = FSDirectory.Open(luceneIndex);
-                //create an analyzer to process the text
-                var analyzer = new StandardAnalyzer(AppLuceneVersion);
-                //create an index writer
-                var indexConfig = new IndexWriterConfig(AppLuceneVersion, analyzer);
-
-                indexWriter = new IndexWriter(dir, indexConfig);
-                IndexWritesPool.TryAdd(luceneIndex, indexWriter);
-            }
-
-            return indexWriter;
         }
 
         static string ToStringSafe(this string value)
@@ -130,7 +86,8 @@ namespace CodeIndex.IndexBuilder
                 new StringField(nameof(source.FilePath), source.FilePath.ToStringSafe(), Field.Store.YES),
                 new TextField(nameof(source.Content), source.Content.ToStringSafe(), Field.Store.YES),
                 new Int64Field(nameof(source.IndexDate), source.IndexDate.Ticks, Field.Store.YES),
-                new Int64Field(nameof(source.LastWriteTimeUtc), source.LastWriteTimeUtc.Ticks, Field.Store.YES)
+                new Int64Field(nameof(source.LastWriteTimeUtc), source.LastWriteTimeUtc.Ticks, Field.Store.YES),
+                new StringField(nameof(source.CodePK), source.CodePK.ToString(), Field.Store.YES)
             };
         }
     }

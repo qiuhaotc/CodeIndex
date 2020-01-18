@@ -11,11 +11,13 @@ namespace CodeIndex.Common
         public string Content { get; set; }
         public DateTime IndexDate { get; set; }
         public DateTime LastWriteTimeUtc { get; set; }
+        public string CodePK { get; set; }
 
         public static CodeSource GetCodeSource(FileInfo fileInfo, string content)
         {
             return new CodeSource
             {
+                CodePK = Guid.NewGuid().ToString("N"),
                 FileExtension = fileInfo.Extension,
                 FileName = fileInfo.Name,
                 FilePath = fileInfo.FullName,

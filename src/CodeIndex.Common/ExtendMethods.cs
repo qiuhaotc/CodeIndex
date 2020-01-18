@@ -1,6 +1,4 @@
 ﻿using System;
-using System.Collections.Generic;
-using System.Text;
 
 namespace CodeIndex.Common
 {
@@ -16,6 +14,6 @@ namespace CodeIndex.Common
             }
 
             return result;
-        } 
+        }
     }
 }

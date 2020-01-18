@@ -1,0 +1,25 @@
+﻿@page "/Details/{CodePK}"
+@inject HttpClient Client
+
+<div class="jumbotron">
+    <h1 class="display-4">Details For @Source?.FileName</h1>
+    <p class="lead">Extension: @Source?.FileExtension | Index Date: @Source?.IndexDate | Last Write Time Utc: @Source?.LastWriteTimeUtc</p>
+    <hr class="my-4">
+    <p>File Path: @Source?.FilePath</p>
+    <hr class="my-4">
+    <p>Content: @Source?.Content</p>
+</div>
+
+@code {
+    [Parameter]
+    public string CodePK { get; set; }
+
+    public CodeSource Source { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        var result = await Client.GetJsonAsync<FetchResult<IEnumerable<CodeSource>>>("api/lucene/GetCodeSources?searchStr=" + System.Web.HttpUtility.UrlEncode($"CodePK:\"{CodePK}\""));
+        Source = result.Result.FirstOrDefault();
+        await base.OnInitializedAsync();
+    }
+}

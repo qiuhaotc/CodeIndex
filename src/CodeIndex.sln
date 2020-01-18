@@ -17,7 +17,7 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CodeIndex.ConsoleApp", "Cod
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CodeIndex.Search", "CodeIndex.Search\CodeIndex.Search.csproj", "{A0D9FDC9-8E6B-4F38-BE81-550343E37119}"
 EndProject
-Project("{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}") = "CodeIndex.Server", "CodeIndex.Server\CodeIndex.Server.csproj", "{BE1F4C0F-F4FF-43B0-B8F2-2C1F9B446059}"
+Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CodeIndex.Server", "CodeIndex.Server\CodeIndex.Server.csproj", "{BE1F4C0F-F4FF-43B0-B8F2-2C1F9B446059}"
 EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
