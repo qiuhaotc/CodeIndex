@@ -17,7 +17,7 @@ namespace CodeIndex.Common
         {
             return new CodeSource
             {
-                FileExtension = fileInfo.Extension,
+                FileExtension = fileInfo.Extension?.Replace(".",""),
                 FileName = fileInfo.Name,
                 FilePath = fileInfo.FullName,
                 IndexDate = DateTime.UtcNow,
