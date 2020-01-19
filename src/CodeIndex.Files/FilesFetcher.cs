@@ -7,17 +7,18 @@ namespace CodeIndex.Files
 {
     public class FilesFetcher
     {
-        public static IEnumerable<FileInfo> FetchAllFiles(string path, string[] excludedExtenstions, string[] excludedPaths, string includedExtenstion = "*")
+        public static IEnumerable<FileInfo> FetchAllFiles(string path, string[] excludedExtensions, string[] excludedPaths, string includedExtenstion = "*", string[] includedExtensions = null)
         {
             path.RequireNotNullOrEmpty(nameof(path));
-            excludedExtenstions.RequireNotNull(nameof(path));
+            excludedExtensions.RequireNotNull(nameof(path));
             excludedPaths.RequireNotNull(nameof(excludedPaths));
             includedExtenstion.RequireNotNullOrEmpty(nameof(includedExtenstion));
 
             return Directory.GetFiles(path, includedExtenstion, SearchOption.AllDirectories)
-                .Select(u => new FileInfo(u))
-                .Where(f => excludedExtenstions.All(extenstion => !f.Extension.Contains(extenstion)))
-                .Where(f => excludedPaths.All(excluded => !f.DirectoryName.Contains(excluded)));
+	            .Where(f => !excludedExtensions.Any(extenstion => f.EndsWith(extenstion, System.StringComparison.InvariantCultureIgnoreCase))
+	                        && !excludedPaths.Any(filePath => f.ToUpper().Contains(filePath))
+	                        && (includedExtensions == null || includedExtensions.Any(extension =>f.EndsWith(extension, System.StringComparison.InvariantCultureIgnoreCase))))
+                .Select(u => new FileInfo(u));
         }
     }
 }

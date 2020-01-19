@@ -13,7 +13,7 @@ namespace CodeIndex.Test
         [Test]
         public void TestSearch_NewReader()
         {
-            CodeIndexBuilder.BuildIndex(TempIndexDir, true, true, true, new CodeSource
+            CodeIndexBuilder.BuildIndex(TempIndexDir, true, true, true, new[] { new CodeSource
             {
                 FileName = "Dummy File 1",
                 FileExtension = "cs",
@@ -33,7 +33,7 @@ namespace CodeIndex.Test
                 FileExtension = "xml",
                 FilePath = @"C:\Dummy File.xml",
                 Content = "Test Content" + Environment.NewLine + "A New Line For Test"
-            });
+            }});
 
             LucenePool.SaveLuceneResultsAndCloseIndexWriter(TempIndexDir);
 
@@ -47,7 +47,7 @@ namespace CodeIndex.Test
         [Test]
         public void TestSearch_ReaderFromWriter()
         {
-            CodeIndexBuilder.BuildIndex(TempIndexDir, true, true, true, new CodeSource
+            CodeIndexBuilder.BuildIndex(TempIndexDir, true, true, true, new[] { new CodeSource
             {
                 FileName = "Dummy File 1",
                 FileExtension = "cs",
@@ -67,7 +67,7 @@ namespace CodeIndex.Test
                 FileExtension = "xml",
                 FilePath = @"C:\Dummy File.xml",
                 Content = "Test Content" + Environment.NewLine + "A New Line For Test"
-            });
+            }});
 
             var reader = LucenePool.IndexWritesPool[TempIndexDir].GetReader(true);
             var results = CodeIndexSearcher.Search(TempIndexDir, reader, new TermQuery(new Term(nameof(CodeSource.FileExtension), "xml")), 10);

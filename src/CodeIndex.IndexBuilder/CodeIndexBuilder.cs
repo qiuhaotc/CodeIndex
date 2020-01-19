@@ -9,10 +9,10 @@ namespace CodeIndex.IndexBuilder
 {
     public static class CodeIndexBuilder
     {
-        public static void BuildIndex(string luceneIndex, bool triggerMerge, bool applyAllDeletes, bool needFlush, params CodeSource[] codeSources)
+        public static void BuildIndex(string luceneIndex, bool triggerMerge, bool applyAllDeletes, bool needFlush, IEnumerable<CodeSource> codeSources)
         {
             luceneIndex.RequireNotNullOrEmpty(nameof(luceneIndex));
-            codeSources.RequireContainsElement(nameof(codeSources));
+            codeSources.RequireNotNull(nameof(codeSources));
             var indexExist = IndexExists(luceneIndex);
             var documents = new List<Document>();
             foreach (var source in codeSources)

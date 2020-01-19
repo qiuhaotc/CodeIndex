@@ -13,7 +13,7 @@ namespace CodeIndex.MaintainIndex
 {
     public class CodeFilesIndexMaintainer : IDisposable
     {
-        public CodeFilesIndexMaintainer(string watchPath, string luceneIndex, string[] excludedExtensions, string[] excludedPaths, int saveIntervalSeconds = 300)
+        public CodeFilesIndexMaintainer(string watchPath, string luceneIndex, string[] excludedExtensions, string[] excludedPaths, int saveIntervalSeconds = 300, string[] includedExtensions = null)
         {
             watchPath.RequireNotNullOrEmpty(nameof(watchPath));
             excludedExtensions.RequireNotNull(nameof(watchPath));
@@ -24,6 +24,7 @@ namespace CodeIndex.MaintainIndex
             this.excludedExtensions = excludedExtensions;
             this.excludedPaths = excludedPaths;
             this.saveIntervalSeconds = saveIntervalSeconds;
+            this.includedExtensions = includedExtensions;
             FileSystemWatcher = FilesWatcherHelper.StartWatch(watchPath, OnFileChange, RenamedEventHandler);
             tokenSource = new CancellationTokenSource();
 
@@ -53,6 +54,7 @@ namespace CodeIndex.MaintainIndex
         string[] excludedExtensions;
         string[] excludedPaths;
         int saveIntervalSeconds;
+        string[] includedExtensions;
         CancellationTokenSource tokenSource;
 
         void OnFileChange(object sender, FileSystemEventArgs e)
@@ -93,12 +95,12 @@ namespace CodeIndex.MaintainIndex
             }
         }
 
-        bool IsExcludedFromIndex(FileSystemEventArgs e)
-        {
-            return excludedPaths.Any(u => e.FullPath.Contains(u)) || excludedExtensions.Any(u => e.FullPath.EndsWith(u));
-        }
+		bool IsExcludedFromIndex(FileSystemEventArgs e)
+		{
+			return excludedPaths.Any(u => e.FullPath.ToUpperInvariant().Contains(u)) || excludedExtensions.Any(u => e.FullPath.EndsWith(u, StringComparison.InvariantCultureIgnoreCase)) || includedExtensions != null && !includedExtensions.Any(u => e.FullPath.EndsWith(u, StringComparison.InvariantCultureIgnoreCase));
+		}
 
-        void CreateNewIndex(string fullPath, PendingRetrySource pendingRetrySource = null)
+		void CreateNewIndex(string fullPath, PendingRetrySource pendingRetrySource = null)
         {
             if (IsFile(fullPath))
             {
@@ -110,7 +112,7 @@ namespace CodeIndex.MaintainIndex
                     if (fileInfo.Exists)
                     {
                         var content = File.ReadAllText(fullPath, FilesEncodingHelper.GetEncoding(fullPath));
-                        CodeIndexBuilder.BuildIndex(luceneIndex, false, false, false, CodeSource.GetCodeSource(fileInfo, content));
+                        CodeIndexBuilder.BuildIndex(luceneIndex, false, false, false, new[] { CodeSource.GetCodeSource(fileInfo, content) });
                     }
                 }
                 catch (IOException)
@@ -155,7 +157,7 @@ namespace CodeIndex.MaintainIndex
                     {
                         var content = File.ReadAllText(fullPath, FilesEncodingHelper.GetEncoding(fullPath));
                         // TODO: When Date Not Change, Not Update
-                        CodeIndexBuilder.BuildIndex(luceneIndex, false, false, false, CodeSource.GetCodeSource(fileInfo, content));
+                        CodeIndexBuilder.BuildIndex(luceneIndex, false, false, false, new[] { CodeSource.GetCodeSource(fileInfo, content) });
                     }
                 }
                 catch (IOException)

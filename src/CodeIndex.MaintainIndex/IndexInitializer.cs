@@ -9,7 +9,7 @@ namespace CodeIndex.MaintainIndex
 {
     public class IndexInitializer
     {
-        public void InitializeIndex(string codeFolder, string luceneIndex)
+        public void InitializeIndex(string codeFolder, string luceneIndex, string[] excludedExtensions, string[] excludedPaths, string includedExtenstion = "*", string[] includedExtensions = null)
         {
             codeFolder.RequireNotNull(nameof(codeFolder));
             luceneIndex.RequireNotNull(nameof(luceneIndex));
@@ -23,7 +23,7 @@ namespace CodeIndex.MaintainIndex
                 Directory.CreateDirectory(luceneIndex);
             }
 
-            CodeIndexBuilder.BuildIndex(luceneIndex, true, true, true, FilesFetcher.FetchAllFiles(codeFolder, Array.Empty<string>(), Array.Empty<string>()).Select(u => CodeSource.GetCodeSource(u, File.ReadAllText(u.FullName, FilesEncodingHelper.GetEncoding(u.FullName)))).ToArray());
+            CodeIndexBuilder.BuildIndex(luceneIndex, true, true, true, FilesFetcher.FetchAllFiles(codeFolder, excludedExtensions, excludedPaths, includedExtenstion, includedExtensions).Select(u => CodeSource.GetCodeSource(u, File.ReadAllText(u.FullName, FilesEncodingHelper.GetEncoding(u.FullName)))).ToArray());
             LucenePool.SaveLuceneResultsAndCloseIndexWriter(luceneIndex);
         }
     }

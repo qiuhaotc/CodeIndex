@@ -48,14 +48,14 @@ namespace CodeIndex.Test
             var result = CodeIndexSearcher.Search(TempIndexDir, new TermQuery(new Term(nameof(CodeSource.FileName), "Dummy File")), 10);
             Assert.AreEqual("Test Content" + Environment.NewLine + "A New Line For Test", result.Single().Get(nameof(CodeSource.Content)));
 
-            CodeIndexBuilder.BuildIndex(TempIndexDir, true, true, true, new CodeSource
+            CodeIndexBuilder.BuildIndex(TempIndexDir, true, true, true, new[] { new CodeSource
             {
                 FileName = "Dummy File New",
                 FileExtension = "cs",
                 FilePath = @"C:\Dummy File.cs",
                 Content = "ABC",
                 IndexDate = new DateTime(2020, 1, 1)
-            });
+            }});
             LucenePool.SaveLuceneResultsAndCloseIndexWriter(TempIndexDir);
 
             result = CodeIndexSearcher.Search(TempIndexDir, new TermQuery(new Term(nameof(CodeSource.FileName), "Dummy File New")), 10);
@@ -145,7 +145,7 @@ namespace CodeIndex.Test
 
         void BuildIndex()
         {
-            CodeIndexBuilder.BuildIndex(TempIndexDir, true, true, true, new CodeSource
+            CodeIndexBuilder.BuildIndex(TempIndexDir, true, true, true, new[] { new CodeSource
             {
                 FileName = "Dummy File",
                 FileExtension = "cs",
@@ -159,7 +159,7 @@ namespace CodeIndex.Test
                 FileExtension = "xml",
                 FilePath = @"D:\DDDD\A new Name.cs",
                 Content = "FFFF Content A new Line"
-            });
+            }});
         }
     }
 }
