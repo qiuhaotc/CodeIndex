@@ -7,7 +7,7 @@
     <div class="input-group-prepend">
         <span class="input-group-text" id="basic-addon1">Search Query</span>
     </div>
-    <input type="text" class="form-control" placeholder="Put Your Search Query Here" aria-label="Put Your Search Query Here" @bind-value="@SearchQuery" />
+    <input type="text" class="form-control" placeholder="Put Your Search Query Here" aria-label="Put Your Search Query Here" @bind-value="@SearchQuery" @bind-value:event="oninput" @onkeydown="@(async e => await KeyPress(e))" />
 </div>
 <div class="input-group mb-3">
     <button type="button" class="btn btn-primary" @onclick="SearchLuceneIndex">Search</button>
@@ -86,7 +86,7 @@
         }
     }
 
-    private async Task SearchLuceneIndex()
+    async Task SearchLuceneIndex()
     {
         if (IsSearching)
         {
@@ -97,5 +97,13 @@
         IsSearching = true;
         FetchResult = await Client.GetJsonAsync<FetchResult<IEnumerable<CodeSource>>>("api/lucene/GetCodeSources?searchStr=" + System.Web.HttpUtility.UrlEncode(SearchQuery));
         IsSearching = false;
+    }
+
+    private async Task KeyPress(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await SearchLuceneIndex();
+        }
     }
 }

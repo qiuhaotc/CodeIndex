@@ -16,9 +16,9 @@ namespace CodeIndex.Server.Controllers
         public LuceneController(IConfiguration config)
         {
             this.config = config;
+            SetReader(config);
         }
 
-        static QueryGenerator generator = new QueryGenerator();
         IConfiguration config;
 
         [HttpGet]
@@ -28,15 +28,10 @@ namespace CodeIndex.Server.Controllers
             FetchResult<IEnumerable<CodeSource>> result;
             try
             {
-                var directory = FSDirectory.Open(config["LuncenIndex"]);
-                var reader = DirectoryReader.Open(directory);
-                var query = generator.GetQueryFromStr(searchStr);
-                var codeSources = CodeIndexSearcher.SearchCode(config["LuncenIndex"], reader, query, 100);
-                reader.Dispose();
 
                 result = new FetchResult<IEnumerable<CodeSource>>
                 {
-                    Result = codeSources,
+                    Result = SearchCodeSource(searchStr),
                     Status = new Status
                     {
                         Success = true
@@ -56,6 +51,23 @@ namespace CodeIndex.Server.Controllers
             }
 
             return result;
+        }
+
+        CodeSource[] SearchCodeSource(string searchStr)
+        {
+	        var query = generator.GetQueryFromStr(searchStr);
+	        return CodeIndexSearcher.SearchCode(config["LuceneIndex"], reader, query, 100);
+        }
+
+        static QueryGenerator generator = new QueryGenerator();
+        static DirectoryReader reader;
+        void SetReader(IConfiguration config)
+        {
+            if (reader == null)
+            {
+                var directory = FSDirectory.Open(config["LuceneIndex"]);
+                reader = DirectoryReader.Open(directory);
+            }
         }
     }
 }
