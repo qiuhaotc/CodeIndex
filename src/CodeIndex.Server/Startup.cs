@@ -29,6 +29,7 @@ namespace CodeIndex.Server
             services.AddRazorPages();
             services.AddServerSideBlazor();
             services.AddSingleton<WeatherForecastService>();
+            services.AddSingleton<ILog>(new NLogger());
             services.AddScoped<Storage>();
 
             // Server Side Blazor doesn't register HttpClient by default

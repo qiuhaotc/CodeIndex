@@ -13,13 +13,15 @@ namespace CodeIndex.Server.Controllers
     [ApiController]
     public class LuceneController : ControllerBase
     {
-        public LuceneController(IConfiguration config)
+        public LuceneController(IConfiguration config, ILog log)
         {
             this.config = config;
+            this.log = log;
             SetReader(config);
         }
 
         IConfiguration config;
+        ILog log;
 
         [HttpGet]
         [Route(nameof(GetCodeSources))]
@@ -37,6 +39,8 @@ namespace CodeIndex.Server.Controllers
                         Success = true
                     }
                 };
+
+                log.Debug($"Request: '{searchStr}' sucessful");
             }
             catch (Exception ex)
             {
@@ -48,6 +52,8 @@ namespace CodeIndex.Server.Controllers
                         StatusDesc = ex.ToString()
                     }
                 };
+
+                log.Error(ex.ToString());
             }
 
             return result;
@@ -63,10 +69,19 @@ namespace CodeIndex.Server.Controllers
         static DirectoryReader reader;
         void SetReader(IConfiguration config)
         {
-            if (reader == null)
+            try
             {
-                var directory = FSDirectory.Open(config["LuceneIndex"]);
-                reader = DirectoryReader.Open(directory);
+
+                if (reader == null)
+                {
+                    var directory = FSDirectory.Open(config["LuceneIndex"]);
+                    reader = DirectoryReader.Open(directory);
+                }
+            }
+            catch (Exception ex)
+            {
+                log.Error(ex.ToString());
+                throw;
             }
         }
     }

@@ -13,7 +13,7 @@ namespace CodeIndex.MaintainIndex
 {
     public class CodeFilesIndexMaintainer : IDisposable
     {
-        public CodeFilesIndexMaintainer(string watchPath, string luceneIndex, string[] excludedExtensions, string[] excludedPaths, int saveIntervalSeconds = 300, string[] includedExtensions = null)
+        public CodeFilesIndexMaintainer(string watchPath, string luceneIndex, string[] excludedExtensions, string[] excludedPaths, int saveIntervalSeconds = 300, string[] includedExtensions = null, ILog log = null)
         {
             watchPath.RequireNotNullOrEmpty(nameof(watchPath));
             excludedExtensions.RequireNotNull(nameof(watchPath));
@@ -25,6 +25,7 @@ namespace CodeIndex.MaintainIndex
             this.excludedPaths = excludedPaths;
             this.saveIntervalSeconds = saveIntervalSeconds;
             this.includedExtensions = includedExtensions;
+            this.log = log;
             FileSystemWatcher = FilesWatcherHelper.StartWatch(watchPath, OnFileChange, RenamedEventHandler);
             tokenSource = new CancellationTokenSource();
 
@@ -55,10 +56,13 @@ namespace CodeIndex.MaintainIndex
         string[] excludedPaths;
         int saveIntervalSeconds;
         string[] includedExtensions;
+        ILog log;
         CancellationTokenSource tokenSource;
 
         void OnFileChange(object sender, FileSystemEventArgs e)
         {
+            log?.Info($"File Change - ChangeType: {e.ChangeType} FullPath: {e.FullPath} Name: {e.Name}");
+
             if (!IsExcludedFromIndex(e))
             {
                 switch (e.ChangeType)
@@ -82,6 +86,8 @@ namespace CodeIndex.MaintainIndex
 
         void RenamedEventHandler(object sender, RenamedEventArgs e)
         {
+            log?.Info($"File Renamed - ChangeType: {e.ChangeType} FullPath: {e.FullPath} Name: {e.Name} OldFullPath: {e.OldFullPath} OldName: {e.OldName}");
+
             if (!IsExcludedFromIndex(e))
             {
                 switch (e.ChangeType)
@@ -212,6 +218,8 @@ namespace CodeIndex.MaintainIndex
                 {
                     if (pendingRetrySource.RetryTimes <= 10) // Always Failed, Stop Retry
                     {
+                        log?.Info($"Retry failed - ChangesType: {pendingRetrySource.ChangesType} FilePath:{pendingRetrySource.FilePath} LastRetryUTCDate: {pendingRetrySource.LastRetryUTCDate.ToString("yyyyMMddHHmmssfff")} OldPath: {pendingRetrySource.OldPath} RetryTimes: {pendingRetrySource.RetryTimes}");
+
                         Task.Run(() =>
                         {
                             if (pendingRetrySource.LastRetryUTCDate > DateTime.UtcNow.AddSeconds(-10)) // Failed In 10 Seconds
@@ -235,8 +243,10 @@ namespace CodeIndex.MaintainIndex
                             }
                         }, cancellationToken);
                     }
-
-                    // TODO: Add Log
+                    else
+                    {
+                        log?.Warn($"Stop retry failed - ChangesType: {pendingRetrySource.ChangesType} FilePath:{pendingRetrySource.FilePath} LastRetryUTCDate: {pendingRetrySource.LastRetryUTCDate.ToString("yyyyMMddHHmmssfff")} OldPath: {pendingRetrySource.OldPath} RetryTimes: {pendingRetrySource.RetryTimes}");
+                    }
                 }
                 else
                 {
