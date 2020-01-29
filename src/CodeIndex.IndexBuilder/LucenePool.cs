@@ -1,8 +1,11 @@
 ﻿using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.IO;
 using System.Threading;
 using CodeIndex.Common;
 using CodeIndex.LuceneContainer;
+using Lucene.Net.Analysis;
+using Lucene.Net.Analysis.Core;
 using Lucene.Net.Analysis.Standard;
 using Lucene.Net.Documents;
 using Lucene.Net.Index;
@@ -125,10 +128,9 @@ namespace CodeIndex.IndexBuilder
                     if (!IndexWritesPool.TryGetValue(luceneIndex, out indexWriter))
                     {
                         var dir = FSDirectory.Open(luceneIndex);
-                        var analyzer = new StandardAnalyzer(Constants.AppLuceneVersion);
                         //create an analyzer to process the text
                         //create an index writer
-                        var indexConfig = new IndexWriterConfig(Constants.AppLuceneVersion, analyzer);
+                        var indexConfig = new IndexWriterConfig(Constants.AppLuceneVersion, GetAnalyzer());
 
                         indexWriter = new IndexWriter(dir, indexConfig);
                         IndexWritesPool.TryAdd(luceneIndex, indexWriter);
@@ -151,11 +153,16 @@ namespace CodeIndex.IndexBuilder
 
         public static ConcurrentDictionary<string, IndexWriter> IndexWritesPool { get; set; } = new ConcurrentDictionary<string, IndexWriter>();
 
-        public static QueryParser GetStandardParser()
+        public static QueryParser GetQueryParser()
         {
-            return new QueryParser(Constants.AppLuceneVersion, nameof(CodeSource.Content), new StandardAnalyzer(Constants.AppLuceneVersion));
+            return new QueryParser(Constants.AppLuceneVersion, nameof(CodeSource.Content), GetAnalyzer());
         }
 
         static readonly ReaderWriterLock readWriteLock = new ReaderWriterLock();
+
+        internal static Analyzer GetAnalyzer()
+        {
+            return new StandardAnalyzer(Constants.AppLuceneVersion);
+        }
     }
 }

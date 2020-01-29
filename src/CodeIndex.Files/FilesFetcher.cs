@@ -14,10 +14,14 @@ namespace CodeIndex.Files
             excludedPaths.RequireNotNull(nameof(excludedPaths));
             includedExtenstion.RequireNotNullOrEmpty(nameof(includedExtenstion));
 
+            excludedPaths = excludedPaths.Select(u => u.ToUpperInvariant()).ToArray();
+            excludedExtensions = excludedExtensions.Select(u => u.ToUpperInvariant()).ToArray();
+            includedExtensions = includedExtensions?.Select(u => u.ToUpperInvariant()).ToArray();
+
             return Directory.GetFiles(path, includedExtenstion, SearchOption.AllDirectories)
-	            .Where(f => !excludedExtensions.Any(extenstion => f.EndsWith(extenstion, System.StringComparison.InvariantCultureIgnoreCase))
-	                        && !excludedPaths.Any(filePath => f.ToUpper().Contains(filePath))
-	                        && (includedExtensions == null || includedExtensions.Any(extension =>f.EndsWith(extension, System.StringComparison.InvariantCultureIgnoreCase))))
+                .Where(f => !excludedExtensions.Any(extenstion => f.EndsWith(extenstion, System.StringComparison.InvariantCultureIgnoreCase))
+                            && !excludedPaths.Any(filePath => f.ToUpper().Contains(filePath))
+                            && (includedExtensions == null || includedExtensions.Any(extension => f.EndsWith(extension, System.StringComparison.InvariantCultureIgnoreCase))))
                 .Select(u => new FileInfo(u));
         }
     }

@@ -31,7 +31,7 @@ namespace CodeIndex.MaintainIndex
                 Directory.CreateDirectory(luceneIndex);
             }
 
-            CodeIndexBuilder.BuildIndex(luceneIndex, true, true, true, FilesFetcher.FetchAllFiles(codeFolder, excludedExtensions, excludedPaths, includedExtenstion, includedExtensions).Select(u => CodeSource.GetCodeSource(u, File.ReadAllText(u.FullName, FilesEncodingHelper.GetEncoding(u.FullName)))).ToArray());
+            CodeIndexBuilder.BuildIndex(luceneIndex, true, true, true, FilesFetcher.FetchAllFiles(codeFolder, excludedExtensions, excludedPaths, includedExtenstion, includedExtensions).Select(u => CodeSource.GetCodeSource(u, File.ReadAllText(u.FullName, FilesEncodingHelper.GetEncoding(u.FullName)))));
             LucenePool.SaveLuceneResultsAndCloseIndexWriter(luceneIndex);
             log?.Info("Index initialized");
         }

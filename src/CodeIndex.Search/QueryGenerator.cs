@@ -52,6 +52,6 @@ namespace CodeIndex.Search
             return Parser.Parse(searchStr);
         }
 
-        QueryParser Parser = LucenePool.GetStandardParser();
+        QueryParser Parser = LucenePool.GetQueryParser();
     }
 }

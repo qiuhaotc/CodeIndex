@@ -71,7 +71,6 @@ namespace CodeIndex.Server.Controllers
         {
             try
             {
-
                 if (reader == null)
                 {
                     var directory = FSDirectory.Open(config["LuceneIndex"]);

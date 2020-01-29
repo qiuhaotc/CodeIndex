@@ -8,7 +8,7 @@ namespace CodeIndex.Test
         [Test]
         public void Test()
         {
-            Assert.NotNull(LucenePool.GetStandardParser());
+            Assert.NotNull(LucenePool.GetQueryParser());
         }
     }
 }

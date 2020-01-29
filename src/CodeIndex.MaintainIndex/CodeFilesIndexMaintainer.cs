@@ -7,7 +7,10 @@ using System.Threading.Tasks;
 using CodeIndex.Common;
 using CodeIndex.Files;
 using CodeIndex.IndexBuilder;
+using CodeIndex.Search;
+using Lucene.Net.Documents;
 using Lucene.Net.Index;
+using Lucene.Net.Search;
 
 namespace CodeIndex.MaintainIndex
 {
@@ -21,10 +24,10 @@ namespace CodeIndex.MaintainIndex
             saveIntervalSeconds.RequireRange(nameof(saveIntervalSeconds), 3600, 1);
 
             this.luceneIndex = luceneIndex;
-            this.excludedExtensions = excludedExtensions;
-            this.excludedPaths = excludedPaths;
+            this.excludedExtensions = excludedExtensions.Select(u => u.ToUpperInvariant()).ToArray();
+            this.excludedPaths = excludedPaths.Select(u => u.ToUpperInvariant()).ToArray();
             this.saveIntervalSeconds = saveIntervalSeconds;
-            this.includedExtensions = includedExtensions;
+            this.includedExtensions = includedExtensions?.Select(u => u.ToUpperInvariant()).ToArray();
             this.log = log;
             FileSystemWatcher = FilesWatcherHelper.StartWatch(watchPath, OnFileChange, RenamedEventHandler);
             tokenSource = new CancellationTokenSource();
@@ -101,12 +104,25 @@ namespace CodeIndex.MaintainIndex
             }
         }
 
-		bool IsExcludedFromIndex(FileSystemEventArgs e)
-		{
-			return excludedPaths.Any(u => e.FullPath.ToUpperInvariant().Contains(u)) || excludedExtensions.Any(u => e.FullPath.EndsWith(u, StringComparison.InvariantCultureIgnoreCase)) || includedExtensions != null && !includedExtensions.Any(u => e.FullPath.EndsWith(u, StringComparison.InvariantCultureIgnoreCase));
-		}
+        bool IsExcludedFromIndex(FileSystemEventArgs e)
+        {
+            var excluded = true;
 
-		void CreateNewIndex(string fullPath, PendingRetrySource pendingRetrySource = null)
+            if (IsFile(e.FullPath))
+            {
+                excluded = excludedPaths.Any(u => e.FullPath.ToUpperInvariant().Contains(u))
+                    || excludedExtensions.Any(u => e.FullPath.EndsWith(u, StringComparison.InvariantCultureIgnoreCase))
+                    || includedExtensions != null && !includedExtensions.Any(u => e.FullPath.EndsWith(u, StringComparison.InvariantCultureIgnoreCase));
+            }
+            else if (IsDirectory(e.FullPath))
+            {
+                excluded = excludedPaths.Any(u => e.FullPath.ToUpperInvariant().Contains(u));
+            }
+
+            return excluded;
+        }
+
+        void CreateNewIndex(string fullPath, PendingRetrySource pendingRetrySource = null)
         {
             if (IsFile(fullPath))
             {
@@ -135,6 +151,8 @@ namespace CodeIndex.MaintainIndex
                 var fileInfo = new FileInfo(fullPath);
                 try
                 {
+                    Thread.Sleep(WaitMilliseconds); // Wait to let file finished write to disk
+
                     if (fileInfo.Exists)
                     {
                         var content = File.ReadAllText(fullPath, FilesEncodingHelper.GetEncoding(fullPath));
@@ -162,8 +180,9 @@ namespace CodeIndex.MaintainIndex
                     if (fileInfo.Exists)
                     {
                         var content = File.ReadAllText(fullPath, FilesEncodingHelper.GetEncoding(fullPath));
+                        var document = CodeIndexBuilder.GetDocumentFromSource(CodeSource.GetCodeSource(fileInfo, content));
                         // TODO: When Date Not Change, Not Update
-                        CodeIndexBuilder.BuildIndex(luceneIndex, false, false, false, new[] { CodeSource.GetCodeSource(fileInfo, content) });
+                        CodeIndexBuilder.UpdateIndex(luceneIndex, new Term(nameof(CodeSource.FilePath), oldFullPath), document);
                     }
                 }
                 catch (IOException)
@@ -173,7 +192,16 @@ namespace CodeIndex.MaintainIndex
             }
             else if (IsDirectory(fullPath))
             {
-                // TODO: Rebuild All Sub Directory Index File, maybe just rename the index path
+                // Rebuild All Sub Directory Index File, rename the index path
+                var term = new PrefixQuery(new Term(nameof(CodeSource.FilePath), oldFullPath));
+                var files = CodeIndexSearcher.Search(luceneIndex, term, int.MaxValue);
+                foreach (var file in files)
+                {
+                    var pathField = file.Get(nameof(CodeSource.FilePath));
+                    file.RemoveField(nameof(CodeSource.FilePath));
+                    file.Add(new StringField(nameof(CodeSource.FilePath), pathField.Replace(oldFullPath, fullPath), Field.Store.YES));
+                    CodeIndexBuilder.UpdateIndex(luceneIndex, new Term(nameof(CodeSource.CodePK), file.Get(nameof(CodeSource.CodePK))), file);
+                }
             }
         }
 
