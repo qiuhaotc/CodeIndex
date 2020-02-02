@@ -160,7 +160,7 @@ namespace CodeIndex.IndexBuilder
 
         static readonly ReaderWriterLock readWriteLock = new ReaderWriterLock();
 
-        internal static Analyzer GetAnalyzer()
+        public static Analyzer GetAnalyzer()
         {
             return new StandardAnalyzer(Constants.AppLuceneVersion);
         }

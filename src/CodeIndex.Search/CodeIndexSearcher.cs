@@ -1,10 +1,13 @@
 ﻿using System;
 using System.Collections.Concurrent;
+using System.IO;
 using System.Linq;
 using CodeIndex.Common;
+using Lucene.Net.Analysis;
 using Lucene.Net.Documents;
 using Lucene.Net.Index;
 using Lucene.Net.Search;
+using Lucene.Net.Search.Highlight;
 using Lucene.Net.Store;
 
 namespace CodeIndex.Search
@@ -35,6 +38,18 @@ namespace CodeIndex.Search
             var searcher = new IndexSearcher(reader);
             var hits = searcher.Search(query, maxResults).ScoreDocs;
             return hits.Select(hit => GetCodeSourceFromDocumet(searcher.Doc(hit.Doc))).ToArray();
+        }
+
+        public static string GeneratePreviewText(Query query, string text, int length, Analyzer analyzer, string prefix = "<label class='highlight'>", string suffix = "</label>")
+        {
+            var scorer = new QueryScorer(query);
+            var formatter = new SimpleHTMLFormatter(prefix, suffix);
+
+            var highlighter = new Highlighter(formatter, scorer);
+            highlighter.TextFragmenter = new SimpleFragmenter(length);
+
+            var stream = analyzer.GetTokenStream(nameof(CodeSource.Content), new StringReader(text));
+            return highlighter.GetBestFragments(stream, text, 3, "...");
         }
 
         public static Document[] Search(string path, Query query, int maxResults)

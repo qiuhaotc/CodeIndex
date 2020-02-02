@@ -41,6 +41,7 @@
             <th scope="col">Index Date</th>
             <th scope="col">Last Write Time Utc</th>
             <th scope="col">Content</th>
+            <th scope="col">Details</th>
         </tr>
     </thead>
     <tbody>
@@ -55,7 +56,10 @@
                     <td>@item.IndexDate</td>
                     <td>@item.LastWriteTimeUtc</td>
                     <td>
-                        <a href="/Details/@item.CodePK">@item.Content.SubStringSafe(0, 30)</a>
+                        <pre>@((MarkupString)item.Content)</pre>
+                    </td>
+                    <td>
+                        <a href="/Details/@item.CodePK/@System.Web.HttpUtility.UrlEncode(SearchQuery)">Details</a>
                     </td>
                 </tr>
             }
@@ -95,7 +99,7 @@
 
         Storage.SetOrUpdate("LuceneSearchQuery", SearchQuery);
         IsSearching = true;
-        FetchResult = await Client.GetJsonAsync<FetchResult<IEnumerable<CodeSource>>>("api/lucene/GetCodeSources?searchStr=" + System.Web.HttpUtility.UrlEncode(SearchQuery));
+        FetchResult = await Client.GetJsonAsync<FetchResult<IEnumerable<CodeSource>>>("api/lucene/GetCodeSources?searchStr=" + System.Web.HttpUtility.UrlEncode(SearchQuery) + "&preview=true");
         IsSearching = false;
     }
 

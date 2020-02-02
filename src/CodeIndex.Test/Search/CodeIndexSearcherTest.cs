@@ -74,5 +74,23 @@ namespace CodeIndex.Test
             Assert.That(results.Length, Is.EqualTo(1));
             reader.Dispose();
         }
+
+        [Test]
+        public void TestGeneratePreviewText()
+        {
+            var generator = new QueryGenerator();
+            var content = "My ABC\r\nIs A ABC CONTENT\r\nIt's abc in lowercase\r\nIt's Abc in mix\r\nNot AB with C";
+            var result = CodeIndexSearcher.GeneratePreviewText(generator.GetQueryFromStr("ABC"), content, int.MaxValue, LucenePool.GetAnalyzer());
+            Assert.AreEqual(@"My <label class='highlight'>ABC</label>
+Is A <label class='highlight'>ABC</label> CONTENT
+It's <label class='highlight'>abc</label> in lowercase
+It's <label class='highlight'>Abc</label> in mix
+Not AB with C", result);
+
+            result = CodeIndexSearcher.GeneratePreviewText(generator.GetQueryFromStr("ABC"), content, 10, LucenePool.GetAnalyzer());
+            Assert.AreEqual(@"My <label class='highlight'>ABC</label>
+Is A <label class='highlight'>ABC</label>...
+It's <label class='highlight'>Abc</label>", result);
+        }
     }
 }

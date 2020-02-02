@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using CodeIndex.Common;
 using CodeIndex.Search;
 using Lucene.Net.Index;
+using Lucene.Net.Search;
 using Lucene.Net.Store;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
@@ -25,20 +26,34 @@ namespace CodeIndex.Server.Controllers
 
         [HttpGet]
         [Route(nameof(GetCodeSources))]
-        public FetchResult<IEnumerable<CodeSource>> GetCodeSources(string searchStr)
+        public FetchResult<IEnumerable<CodeSource>> GetCodeSources(string searchStr, bool preview = false, string preQuery = "")
         {
             FetchResult<IEnumerable<CodeSource>> result;
             try
             {
-
                 result = new FetchResult<IEnumerable<CodeSource>>
                 {
-                    Result = SearchCodeSource(searchStr),
+                    Result = SearchCodeSource(searchStr, out var query),
                     Status = new Status
                     {
                         Success = true
                     }
                 };
+
+                if (preview)
+                {
+                    foreach(var item in result.Result)
+                    {
+                        item.Content = CodeIndexSearcher.GeneratePreviewText(query, item.Content, 50, generator.Analyzer);
+                    }
+                }
+                else
+                {
+                    foreach (var item in result.Result)
+                    {
+                        item.Content = CodeIndexSearcher.GeneratePreviewText(generator.GetQueryFromStr(preQuery), item.Content, int.MaxValue, generator.Analyzer);
+                    }
+                }
 
                 log.Debug($"Request: '{searchStr}' sucessful");
             }
@@ -59,9 +74,9 @@ namespace CodeIndex.Server.Controllers
             return result;
         }
 
-        CodeSource[] SearchCodeSource(string searchStr)
+        CodeSource[] SearchCodeSource(string searchStr, out Query query)
         {
-	        var query = generator.GetQueryFromStr(searchStr);
+	        query = generator.GetQueryFromStr(searchStr);
 	        return CodeIndexSearcher.SearchCode(config["LuceneIndex"], reader, query, 100);
         }
 

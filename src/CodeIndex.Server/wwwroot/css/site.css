@@ -181,3 +181,9 @@ app {
         display: block;
     }
 }
+
+.highlight {
+    color: red;
+    font-weight: bold;
+    font-style: italic;
+}
