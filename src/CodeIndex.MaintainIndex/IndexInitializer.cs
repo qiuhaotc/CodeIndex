@@ -23,6 +23,7 @@ namespace CodeIndex.MaintainIndex
             if (Directory.Exists(luceneIndex))
             {
                 log?.Info("Delete exist index");
+                // TODO: Not delete, update index and delete not exists one
                 CodeIndexBuilder.DeleteAllIndex(luceneIndex);
             }
             else
@@ -31,6 +32,7 @@ namespace CodeIndex.MaintainIndex
                 Directory.CreateDirectory(luceneIndex);
             }
 
+            // TODO: Add retry logic like maintainer
             CodeIndexBuilder.BuildIndex(luceneIndex, true, true, true, FilesFetcher.FetchAllFiles(codeFolder, excludedExtensions, excludedPaths, includedExtenstion, includedExtensions).Select(u => CodeSource.GetCodeSource(u, File.ReadAllText(u.FullName, FilesEncodingHelper.GetEncoding(u.FullName)))));
             LucenePool.SaveLuceneResultsAndCloseIndexWriter(luceneIndex);
             log?.Info("Index initialized");

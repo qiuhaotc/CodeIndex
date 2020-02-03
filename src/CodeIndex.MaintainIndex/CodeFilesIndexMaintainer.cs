@@ -51,6 +51,7 @@ namespace CodeIndex.MaintainIndex
             LucenePool.SaveLuceneResultsAndCloseIndexWriter(luceneIndex);
         }
 
+        // TODO: Add a boolean field to determine initialize is finished
         FileSystemWatcher FileSystemWatcher { get; set; }
         const int WaitMilliseconds = 100;
 
