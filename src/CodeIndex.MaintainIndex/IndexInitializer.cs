@@ -34,7 +34,7 @@ namespace CodeIndex.MaintainIndex
 
             // TODO: Add retry logic like maintainer
             CodeIndexBuilder.BuildIndex(luceneIndex, true, true, true, FilesFetcher.FetchAllFiles(codeFolder, excludedExtensions, excludedPaths, includedExtenstion, includedExtensions).Select(u => CodeSource.GetCodeSource(u, File.ReadAllText(u.FullName, FilesEncodingHelper.GetEncoding(u.FullName)))));
-            LucenePool.SaveLuceneResultsAndCloseIndexWriter(luceneIndex);
+            LucenePool.SaveResultsAndClearLucenePool(luceneIndex);
             log?.Info("Index initialized");
         }
     }

@@ -35,7 +35,7 @@ namespace CodeIndex.Test
                 Content = "Test Content" + Environment.NewLine + "A New Line For Test"
             }});
 
-            LucenePool.SaveLuceneResultsAndCloseIndexWriter(TempIndexDir);
+            LucenePool.SaveResultsAndClearLucenePool(TempIndexDir);
 
             var results1 = CodeIndexSearcher.Search(TempIndexDir, new TermQuery(new Term(nameof(CodeSource.FileExtension), "cs")), 10);
             Assert.That(results1.Length, Is.EqualTo(2));

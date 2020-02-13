@@ -90,5 +90,14 @@ namespace CodeIndex.IndexBuilder
                 new StringField(nameof(source.CodePK), source.CodePK.ToString(), Field.Store.YES)
             };
         }
+
+        public static Document GetDocument(string luceneIndex, Term term)
+        {
+            luceneIndex.RequireNotNullOrEmpty(nameof(luceneIndex));
+            term.RequireNotNull(nameof(term));
+
+            var document = LucenePool.GetDocument(luceneIndex, term);
+            return document;
+        }
     }
 }

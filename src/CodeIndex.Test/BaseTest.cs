@@ -27,7 +27,7 @@ namespace CodeIndex.Test
         [TearDown]
         protected virtual void TearDown()
         {
-            LucenePool.ClearIndexWritesPool();
+            LucenePool.SaveResultsAndClearLucenePool(TempIndexDir);
             CodeIndexSearcher.ClearDirectoryReadersPool();
             DeleteAllFilesInTempDir(TempDir);
         }

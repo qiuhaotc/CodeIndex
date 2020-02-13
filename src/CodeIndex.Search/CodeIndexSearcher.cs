@@ -14,6 +14,8 @@ namespace CodeIndex.Search
 {
     public static class CodeIndexSearcher
     {
+        // TODO: Move search logic to Lucene Pool
+
         public static ConcurrentDictionary<string, DirectoryReader> DirectoryReadersPool { get; set; } = new ConcurrentDictionary<string, DirectoryReader>();
 
         public static Document[] Search(string path, DirectoryReader reader, Query query, int maxResults)

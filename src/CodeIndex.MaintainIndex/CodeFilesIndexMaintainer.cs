@@ -48,7 +48,7 @@ namespace CodeIndex.MaintainIndex
             FileSystemWatcher.EnableRaisingEvents = false;
             FileSystemWatcher.Dispose();
             tokenSource.Cancel();
-            LucenePool.SaveLuceneResultsAndCloseIndexWriter(luceneIndex);
+            LucenePool.SaveResultsAndClearLucenePool(luceneIndex);
         }
 
         // TODO: Add a boolean field to determine initialize is finished
@@ -295,7 +295,7 @@ namespace CodeIndex.MaintainIndex
 
                 if (pendingChanges > 100 || (DateTime.UtcNow - lastSaveDate).Seconds >= saveIntervalSeconds)
                 {
-                    LucenePool.SaveLuceneResultsAndCloseIndexWriter(luceneIndex);
+                    LucenePool.SaveResultsAndClearLucenePool(luceneIndex);
                     pendingChanges = 0;
                     lastSaveDate = DateTime.UtcNow;
                 }

@@ -33,7 +33,7 @@ namespace CodeIndex.Test
             CodeIndexBuilder.BuildIndex(TempIndexDir, true, true, true,
                 new[] { CodeSource.GetCodeSource(new FileInfo(fileAPath), "12345"),
                 CodeSource.GetCodeSource(new FileInfo(fileBPath), "this is a content for test, that's it\r\na new line;") });
-            LucenePool.SaveLuceneResultsAndCloseIndexWriter(TempIndexDir);
+            LucenePool.SaveResultsAndClearLucenePool(TempIndexDir);
 
             using (var maintainer = new CodeFilesIndexMaintainer(watchPath, TempIndexDir, new[] { "dll" }, Array.Empty<string>(), 1))
             {
