@@ -1,0 +1,44 @@
+﻿@page "/TokenTest"
+@inject HttpClient Client
+
+<h3>TokenTest</h3>
+<div class="input-group mb-3">
+    <div class="input-group-prepend">
+        <span class="input-group-text" id="basic-addon1">Content</span>
+    </div>
+    <input type="text" class="form-control" placeholder="Put Your Content Here" aria-label="Put Your Content Here" @bind-value="@Content" @bind-value:event="oninput" @onkeydown="@(async e => await KeyPress(e))" />
+</div>
+<div class="input-group mb-3">
+    <button type="button" class="btn btn-primary" @onclick="TokenizeContent">Tokenize</button>
+</div>
+<div class="input-group mb-3">
+    <pre>@Result</pre>
+</div>
+
+@code {
+    public string Content { get; set; }
+
+    public bool IsSearching { get; set; }
+
+    public string Result { get; set; }
+
+    private async Task KeyPress(KeyboardEventArgs e)
+    {
+        if (e.Key == "Enter")
+        {
+            await TokenizeContent();
+        }
+    }
+
+    async Task TokenizeContent()
+    {
+        if (IsSearching)
+        {
+            return;
+        }
+
+        IsSearching = true;
+        Result = (await Client.GetJsonAsync<FetchResult<string>>("api/lucene/GetTokenizeStr?searchStr=" + System.Web.HttpUtility.UrlEncode(Content))).Result;
+        IsSearching = false;
+    }
+}

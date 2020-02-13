@@ -1,7 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Text;
 using CodeIndex.Common;
 using CodeIndex.Search;
+using Lucene.Net.Analysis;
+using Lucene.Net.Analysis.Core;
+using Lucene.Net.Analysis.Standard;
+using Lucene.Net.Analysis.TokenAttributes;
 using Lucene.Net.Index;
 using Lucene.Net.Search;
 using Lucene.Net.Store;
@@ -97,6 +102,38 @@ namespace CodeIndex.Server.Controllers
                 log.Error(ex.ToString());
                 throw;
             }
+        }
+
+        [HttpGet]
+        [Route(nameof(GetTokenizeStr))]
+        public FetchResult<string> GetTokenizeStr(string searchStr)
+        {
+            return new FetchResult<string>()
+            {
+                Result = GetTokenStr(new StandardAnalyzer(Lucene.Net.Util.LuceneVersion.LUCENE_48), searchStr) + Environment.NewLine
+                + GetTokenStr(new WhitespaceAnalyzer(Lucene.Net.Util.LuceneVersion.LUCENE_48), searchStr) + Environment.NewLine
+                + GetTokenStr(new SimpleAnalyzer(Lucene.Net.Util.LuceneVersion.LUCENE_48), searchStr) + Environment.NewLine
+                + GetTokenStr(new StopAnalyzer(Lucene.Net.Util.LuceneVersion.LUCENE_48), searchStr) + Environment.NewLine
+            };
+        }
+
+        string GetTokenStr(Analyzer analyzer, string content)
+        {
+            var stringBuilder = new StringBuilder();
+            stringBuilder.AppendLine(analyzer.GetType().FullName);
+
+            var tokenStream = analyzer.GetTokenStream("A", content ?? string.Empty);
+
+            var termAttr = tokenStream.GetAttribute<ICharTermAttribute>();
+
+            tokenStream.Reset();
+
+            while (tokenStream.IncrementToken())
+            {
+                stringBuilder.AppendLine(termAttr.ToString());
+            }
+
+            return stringBuilder.ToString();
         }
     }
 }
