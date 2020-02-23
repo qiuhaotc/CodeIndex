@@ -2,11 +2,8 @@ using System;
 using System.Linq;
 using CodeIndex.Common;
 using CodeIndex.IndexBuilder;
-using CodeIndex.LuceneContainer;
 using CodeIndex.Search;
-using Lucene.Net.Analysis.Standard;
 using Lucene.Net.Index;
-using Lucene.Net.QueryParsers.Classic;
 using Lucene.Net.Search;
 using NUnit.Framework;
 
@@ -28,13 +25,13 @@ namespace CodeIndex.Test
             Assert.AreEqual("Test Content" + Environment.NewLine + "A New Line For Test", result1[0].Get(nameof(CodeSource.Content)));
             Assert.AreEqual(new DateTime(2020, 1, 1).Ticks, result1[0].GetField(nameof(CodeSource.IndexDate)).GetInt64Value());
 
-            var queryParser = new QueryParser(Constants.AppLuceneVersion, nameof(CodeSource.Content), new StandardAnalyzer(Constants.AppLuceneVersion));
-            var result2 = CodeIndexSearcher.Search(TempIndexDir, queryParser.Parse("FFFF test"), 10);
+            var generator = new QueryGenerator();
+            var result2 = CodeIndexSearcher.Search(TempIndexDir, generator.GetQueryFromStr("FFFF test"), 10);
             Assert.That(result2.Length, Is.EqualTo(2));
             Assert.IsTrue(result2.Any(u => u.Get(nameof(CodeSource.FileName)) == "Dummy File"));
             Assert.IsTrue(result2.Any(u => u.Get(nameof(CodeSource.FileName)) == "A new File"));
 
-            var result3 = CodeIndexSearcher.Search(TempIndexDir, queryParser.Parse("FFFF"), 10);
+            var result3 = CodeIndexSearcher.Search(TempIndexDir, generator.GetQueryFromStr("FFFF"), 10);
             Assert.That(result3.Length, Is.EqualTo(1));
             Assert.IsTrue(result3.Any(u => u.Get(nameof(CodeSource.FileName)) == "A new File"));
         }
@@ -68,18 +65,18 @@ namespace CodeIndex.Test
             BuildIndex();
             LucenePool.SaveResultsAndClearLucenePool(TempIndexDir);
 
-            var queryParser = new QueryParser(Constants.AppLuceneVersion, nameof(CodeSource.Content), new StandardAnalyzer(Constants.AppLuceneVersion));
-            var result = CodeIndexSearcher.Search(TempIndexDir, queryParser.Parse("FFFF test"), 10);
+            var generator = new QueryGenerator();
+            var result = CodeIndexSearcher.Search(TempIndexDir, generator.GetQueryFromStr("FFFF test"), 10);
             Assert.That(result.Length, Is.EqualTo(2));
 
             CodeIndexBuilder.DeleteIndex(TempIndexDir, new Term(nameof(CodeSource.FileExtension), "xml"));
             LucenePool.SaveResultsAndClearLucenePool(TempIndexDir);
-            result = CodeIndexSearcher.Search(TempIndexDir, queryParser.Parse("FFFF test"), 10);
+            result = CodeIndexSearcher.Search(TempIndexDir, generator.GetQueryFromStr("FFFF test"), 10);
             Assert.That(result.Length, Is.EqualTo(1));
 
-            CodeIndexBuilder.DeleteIndex(TempIndexDir, queryParser.Parse("Test"));
+            CodeIndexBuilder.DeleteIndex(TempIndexDir, generator.GetQueryFromStr("Test"));
             LucenePool.SaveResultsAndClearLucenePool(TempIndexDir);
-            result = CodeIndexSearcher.Search(TempIndexDir, queryParser.Parse("FFFF test"), 10);
+            result = CodeIndexSearcher.Search(TempIndexDir, generator.GetQueryFromStr("FFFF test"), 10);
             Assert.That(result.Length, Is.EqualTo(0));
         }
 

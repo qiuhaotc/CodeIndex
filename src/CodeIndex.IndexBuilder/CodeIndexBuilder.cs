@@ -76,8 +76,13 @@ namespace CodeIndex.IndexBuilder
             return value ?? string.Empty;
         }
 
-        public static Document GetDocumentFromSource(CodeSource source)
+        public static Document GetDocumentFromSource(CodeSource source, bool needPreprocessing = true)
         {
+            if (needPreprocessing)
+            {
+                source.Content = SimpleCodeContentProcessing.Preprocessing(source.Content);
+            }
+
             return new Document
             {
                 // StringField indexes but doesn't tokenize

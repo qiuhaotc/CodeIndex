@@ -2,7 +2,9 @@
 using System.Collections.Concurrent;
 using System.IO;
 using System.Linq;
+using System.Web;
 using CodeIndex.Common;
+using CodeIndex.IndexBuilder;
 using Lucene.Net.Analysis;
 using Lucene.Net.Documents;
 using Lucene.Net.Index;
@@ -42,16 +44,26 @@ namespace CodeIndex.Search
             return hits.Select(hit => GetCodeSourceFromDocumet(searcher.Doc(hit.Doc))).ToArray();
         }
 
-        public static string GeneratePreviewText(Query query, string text, int length, Analyzer analyzer, string prefix = "<label class='highlight'>", string suffix = "</label>")
+        public static string GenerateHtmlPreviewText(Query query, string text, int length, Analyzer analyzer, string prefix = "<label class='highlight'>", string suffix = "</label>", bool needPreprocessing = true)
         {
             var scorer = new QueryScorer(query);
-            var formatter = new SimpleHTMLFormatter(prefix, suffix);
+            var formatter = new SimpleHTMLFormatter(SimpleCodeContentProcessing.HighLightPrefix, SimpleCodeContentProcessing.HighLightSuffix);
 
             var highlighter = new Highlighter(formatter, scorer);
             highlighter.TextFragmenter = new SimpleFragmenter(length);
 
             var stream = analyzer.GetTokenStream(nameof(CodeSource.Content), new StringReader(text));
-            return highlighter.GetBestFragments(stream, text, 3, "...");
+
+            var result = highlighter.GetBestFragments(stream, text, 3, "...");
+
+            if (needPreprocessing)
+            {
+                result = SimpleCodeContentProcessing.RestoreString(result);
+            }
+
+            result = HttpUtility.HtmlEncode(result).Replace(SimpleCodeContentProcessing.HighLightPrefix, prefix).Replace(SimpleCodeContentProcessing.HighLightSuffix, suffix);
+
+            return result;
         }
 
         public static Document[] Search(string path, Query query, int maxResults)

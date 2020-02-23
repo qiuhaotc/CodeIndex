@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Text;
 using CodeIndex.Common;
+using CodeIndex.IndexBuilder;
 using CodeIndex.Search;
 using Lucene.Net.Analysis;
 using Lucene.Net.Analysis.Core;
@@ -26,8 +27,8 @@ namespace CodeIndex.Server.Controllers
             SetReader(config);
         }
 
-        IConfiguration config;
-        ILog log;
+        readonly IConfiguration config;
+        readonly ILog log;
 
         [HttpGet]
         [Route(nameof(GetCodeSources))]
@@ -38,7 +39,7 @@ namespace CodeIndex.Server.Controllers
             {
                 result = new FetchResult<IEnumerable<CodeSource>>
                 {
-                    Result = SearchCodeSource(searchStr, out var query),
+                    Result = SearchCodeSource(searchStr, out var query, preview),
                     Status = new Status
                     {
                         Success = true
@@ -47,16 +48,16 @@ namespace CodeIndex.Server.Controllers
 
                 if (preview)
                 {
-                    foreach(var item in result.Result)
+                    foreach (var item in result.Result)
                     {
-                        item.Content = CodeIndexSearcher.GeneratePreviewText(query, item.Content, 50, generator.Analyzer);
+                        item.Content = CodeIndexSearcher.GenerateHtmlPreviewText(query, item.Content, 50, generator.Analyzer);
                     }
                 }
                 else
                 {
                     foreach (var item in result.Result)
                     {
-                        item.Content = CodeIndexSearcher.GeneratePreviewText(generator.GetQueryFromStr(preQuery), item.Content, int.MaxValue, generator.Analyzer);
+                        item.Content = CodeIndexSearcher.GenerateHtmlPreviewText(generator.GetQueryFromStr(preQuery), item.Content, int.MaxValue, generator.Analyzer);
                     }
                 }
 
@@ -79,13 +80,13 @@ namespace CodeIndex.Server.Controllers
             return result;
         }
 
-        CodeSource[] SearchCodeSource(string searchStr, out Query query)
+        CodeSource[] SearchCodeSource(string searchStr, out Query query, bool needPreprocessing = true)
         {
-	        query = generator.GetQueryFromStr(searchStr);
-	        return CodeIndexSearcher.SearchCode(config["LuceneIndex"], reader, query, 100);
+            query = generator.GetQueryFromStr(searchStr, needPreprocessing);
+            return CodeIndexSearcher.SearchCode(config["LuceneIndex"], reader, query, 100);
         }
 
-        static QueryGenerator generator = new QueryGenerator();
+        static readonly QueryGenerator generator = new QueryGenerator();
         static DirectoryReader reader;
         void SetReader(IConfiguration config)
         {
@@ -110,14 +111,15 @@ namespace CodeIndex.Server.Controllers
         {
             return new FetchResult<string>()
             {
-                Result = GetTokenStr(new StandardAnalyzer(Lucene.Net.Util.LuceneVersion.LUCENE_48), searchStr) + Environment.NewLine
-                + GetTokenStr(new WhitespaceAnalyzer(Lucene.Net.Util.LuceneVersion.LUCENE_48), searchStr) + Environment.NewLine
-                + GetTokenStr(new SimpleAnalyzer(Lucene.Net.Util.LuceneVersion.LUCENE_48), searchStr) + Environment.NewLine
-                + GetTokenStr(new StopAnalyzer(Lucene.Net.Util.LuceneVersion.LUCENE_48), searchStr) + Environment.NewLine
+                Result = GetTokenStr(new StandardAnalyzer(Constants.AppLuceneVersion), searchStr) + Environment.NewLine
+                + GetTokenStr(new WhitespaceAnalyzer(Constants.AppLuceneVersion), searchStr) + Environment.NewLine
+                + GetTokenStr(new SimpleAnalyzer(Constants.AppLuceneVersion), searchStr) + Environment.NewLine
+                + GetTokenStr(new StopAnalyzer(Constants.AppLuceneVersion), searchStr) + Environment.NewLine
+                + GetTokenStr(new SimpleCodeAnalyzer(Constants.AppLuceneVersion, true), SimpleCodeContentProcessing.Preprocessing(searchStr), true) + Environment.NewLine
             };
         }
 
-        string GetTokenStr(Analyzer analyzer, string content)
+        string GetTokenStr(Analyzer analyzer, string content, bool needRestoreString = false)
         {
             var stringBuilder = new StringBuilder();
             stringBuilder.AppendLine(analyzer.GetType().FullName);
@@ -133,7 +135,7 @@ namespace CodeIndex.Server.Controllers
                 stringBuilder.AppendLine(termAttr.ToString());
             }
 
-            return stringBuilder.ToString();
+            return needRestoreString ? SimpleCodeContentProcessing.RestoreString(stringBuilder.ToString()) : stringBuilder.ToString();
         }
     }
 }

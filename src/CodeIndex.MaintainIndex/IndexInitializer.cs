@@ -8,7 +8,7 @@ namespace CodeIndex.MaintainIndex
 {
     public class IndexInitializer
     {
-        private ILog log;
+        readonly ILog log;
 
         public IndexInitializer(ILog log = null)
         {

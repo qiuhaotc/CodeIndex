@@ -2,9 +2,7 @@
 using System.Collections.Generic;
 using System.Threading;
 using CodeIndex.Common;
-using CodeIndex.LuceneContainer;
 using Lucene.Net.Analysis;
-using Lucene.Net.Analysis.Standard;
 using Lucene.Net.Documents;
 using Lucene.Net.Index;
 using Lucene.Net.QueryParsers.Classic;
@@ -215,7 +213,7 @@ namespace CodeIndex.IndexBuilder
 
         public static Analyzer GetAnalyzer()
         {
-            return new StandardAnalyzer(Constants.AppLuceneVersion);
+            return new SimpleCodeAnalyzer(Constants.AppLuceneVersion, true);
         }
     }
 }

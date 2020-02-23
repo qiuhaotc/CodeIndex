@@ -1,6 +1,6 @@
 ﻿using Lucene.Net.Util;
 
-namespace CodeIndex.LuceneContainer
+namespace CodeIndex
 {
     public class Constants
     {

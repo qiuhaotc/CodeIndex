@@ -46,9 +46,24 @@ namespace CodeIndex.Search
             return query;
         }
 
-        public Query GetQueryFromStr(string searchStr)
+        public Query GetQueryFromStr(string searchStr, bool needPreprocessing = true)
         {
             searchStr.RequireNotNullOrEmpty(nameof(searchStr));
+
+            var restoreWhenFinished = false;
+
+            if (searchStr.StartsWith("\"") && searchStr.EndsWith("\""))
+            {
+                restoreWhenFinished = true;
+                searchStr = searchStr.SubStringSafe(1, searchStr.Length - 2);
+            }
+
+            searchStr = needPreprocessing ? SimpleCodeContentProcessing.Preprocessing(searchStr) : searchStr;
+
+            if (restoreWhenFinished)
+            {
+                searchStr = $"\"{searchStr}\"";
+            }
 
             return parser.Parse(searchStr);
         }
