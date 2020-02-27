@@ -39,7 +39,7 @@ namespace CodeIndex.Server.Controllers
             {
                 result = new FetchResult<IEnumerable<CodeSource>>
                 {
-                    Result = SearchCodeSource(searchStr, out var query, preview),
+                    Result = SearchCodeSource(searchStr, out var query),
                     Status = new Status
                     {
                         Success = true
@@ -80,9 +80,9 @@ namespace CodeIndex.Server.Controllers
             return result;
         }
 
-        CodeSource[] SearchCodeSource(string searchStr, out Query query, bool needPreprocessing = true)
+        CodeSource[] SearchCodeSource(string searchStr, out Query query)
         {
-            query = generator.GetQueryFromStr(searchStr, needPreprocessing);
+            query = generator.GetQueryFromStr(searchStr);
             return CodeIndexSearcher.SearchCode(config["LuceneIndex"], reader, query, 100);
         }
 

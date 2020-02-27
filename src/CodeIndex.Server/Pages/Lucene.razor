@@ -5,9 +5,27 @@
 <h1>Lucene Search Test Page</h1>
 <div class="input-group mb-3">
     <div class="input-group-prepend">
-        <span class="input-group-text" id="basic-addon1">Search Query</span>
+        <span class="input-group-text" id="basic-addon1">Content</span>
     </div>
-    <input type="text" class="form-control" placeholder="Put Your Search Query Here" aria-label="Put Your Search Query Here" @bind-value="@SearchQuery" @bind-value:event="oninput" @onkeydown="@(async e => await KeyPress(e))" />
+    <input type="text" class="form-control" placeholder="Put Your Content Here" aria-label="Put Your Content Here" @bind-value="@ContentQuery" @bind-value:event="oninput" @onkeydown="@(async e => await KeyPress(e))" />
+</div>
+<div class="input-group mb-3">
+    <div class="input-group-prepend">
+        <span class="input-group-text" id="basic-addon2">File Name</span>
+    </div>
+    <input type="text" class="form-control" placeholder="Put Your File Name Here" aria-label="Put Your File Name Here" @bind-value="@FileNameQuery" @bind-value:event="oninput" @onkeydown="@(async e => await KeyPress(e))" />
+</div>
+<div class="input-group mb-3">
+    <div class="input-group-prepend">
+        <span class="input-group-text" id="basic-addon3">File Extension</span>
+    </div>
+    <input type="text" class="form-control" placeholder="Put Your File Extension Here" aria-label="Put Your File Extension Here" @bind-value="@FileExtensionQuery" @bind-value:event="oninput" @onkeydown="@(async e => await KeyPress(e))" />
+</div>
+<div class="input-group mb-4">
+    <div class="input-group-prepend">
+        <span class="input-group-text" id="basic-addon4">File Location</span>
+    </div>
+    <input type="text" class="form-control" placeholder="Put Your File Location Here" aria-label="Put Your File Location Here" @bind-value="@FilePathQuery" @bind-value:event="oninput" @onkeydown="@(async e => await KeyPress(e))" />
 </div>
 <div class="input-group mb-3">
     <button type="button" class="btn btn-primary" @onclick="SearchLuceneIndex">Search</button>
@@ -59,7 +77,7 @@
                         <pre>@((MarkupString)item.Content)</pre>
                     </td>
                     <td>
-                        <a href="/Details/@item.CodePK/@System.Web.HttpUtility.UrlEncode(SearchQuery)">Details</a>
+                        <a href="/Details/@item.CodePK/@SearchQuery">Details</a>
                     </td>
                 </tr>
             }
@@ -74,7 +92,17 @@
 </table>
 
 @code {
-    public string SearchQuery { get; set; }
+
+    public string SearchQuery => Search.QueryGenerator.GetSearchStr(FileNameQuery, ContentQuery, FileExtensionQuery, FilePathQuery);
+
+    public string ContentQuery { get; set; }
+
+    public string FileNameQuery { get; set; }
+
+    public string FileExtensionQuery { get; set; }
+
+    public string FilePathQuery { get; set; }
+
 
     public FetchResult<IEnumerable<CodeSource>> FetchResult { get; set; }
 
@@ -83,7 +111,12 @@
     protected override async Task OnInitializedAsync()
     {
         await base.OnInitializedAsync();
-        SearchQuery = Storage.GetValue("LuceneSearchQuery")?.ToString();
+
+        ContentQuery = Storage.GetValue("ContentQuery")?.ToString();
+        FileNameQuery = Storage.GetValue("FileNameQuery")?.ToString();
+        FileExtensionQuery = Storage.GetValue("FileExtensionQuery")?.ToString();
+        FilePathQuery = Storage.GetValue("FilePathQuery")?.ToString();
+
         if (!string.IsNullOrEmpty(SearchQuery))
         {
             await SearchLuceneIndex();
@@ -97,7 +130,11 @@
             return;
         }
 
-        Storage.SetOrUpdate("LuceneSearchQuery", SearchQuery);
+        Storage.SetOrUpdate("ContentQuery", ContentQuery);
+        Storage.SetOrUpdate("FileNameQuery", FileNameQuery);
+        Storage.SetOrUpdate("FileExtensionQuery", FileExtensionQuery);
+        Storage.SetOrUpdate("FilePathQuery", FilePathQuery);
+
         IsSearching = true;
         FetchResult = await Client.GetJsonAsync<FetchResult<IEnumerable<CodeSource>>>("api/lucene/GetCodeSources?searchStr=" + System.Web.HttpUtility.UrlEncode(SearchQuery) + "&preview=true");
         IsSearching = false;

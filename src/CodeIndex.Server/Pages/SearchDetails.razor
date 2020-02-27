@@ -24,7 +24,7 @@
 
     protected override async Task OnInitializedAsync()
     {
-        var result = await Client.GetJsonAsync<FetchResult<IEnumerable<CodeSource>>>("api/lucene/GetCodeSources?searchStr=" + System.Web.HttpUtility.UrlEncode($"CodePK:\"{CodePK}\"") + "&preQuery=" + PreQuery);
+        var result = await Client.GetJsonAsync<FetchResult<IEnumerable<CodeSource>>>("api/lucene/GetCodeSources?searchStr=" + System.Web.HttpUtility.UrlEncode($"CodePK:\"{CodePK}\"") + "&preQuery=" + System.Web.HttpUtility.UrlEncode(PreQuery));
         Source = result.Result.FirstOrDefault();
         await base.OnInitializedAsync();
     }

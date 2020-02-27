@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Collections.Generic;
 using CodeIndex.Common;
 using CodeIndex.IndexBuilder;
 using Lucene.Net.Analysis;
@@ -46,24 +47,55 @@ namespace CodeIndex.Search
             return query;
         }
 
-        public Query GetQueryFromStr(string searchStr, bool needPreprocessing = true)
+        public static string GetSearchStr(string fileName, string content, string fileExtension, string filePath)
+        {
+            var searchQueries = new List<string>();
+
+            if (!string.IsNullOrEmpty(fileName))
+            {
+                searchQueries.Add($"{nameof(CodeSource.FileName)}:{fileName}");
+            }
+
+            if (!string.IsNullOrEmpty(content))
+            {
+                var restoreWhenFinished = false;
+
+                if (content.StartsWith("\"") && content.EndsWith("\""))
+                {
+                    restoreWhenFinished = true;
+                    content = content.SubStringSafe(1, content.Length - 2);
+                }
+
+                content = content.Replace(FuzzySymbol, FuzzySymbolReplaceTo);
+                content = SimpleCodeContentProcessing.Preprocessing(content).Replace(FuzzySymbolReplaceTo, FuzzySymbol);
+
+                if (restoreWhenFinished)
+                {
+                    content = $"\"{content}\"";
+                }
+
+                searchQueries.Add($"{nameof(CodeSource.Content)}:{content}");
+            }
+
+            if (!string.IsNullOrEmpty(fileExtension))
+            {
+                searchQueries.Add($"{nameof(CodeSource.FileExtension)}:{fileExtension}");
+            }
+
+            if (!string.IsNullOrEmpty(filePath))
+            {
+                searchQueries.Add($"{nameof(CodeSource.FilePath)}:{filePath}");
+            }
+
+            return string.Join(" AND ", searchQueries);
+        }
+
+        const string FuzzySymbol = "*";
+        const string FuzzySymbolReplaceTo = "FORFUZZY";
+
+        public Query GetQueryFromStr(string searchStr)
         {
             searchStr.RequireNotNullOrEmpty(nameof(searchStr));
-
-            var restoreWhenFinished = false;
-
-            if (searchStr.StartsWith("\"") && searchStr.EndsWith("\""))
-            {
-                restoreWhenFinished = true;
-                searchStr = searchStr.SubStringSafe(1, searchStr.Length - 2);
-            }
-
-            searchStr = needPreprocessing ? SimpleCodeContentProcessing.Preprocessing(searchStr) : searchStr;
-
-            if (restoreWhenFinished)
-            {
-                searchStr = $"\"{searchStr}\"";
-            }
 
             return parser.Parse(searchStr);
         }

@@ -51,6 +51,7 @@ namespace CodeIndex.Search
 
             var highlighter = new Highlighter(formatter, scorer);
             highlighter.TextFragmenter = new SimpleFragmenter(length);
+            highlighter.MaxDocCharsToAnalyze = int.MaxValue;
 
             var stream = analyzer.GetTokenStream(nameof(CodeSource.Content), new StringReader(text));
 
@@ -61,7 +62,7 @@ namespace CodeIndex.Search
                 result = SimpleCodeContentProcessing.RestoreString(result);
             }
 
-            result = HttpUtility.HtmlEncode(result).Replace(SimpleCodeContentProcessing.HighLightPrefix, prefix).Replace(SimpleCodeContentProcessing.HighLightSuffix, suffix);
+            result = result == null ? string.Empty : HttpUtility.HtmlEncode(result).Replace(SimpleCodeContentProcessing.HighLightPrefix, prefix).Replace(SimpleCodeContentProcessing.HighLightSuffix, suffix);
 
             return result;
         }
