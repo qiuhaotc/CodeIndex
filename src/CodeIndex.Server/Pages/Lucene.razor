@@ -2,53 +2,77 @@
 @inject HttpClient Client
 @inject CodeIndex.Common.Storage Storage
 
-<h1>Lucene Search Test Page</h1>
-<div class="input-group mb-3">
-    <div class="input-group-prepend">
-        <span class="input-group-text" id="basic-addon1">Content</span>
+<div class="row">
+    <div class="col-sm">
+        <h1>Lucene Search Test Page</h1>
     </div>
-    <input type="text" class="form-control" placeholder="Put Your Content Here" aria-label="Put Your Content Here" @bind-value="@ContentQuery" @bind-value:event="oninput" @onkeydown="@(async e => await KeyPress(e))" />
 </div>
-<div class="input-group mb-3">
-    <div class="input-group-prepend">
-        <span class="input-group-text" id="basic-addon2">File Name</span>
-    </div>
-    <input type="text" class="form-control" placeholder="Put Your File Name Here" aria-label="Put Your File Name Here" @bind-value="@FileNameQuery" @bind-value:event="oninput" @onkeydown="@(async e => await KeyPress(e))" />
-</div>
-<div class="input-group mb-3">
-    <div class="input-group-prepend">
-        <span class="input-group-text" id="basic-addon3">File Extension</span>
-    </div>
-    <input type="text" class="form-control" placeholder="Put Your File Extension Here" aria-label="Put Your File Extension Here" @bind-value="@FileExtensionQuery" @bind-value:event="oninput" @onkeydown="@(async e => await KeyPress(e))" />
-</div>
-<div class="input-group mb-4">
-    <div class="input-group-prepend">
-        <span class="input-group-text" id="basic-addon4">File Location</span>
-    </div>
-    <input type="text" class="form-control" placeholder="Put Your File Location Here" aria-label="Put Your File Location Here" @bind-value="@FilePathQuery" @bind-value:event="oninput" @onkeydown="@(async e => await KeyPress(e))" />
-</div>
-<div class="input-group mb-3">
-    <button type="button" class="btn btn-primary" @onclick="SearchLuceneIndex">Search</button>
-</div>
-<div class="input-group mb-3">
-    @if (!FetchResult?.Status?.Success ?? false)
-    {
-        <div class="alert alert-danger" role="alert">
-            @FetchResult.Status.StatusDesc
+<div class="row">
+    <div class="col-sm">
+        <div class="input-group mb-3">
+            <div class="input-group-prepend">
+                <span class="input-group-text" id="basic-addon1">Content</span>
+            </div>
+            <input type="text" class="form-control" placeholder="Put Your Content Here" aria-label="Put Your Content Here" @bind-value="@ContentQuery" @bind-value:event="oninput" @onkeydown="@(async e => await KeyPress(e))" />
         </div>
-    }
-    else if (FetchResult?.Status?.Success ?? false)
-    {
-        <div class="alert alert-success" role="alert">
-            Post Success, Find Results: @FetchResult?.Result?.Count()
+    </div>
+</div>
+<div class="row">
+    <div class="col-sm">
+        <div class="input-group mb-3">
+            <div class="input-group-prepend">
+                <span class="input-group-text" id="basic-addon2">File Name</span>
+            </div>
+            <input type="text" class="form-control" placeholder="Put Your File Name Here" aria-label="Put Your File Name Here" @bind-value="@FileNameQuery" @bind-value:event="oninput" @onkeydown="@(async e => await KeyPress(e))" />
         </div>
-    }
-    else
-    {
-        <div class="alert alert-info" role="alert">
-            Waiting For Search
+    </div>
+    <div class="col-sm">
+        <div class="input-group mb-3">
+            <div class="input-group-prepend">
+                <span class="input-group-text" id="basic-addon3">File Extension</span>
+            </div>
+            <input type="text" class="form-control" placeholder="Put Your File Extension Here" aria-label="Put Your File Extension Here" @bind-value="@FileExtensionQuery" @bind-value:event="oninput" @onkeydown="@(async e => await KeyPress(e))" />
         </div>
-    }
+    </div>
+    <div class="col-sm">
+        <div class="input-group mb-3">
+            <div class="input-group-prepend">
+                <span class="input-group-text" id="basic-addon4">File Location</span>
+            </div>
+            <input type="text" class="form-control" placeholder="Put Your File Path Here" aria-label="Put Your File Path Here" @bind-value="@FilePathQuery" @bind-value:event="oninput" @onkeydown="@(async e => await KeyPress(e))" />
+        </div>
+    </div>
+</div>
+<div class="row">
+    <div class="col-sm">
+        <div class="input-group mb-3">
+            <button type="button" class="btn btn-primary" @onclick="SearchLuceneIndex">Search</button>
+        </div>
+    </div>
+</div>
+<div class="row">
+    <div class="col-sm">
+        <div class="input-group mb-3">
+            @if (!FetchResult?.Status?.Success ?? false)
+            {
+                <div class="alert alert-danger" role="alert">
+                    @FetchResult.Status.StatusDesc
+                </div>
+            }
+            else if (FetchResult?.Status?.Success ?? false)
+            {
+                <div class="alert alert-success" role="alert">
+                    Post Success, Find Results: @FetchResult?.Result?.Count()
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-info" role="alert">
+                    Waiting For Search
+                </div>
+            }
+        </div>
+    </div>
 </div>
 <table class="table">
     <thead>
@@ -56,8 +80,8 @@
             <th scope="col">File Name</th>
             <th scope="col">File Extension</th>
             <th scope="col">File Path</th>
-            <th scope="col">Index Date</th>
-            <th scope="col">Last Write Time Utc</th>
+            <th scope="col">Index Date Utc</th>
+            <th scope="col">Last Write Utc</th>
             <th scope="col">Content</th>
             <th scope="col">Details</th>
         </tr>
@@ -77,7 +101,7 @@
                         <pre>@((MarkupString)item.Content)</pre>
                     </td>
                     <td>
-                        <a href="/Details/@item.CodePK/@SearchQuery">Details</a>
+                        <a href="/Details/@item.CodePK/@System.Web.HttpUtility.UrlEncode(ContentQuery ?? string.Empty)">Details</a>
                     </td>
                 </tr>
             }
@@ -136,8 +160,31 @@
         Storage.SetOrUpdate("FilePathQuery", FilePathQuery);
 
         IsSearching = true;
-        FetchResult = await Client.GetJsonAsync<FetchResult<IEnumerable<CodeSource>>>("api/lucene/GetCodeSources?searchStr=" + System.Web.HttpUtility.UrlEncode(SearchQuery) + "&preview=true");
-        IsSearching = false;
+        FetchResult = null;
+
+        try
+        {
+            var searchQuery = System.Web.HttpUtility.UrlEncode(SearchQuery);
+            if (!string.IsNullOrEmpty(searchQuery))
+            {
+                FetchResult = await Client.GetJsonAsync<FetchResult<IEnumerable<CodeSource>>>("api/lucene/GetCodeSources?searchQuery=" + System.Web.HttpUtility.UrlEncode(SearchQuery) + "&preview=true" + "&contentQuery=" + System.Web.HttpUtility.UrlEncode(ContentQuery ?? string.Empty));
+            }
+            else
+            {
+                FetchResult = new FetchResult<IEnumerable<CodeSource>>()
+                {
+                    Status = new Status()
+                    {
+                        Success = false,
+                        StatusDesc = "Search query can't be empty"
+                    }
+                };
+            }
+        }
+        finally
+        {
+            IsSearching = false;
+        }
     }
 
     private async Task KeyPress(KeyboardEventArgs e)

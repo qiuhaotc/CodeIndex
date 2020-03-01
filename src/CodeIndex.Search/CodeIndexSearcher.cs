@@ -18,7 +18,7 @@ namespace CodeIndex.Search
     {
         // TODO: Move search logic to Lucene Pool
 
-        public static ConcurrentDictionary<string, DirectoryReader> DirectoryReadersPool { get; set; } = new ConcurrentDictionary<string, DirectoryReader>();
+        public static ConcurrentDictionary<string, DirectoryReader> DirectoryReadersPool { get; } = new ConcurrentDictionary<string, DirectoryReader>();
 
         public static Document[] Search(string path, DirectoryReader reader, Query query, int maxResults)
         {
@@ -44,25 +44,27 @@ namespace CodeIndex.Search
             return hits.Select(hit => GetCodeSourceFromDocumet(searcher.Doc(hit.Doc))).ToArray();
         }
 
-        public static string GenerateHtmlPreviewText(Query query, string text, int length, Analyzer analyzer, string prefix = "<label class='highlight'>", string suffix = "</label>", bool needPreprocessing = true)
+        public static string GenerateHtmlPreviewText(Query query, string text, int length, Analyzer analyzer, string prefix = "<label class='highlight'>", string suffix = "</label>", bool returnRawContentWhenResultIsEmpty = false)
         {
-            var scorer = new QueryScorer(query);
-            var formatter = new SimpleHTMLFormatter(SimpleCodeContentProcessing.HighLightPrefix, SimpleCodeContentProcessing.HighLightSuffix);
+            string result = null;
 
-            var highlighter = new Highlighter(formatter, scorer);
-            highlighter.TextFragmenter = new SimpleFragmenter(length);
-            highlighter.MaxDocCharsToAnalyze = int.MaxValue;
-
-            var stream = analyzer.GetTokenStream(nameof(CodeSource.Content), new StringReader(text));
-
-            var result = highlighter.GetBestFragments(stream, text, 3, "...");
-
-            if (needPreprocessing)
+            if(query != null)
             {
-                result = SimpleCodeContentProcessing.RestoreString(result);
+                var scorer = new QueryScorer(query);
+                var formatter = new SimpleHTMLFormatter(CodeContentProcessing.HighLightPrefix, CodeContentProcessing.HighLightSuffix);
+
+                var highlighter = new Highlighter(formatter, scorer);
+                highlighter.TextFragmenter = new SimpleFragmenter(length);
+                highlighter.MaxDocCharsToAnalyze = int.MaxValue;
+
+                var stream = analyzer.GetTokenStream(nameof(CodeSource.Content), new StringReader(text));
+
+                result = highlighter.GetBestFragments(stream, text, 3, "...");
             }
 
-            result = result == null ? string.Empty : HttpUtility.HtmlEncode(result).Replace(SimpleCodeContentProcessing.HighLightPrefix, prefix).Replace(SimpleCodeContentProcessing.HighLightSuffix, suffix);
+            result = string.IsNullOrEmpty(result) ?
+                    (returnRawContentWhenResultIsEmpty ? HttpUtility.HtmlEncode(text) : string.Empty)
+                    : HttpUtility.HtmlEncode(result).Replace(CodeContentProcessing.HighLightPrefix, prefix).Replace(CodeContentProcessing.HighLightSuffix, suffix);
 
             return result;
         }

@@ -76,24 +76,29 @@ namespace CodeIndex.IndexBuilder
             return value ?? string.Empty;
         }
 
-        public static Document GetDocumentFromSource(CodeSource source, bool needPreprocessing = true)
+        public static Document GetDocumentFromSource(CodeSource source)
         {
-            if (needPreprocessing)
-            {
-                source.Content = SimpleCodeContentProcessing.Preprocessing(source.Content);
-            }
-
             return new Document
             {
+                new TextField(nameof(source.FileName), source.FileName.ToStringSafe(), Field.Store.YES),
                 // StringField indexes but doesn't tokenize
-                new StringField(nameof(source.FileName), source.FileName.ToStringSafe(), Field.Store.YES),
                 new StringField(nameof(source.FileExtension), source.FileExtension.ToStringSafe(), Field.Store.YES),
-                new StringField(nameof(source.FilePath), source.FilePath.ToStringSafe(), Field.Store.YES),
+                new StringField(nameof(source.FilePath) + Constants.NoneTokenizeFieldSuffix, source.FilePath.ToStringSafe(), Field.Store.YES),
+                new TextField(nameof(source.FilePath), source.FilePath.ToStringSafe(), Field.Store.YES),
                 new TextField(nameof(source.Content), source.Content.ToStringSafe(), Field.Store.YES),
                 new Int64Field(nameof(source.IndexDate), source.IndexDate.Ticks, Field.Store.YES),
                 new Int64Field(nameof(source.LastWriteTimeUtc), source.LastWriteTimeUtc.Ticks, Field.Store.YES),
                 new StringField(nameof(source.CodePK), source.CodePK.ToString(), Field.Store.YES)
             };
+        }
+
+        public static void UpdateCodeFilePath(Document codeSourceDocumnet, string oldFullPath, string nowFullPath)
+        {
+            var pathField = codeSourceDocumnet.Get(nameof(CodeSource.FilePath));
+            codeSourceDocumnet.RemoveField(nameof(CodeSource.FilePath));
+            codeSourceDocumnet.RemoveField(nameof(CodeSource.FilePath) + Constants.NoneTokenizeFieldSuffix);
+            codeSourceDocumnet.Add(new TextField(nameof(CodeSource.FilePath), pathField.Replace(oldFullPath, nowFullPath), Field.Store.YES));
+            codeSourceDocumnet.Add(new StringField(nameof(CodeSource.FilePath) + Constants.NoneTokenizeFieldSuffix, pathField.Replace(oldFullPath, nowFullPath), Field.Store.YES));
         }
 
         public static Document GetDocument(string luceneIndex, Term term)

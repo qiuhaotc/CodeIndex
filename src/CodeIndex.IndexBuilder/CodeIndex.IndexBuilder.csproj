@@ -7,6 +7,7 @@
   <ItemGroup>
     <PackageReference Include="Lucene.Net" Version="4.8.0-beta00007" />
     <PackageReference Include="Lucene.Net.Analysis.Common" Version="4.8.0-beta00007" />
+    <PackageReference Include="Lucene.Net.Analysis.SmartCn" Version="4.8.0-beta00007" />
     <PackageReference Include="Lucene.Net.QueryParser" Version="4.8.0-beta00007" />
   </ItemGroup>
 

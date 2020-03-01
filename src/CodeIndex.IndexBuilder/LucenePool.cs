@@ -200,9 +200,9 @@ namespace CodeIndex.IndexBuilder
             }
         }
 
-        public static ConcurrentDictionary<string, IndexWriter> IndexWritesPool { get; set; } = new ConcurrentDictionary<string, IndexWriter>();
-        static ConcurrentDictionary<string, IndexSearcher> IndexSearcherPool { get; set; } = new ConcurrentDictionary<string, IndexSearcher>();
-        static ConcurrentDictionary<string, IndexReader> IndexReaderPool { get; set; } = new ConcurrentDictionary<string, IndexReader>();
+        public static ConcurrentDictionary<string, IndexWriter> IndexWritesPool { get; } = new ConcurrentDictionary<string, IndexWriter>();
+        static ConcurrentDictionary<string, IndexSearcher> IndexSearcherPool { get; } = new ConcurrentDictionary<string, IndexSearcher>();
+        static ConcurrentDictionary<string, IndexReader> IndexReaderPool { get; } = new ConcurrentDictionary<string, IndexReader>();
 
         public static QueryParser GetQueryParser()
         {
@@ -213,7 +213,7 @@ namespace CodeIndex.IndexBuilder
 
         public static Analyzer GetAnalyzer()
         {
-            return new SimpleCodeAnalyzer(Constants.AppLuceneVersion, true);
+            return new CodeAnalyzer(Constants.AppLuceneVersion, true);
         }
     }
 }

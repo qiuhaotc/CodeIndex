@@ -10,7 +10,12 @@ namespace CodeIndex.Common
 
             if (!string.IsNullOrEmpty(str))
             {
-                result = str.Substring(startIndex, Math.Min(length, str.Length - startIndex));
+                length = Math.Min(length, str.Length - startIndex);
+
+                if(length > 0)
+                {
+                    result = str.Substring(startIndex, length);
+                }
             }
 
             return result;

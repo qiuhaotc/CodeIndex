@@ -24,6 +24,7 @@ app {
     height: 3.5rem;
     display: flex;
     align-items: center;
+    z-index: 1000;
 }
 
 .main {
@@ -186,4 +187,8 @@ app {
     color: red;
     font-weight: bold;
     font-style: italic;
+}
+
+pre {
+    white-space: pre-wrap
 }

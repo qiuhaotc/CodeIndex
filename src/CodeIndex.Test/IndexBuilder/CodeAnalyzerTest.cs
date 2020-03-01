@@ -5,17 +5,16 @@ using Lucene.Net.Analysis;
 using Lucene.Net.Analysis.TokenAttributes;
 using NUnit.Framework;
 
-namespace CodeIndex.Test
+namespace CodeIndex.Test.IndexBuilder
 {
-    public class SimpleCodeAnalyzerTest
+    public class CodeAnalyzerTest
     {
         [Test]
         public void TestAnalyzer()
         {
             var content = " LucenePool.SaveResultsAndClearLucenePool(TempIndexDir);";
-            var processedContent = SimpleCodeContentProcessing.Preprocessing(content);
-            var result = GetTokens(new SimpleCodeAnalyzer(Constants.AppLuceneVersion, false), processedContent, true);
-            CollectionAssert.AreEquivalent(new[] 
+            var result = GetTokens(new CodeAnalyzer(Constants.AppLuceneVersion, false), content);
+            CollectionAssert.AreEquivalent(new[]
             {
                 "LucenePool",
                 ".",
@@ -26,7 +25,7 @@ namespace CodeIndex.Test
                 ";"
             }, result);
 
-            result = GetTokens(new SimpleCodeAnalyzer(Constants.AppLuceneVersion, true), processedContent, true);
+            result = GetTokens(new CodeAnalyzer(Constants.AppLuceneVersion, true), content);
             CollectionAssert.AreEquivalent(new[]
             {
                 "lucenepool",
@@ -37,12 +36,27 @@ namespace CodeIndex.Test
                 ")",
                 ";"
             }, result);
+
+            result = GetTokens(new CodeAnalyzer(Constants.AppLuceneVersion, false), @"Line One
+Line Two
+
+Line Four");
+
+            CollectionAssert.AreEquivalent(new[]
+            {
+                "Line",
+                "One",
+                "Line",
+                "Two",
+                "Line",
+                "Four"
+            }, result);
         }
 
-        List<string> GetTokens(Analyzer analyzer, string content, bool needRestoreString = false)
+        List<string> GetTokens(Analyzer analyzer, string content)
         {
             var tokens = new List<string>();
-            var tokenStream = analyzer.GetTokenStream("A", content ?? string.Empty);
+            var tokenStream = analyzer.GetTokenStream("A", content);
             var termAttr = tokenStream.GetAttribute<ICharTermAttribute>();
             tokenStream.Reset();
 
@@ -51,7 +65,7 @@ namespace CodeIndex.Test
                 tokens.Add(termAttr.ToString());
             }
 
-            return needRestoreString ? tokens.Select(u => SimpleCodeContentProcessing.RestoreString(u)).ToList() : tokens;
+            return tokens;
         }
     }
 }

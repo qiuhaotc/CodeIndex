@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Web;
 using CodeIndex.Common;
 using CodeIndex.IndexBuilder;
 using CodeIndex.Search;
@@ -91,6 +92,38 @@ Not AB with C", result);
             Assert.AreEqual(@"My <label class='highlight'>ABC</label>
 Is A <label class='highlight'>ABC</label>...
 It&#39;s <label class='highlight'>Abc</label>", result);
+        }
+
+        [Test]
+        public void TestGenerateHtmlPreviewText_ReturnRawContent()
+        {
+            var generator = new QueryGenerator();
+            var content = "My ABC\r\nIs A ABC CONTENT\r\nIt's abc in lowercase\r\nIt's Abc in mix\r\nNot AB with C";
+            var result = CodeIndexSearcher.GenerateHtmlPreviewText(generator.GetQueryFromStr("NotExistWord"), content, int.MaxValue, LucenePool.GetAnalyzer());
+            Assert.IsEmpty(result);
+
+            result = CodeIndexSearcher.GenerateHtmlPreviewText(generator.GetQueryFromStr("NotExistWord"), content, 10, LucenePool.GetAnalyzer(), returnRawContentWhenResultIsEmpty: true);
+            Assert.AreEqual(HttpUtility.HtmlEncode(content), result);
+
+            result = CodeIndexSearcher.GenerateHtmlPreviewText(null, content, 10, LucenePool.GetAnalyzer(), returnRawContentWhenResultIsEmpty: true);
+            Assert.AreEqual(HttpUtility.HtmlEncode(content), result);
+        }
+
+        [Test]
+        public void TestSearchCode()
+        {
+            CodeIndexBuilder.BuildIndex(TempIndexDir, true, true, true, new[] { new CodeSource
+            {
+                FileName = "Dummy File 1",
+                FileExtension = "cs",
+                FilePath = @"C:\Dummy File 1.cs",
+                Content = "Test Content" + Environment.NewLine + "A New Line For Test"
+            }});
+
+            var reader = LucenePool.IndexWritesPool[TempIndexDir].GetReader(true);
+            var results = CodeIndexSearcher.SearchCode(TempIndexDir, reader, new TermQuery(new Term(nameof(CodeSource.FileExtension), "cs")), 10);
+            Assert.That(results.Length, Is.EqualTo(1));
+            reader.Dispose();
         }
     }
 }

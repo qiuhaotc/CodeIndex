@@ -1,4 +1,5 @@
-﻿@page "/Details/{CodePK}/{PreQuery}"
+﻿@page "/Details/{CodePK}"
+@page "/Details/{CodePK}/{ContentQuery}"
 @inject HttpClient Client
 
 <div class="jumbotron">
@@ -18,13 +19,13 @@
     public string CodePK { get; set; }
 
     [Parameter]
-    public string PreQuery { get; set; }
+    public string ContentQuery { get; set; }
 
     public CodeSource Source { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
-        var result = await Client.GetJsonAsync<FetchResult<IEnumerable<CodeSource>>>("api/lucene/GetCodeSources?searchStr=" + System.Web.HttpUtility.UrlEncode($"CodePK:\"{CodePK}\"") + "&preQuery=" + System.Web.HttpUtility.UrlEncode(PreQuery));
+        var result = await Client.GetJsonAsync<FetchResult<IEnumerable<CodeSource>>>("api/lucene/GetCodeSources?searchQuery=" + System.Web.HttpUtility.UrlEncode($"CodePK:\"{CodePK}\"") + "&contentQuery=" + ContentQuery);
         Source = result.Result.FirstOrDefault();
         await base.OnInitializedAsync();
     }

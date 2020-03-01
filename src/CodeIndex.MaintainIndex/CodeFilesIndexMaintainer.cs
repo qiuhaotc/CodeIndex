@@ -8,7 +8,6 @@ using CodeIndex.Common;
 using CodeIndex.Files;
 using CodeIndex.IndexBuilder;
 using CodeIndex.Search;
-using Lucene.Net.Documents;
 using Lucene.Net.Index;
 using Lucene.Net.Search;
 
@@ -80,7 +79,7 @@ namespace CodeIndex.MaintainIndex
                         break;
 
                     case WatcherChangeTypes.Deleted:
-                        CodeIndexBuilder.DeleteIndex(luceneIndex, new Term(nameof(CodeSource.FilePath), e.FullPath));
+                        CodeIndexBuilder.DeleteIndex(luceneIndex, GetNoneTokenizeFieldTerm(nameof(CodeSource.FilePath), e.FullPath));
                         break;
                 }
 
@@ -159,7 +158,7 @@ namespace CodeIndex.MaintainIndex
                         var content = File.ReadAllText(fullPath, FilesEncodingHelper.GetEncoding(fullPath));
                         // TODO: When Date Not Change, Not Update
                         var document = CodeIndexBuilder.GetDocumentFromSource(CodeSource.GetCodeSource(fileInfo, content));
-                        CodeIndexBuilder.UpdateIndex(luceneIndex, new Term(nameof(CodeSource.FilePath), fullPath), document);
+                        CodeIndexBuilder.UpdateIndex(luceneIndex, GetNoneTokenizeFieldTerm(nameof(CodeSource.FilePath), fullPath), document);
                     }
                 }
                 catch (IOException)
@@ -173,7 +172,7 @@ namespace CodeIndex.MaintainIndex
         {
             if (IsFile(fullPath))
             {
-                CodeIndexBuilder.DeleteIndex(luceneIndex, new Term(nameof(CodeSource.FilePath), oldFullPath));
+                CodeIndexBuilder.DeleteIndex(luceneIndex, GetNoneTokenizeFieldTerm(nameof(CodeSource.FilePath), oldFullPath));
 
                 var fileInfo = new FileInfo(fullPath);
                 try
@@ -183,7 +182,7 @@ namespace CodeIndex.MaintainIndex
                         var content = File.ReadAllText(fullPath, FilesEncodingHelper.GetEncoding(fullPath));
                         var document = CodeIndexBuilder.GetDocumentFromSource(CodeSource.GetCodeSource(fileInfo, content));
                         // TODO: When Date Not Change, Not Update
-                        CodeIndexBuilder.UpdateIndex(luceneIndex, new Term(nameof(CodeSource.FilePath), oldFullPath), document);
+                        CodeIndexBuilder.UpdateIndex(luceneIndex, GetNoneTokenizeFieldTerm(nameof(CodeSource.FilePath), oldFullPath), document);
                     }
                 }
                 catch (IOException)
@@ -194,14 +193,12 @@ namespace CodeIndex.MaintainIndex
             else if (IsDirectory(fullPath))
             {
                 // Rebuild All Sub Directory Index File, rename the index path
-                var term = new PrefixQuery(new Term(nameof(CodeSource.FilePath), oldFullPath));
-                var files = CodeIndexSearcher.Search(luceneIndex, term, int.MaxValue);
-                foreach (var file in files)
+                var term = new PrefixQuery(GetNoneTokenizeFieldTerm(nameof(CodeSource.FilePath), oldFullPath));
+                var docs = CodeIndexSearcher.Search(luceneIndex, term, int.MaxValue);
+                foreach (var doc in docs)
                 {
-                    var pathField = file.Get(nameof(CodeSource.FilePath));
-                    file.RemoveField(nameof(CodeSource.FilePath));
-                    file.Add(new StringField(nameof(CodeSource.FilePath), pathField.Replace(oldFullPath, fullPath), Field.Store.YES));
-                    CodeIndexBuilder.UpdateIndex(luceneIndex, new Term(nameof(CodeSource.CodePK), file.Get(nameof(CodeSource.CodePK))), file);
+                    CodeIndexBuilder.UpdateCodeFilePath(doc, oldFullPath, fullPath);
+                    CodeIndexBuilder.UpdateIndex(luceneIndex, new Term(nameof(CodeSource.CodePK), doc.Get(nameof(CodeSource.CodePK))), doc);
                 }
             }
         }
@@ -304,6 +301,11 @@ namespace CodeIndex.MaintainIndex
                     Thread.Sleep(saveIntervalSeconds * 100); //  Sleep when nothing need to save
                 }
             }
+        }
+
+        Term GetNoneTokenizeFieldTerm(string fieldName, string termValue)
+        {
+            return new Term($"{fieldName}{Constants.NoneTokenizeFieldSuffix}", termValue);
         }
     }
 }

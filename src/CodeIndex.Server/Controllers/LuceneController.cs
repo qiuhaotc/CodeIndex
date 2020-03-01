@@ -32,36 +32,40 @@ namespace CodeIndex.Server.Controllers
 
         [HttpGet]
         [Route(nameof(GetCodeSources))]
-        public FetchResult<IEnumerable<CodeSource>> GetCodeSources(string searchStr, bool preview = false, string preQuery = "")
+        public FetchResult<IEnumerable<CodeSource>> GetCodeSources(string searchQuery, bool preview, string contentQuery = "")
         {
+            ArgumentValidation.RequireNotNullOrEmpty(searchQuery, nameof(searchQuery));
+
             FetchResult<IEnumerable<CodeSource>> result;
             try
             {
                 result = new FetchResult<IEnumerable<CodeSource>>
                 {
-                    Result = SearchCodeSource(searchStr, out var query),
+                    Result = SearchCodeSource(searchQuery, out var query),
                     Status = new Status
                     {
                         Success = true
                     }
                 };
 
+                var queryForContent = string.IsNullOrWhiteSpace(contentQuery) ? null : generator.GetQueryFromStr(contentQuery);
+
                 if (preview)
                 {
                     foreach (var item in result.Result)
                     {
-                        item.Content = CodeIndexSearcher.GenerateHtmlPreviewText(query, item.Content, 50, generator.Analyzer);
+                        item.Content = CodeIndexSearcher.GenerateHtmlPreviewText(queryForContent, item.Content, 30, generator.Analyzer);
                     }
                 }
-                else
+                else if (!preview)
                 {
                     foreach (var item in result.Result)
                     {
-                        item.Content = CodeIndexSearcher.GenerateHtmlPreviewText(generator.GetQueryFromStr(preQuery), item.Content, int.MaxValue, generator.Analyzer);
+                        item.Content = CodeIndexSearcher.GenerateHtmlPreviewText(queryForContent, item.Content, int.MaxValue, generator.Analyzer, returnRawContentWhenResultIsEmpty: true);
                     }
                 }
 
-                log.Debug($"Request: '{searchStr}' sucessful");
+                log.Debug($"Request: '{searchQuery}' sucessful");
             }
             catch (Exception ex)
             {
@@ -115,11 +119,11 @@ namespace CodeIndex.Server.Controllers
                 + GetTokenStr(new WhitespaceAnalyzer(Constants.AppLuceneVersion), searchStr) + Environment.NewLine
                 + GetTokenStr(new SimpleAnalyzer(Constants.AppLuceneVersion), searchStr) + Environment.NewLine
                 + GetTokenStr(new StopAnalyzer(Constants.AppLuceneVersion), searchStr) + Environment.NewLine
-                + GetTokenStr(new SimpleCodeAnalyzer(Constants.AppLuceneVersion, true), SimpleCodeContentProcessing.Preprocessing(searchStr), true) + Environment.NewLine
+                + GetTokenStr(new CodeAnalyzer(Constants.AppLuceneVersion, true), searchStr) + Environment.NewLine
             };
         }
 
-        string GetTokenStr(Analyzer analyzer, string content, bool needRestoreString = false)
+        string GetTokenStr(Analyzer analyzer, string content)
         {
             var stringBuilder = new StringBuilder();
             stringBuilder.AppendLine(analyzer.GetType().FullName);
@@ -135,7 +139,7 @@ namespace CodeIndex.Server.Controllers
                 stringBuilder.AppendLine(termAttr.ToString());
             }
 
-            return needRestoreString ? SimpleCodeContentProcessing.RestoreString(stringBuilder.ToString()) : stringBuilder.ToString();
+            return stringBuilder.ToString();
         }
     }
 }

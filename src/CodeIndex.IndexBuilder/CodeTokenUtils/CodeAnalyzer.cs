@@ -5,12 +5,12 @@ using Lucene.Net.Util;
 
 namespace CodeIndex.IndexBuilder
 {
-    public class SimpleCodeAnalyzer : Analyzer
+    public class CodeAnalyzer : Analyzer
     {
         readonly LuceneVersion luceneVersion;
         readonly bool lowerCase;
 
-        public SimpleCodeAnalyzer(LuceneVersion luceneVersion, bool lowerCase)
+        public CodeAnalyzer(LuceneVersion luceneVersion, bool lowerCase)
         {
             this.luceneVersion = luceneVersion;
             this.lowerCase = lowerCase;
@@ -18,7 +18,7 @@ namespace CodeIndex.IndexBuilder
 
         protected override TokenStreamComponents CreateComponents(string fieldName, TextReader reader)
         {
-            var tokenizer = new SimpleCodeTokenizer(luceneVersion, reader);
+            var tokenizer = new CodeTokenizer(reader);
 
             if (lowerCase)
             {

@@ -5,8 +5,6 @@ using CodeIndex.Common;
 using CodeIndex.IndexBuilder;
 using CodeIndex.MaintainIndex;
 using CodeIndex.Search;
-using Lucene.Net.Index;
-using Lucene.Net.Search;
 using NUnit.Framework;
 
 namespace CodeIndex.Test
@@ -39,7 +37,7 @@ namespace CodeIndex.Test
             File.AppendAllText(fileAPath, "56789");
             Thread.Sleep(waitMS); // wait task finish saving
 
-            var index = CodeIndexSearcher.Search(TempIndexDir, new TermQuery(new Term(nameof(CodeSource.FileName), "AAA.cs")), 10);
+            var index = CodeIndexSearcher.Search(TempIndexDir, Generator.GetQueryFromStr($"{nameof(CodeSource.FileName)}:\"AAA.cs\""), 10);
             Assert.AreEqual(1, index.Length);
             Assert.AreEqual("1234556789", index[0].Get(nameof(CodeSource.Content)));
         }

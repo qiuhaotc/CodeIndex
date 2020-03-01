@@ -12,6 +12,9 @@ namespace CodeIndex.Test
         protected string TempDir { get; set; }
         protected string TempIndexDir => Path.Combine(TempDir, IndexDirName);
 
+        QueryGenerator generator;
+        protected QueryGenerator Generator => generator ?? (generator = new QueryGenerator());
+
         [SetUp]
         protected virtual void SetUp()
         {

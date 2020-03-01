@@ -19,6 +19,13 @@ Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CodeIndex.Search", "CodeInd
 EndProject
 Project("{9A19103F-16F7-4668-BE54-9A1E7A4F7556}") = "CodeIndex.Server", "CodeIndex.Server\CodeIndex.Server.csproj", "{BE1F4C0F-F4FF-43B0-B8F2-2C1F9B446059}"
 EndProject
+Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "doc", "doc", "{B0519424-9D66-4622-AE1A-B175AB6FEB9D}"
+	ProjectSection(SolutionItems) = preProject
+		..\README.md = ..\README.md
+		..\doc\WebServer-Details.png = ..\doc\WebServer-Details.png
+		..\doc\WebServer.png = ..\doc\WebServer.png
+	EndProjectSection
+EndProject
 Global
 	GlobalSection(SolutionConfigurationPlatforms) = preSolution
 		Debug|Any CPU = Debug|Any CPU

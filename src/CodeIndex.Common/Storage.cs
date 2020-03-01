@@ -4,7 +4,7 @@ namespace CodeIndex.Common
 {
     public class Storage
     {
-        Dictionary<string, object> Items { get; set; } = new Dictionary<string, object>();
+        Dictionary<string, object> Items { get; } = new Dictionary<string, object>();
         public string UserName { get; set; }
 
         public object GetValue(string key)
