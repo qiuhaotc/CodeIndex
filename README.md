@@ -13,3 +13,11 @@ Wait the index finished build
 
 Config the appsetting.json => LuceneIndex to your local index folder
 Run server and doing the searching
+
+#### Test
+
+Main Page
+<div><img src="https://github.com/qiuhaotc/CodeIndex/blob/master/doc/WebServer.png"/></div>
+
+Details Page
+<div><img src="https://github.com/qiuhaotc/CodeIndex/blob/master/doc/WebServer-Details.png"/></div>
