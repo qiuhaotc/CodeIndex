@@ -17,7 +17,7 @@ Run server and doing the searching
 #### Test
 
 Main Page
-<div><img src="https://github.com/qiuhaotc/CodeIndex/blob/master/doc/WebServer.png"/></div>
+<div><img src="https://raw.githubusercontent.com/qiuhaotc/CodeIndex/master/doc/WebServer.png"/></div>
 
 Details Page
-<div><img src="https://github.com/qiuhaotc/CodeIndex/blob/master/doc/WebServer-Details.png"/></div>
+<div><img src="https://raw.githubusercontent.com/qiuhaotc/CodeIndex/master/doc/WebServer-Details.png"/></div>
