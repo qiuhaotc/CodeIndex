@@ -32,16 +32,18 @@ namespace CodeIndex.Server.Controllers
 
         [HttpGet]
         [Route(nameof(GetCodeSources))]
-        public FetchResult<IEnumerable<CodeSource>> GetCodeSources(string searchQuery, bool preview, string contentQuery = "")
+        public FetchResult<IEnumerable<CodeSource>> GetCodeSources(string searchQuery, bool preview, string contentQuery = "", int? showResults = 0)
         {
             ArgumentValidation.RequireNotNullOrEmpty(searchQuery, nameof(searchQuery));
 
             FetchResult<IEnumerable<CodeSource>> result;
             try
             {
+                var showResultsValue = showResults.HasValue && showResults.Value <= 100 && showResults.Value > 0 ? showResults.Value : 100;
+
                 result = new FetchResult<IEnumerable<CodeSource>>
                 {
-                    Result = SearchCodeSource(searchQuery, out var query),
+                    Result = SearchCodeSource(searchQuery, out var query, showResultsValue),
                     Status = new Status
                     {
                         Success = true
@@ -84,10 +86,10 @@ namespace CodeIndex.Server.Controllers
             return result;
         }
 
-        CodeSource[] SearchCodeSource(string searchStr, out Query query)
+        CodeSource[] SearchCodeSource(string searchStr, out Query query, int showResults = 100)
         {
             query = generator.GetQueryFromStr(searchStr);
-            return CodeIndexSearcher.SearchCode(config["LuceneIndex"], reader, query, 100);
+            return CodeIndexSearcher.SearchCode(config["LuceneIndex"], reader, query, showResults > 100 ? 100 : showResults);
         }
 
         static readonly QueryGenerator generator = new QueryGenerator();

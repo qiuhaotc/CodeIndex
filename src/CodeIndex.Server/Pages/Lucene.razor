@@ -44,9 +44,22 @@
     </div>
 </div>
 <div class="row">
-    <div class="col-sm">
+    <div class="col-sm-8">
         <div class="input-group mb-3">
             <button type="button" class="btn btn-primary" @onclick="SearchLuceneIndex">Search</button>
+        </div>
+    </div>
+    <div class="col-sm-4 form-inline">
+        <div class="input-group mb-3">
+            <div class="input-group-prepend">
+                <span class="input-group-text" id="basic-addon4">Show Results</span>
+            </div>
+            <select class="form-control" @bind="ShowResults">
+                <option value="10">10</option>
+                <option value="20">20</option>
+                <option value="50">50</option>
+                <option value="100">100</option>
+            </select>
         </div>
     </div>
 </div>
@@ -74,46 +87,48 @@
         </div>
     </div>
 </div>
-<table class="table">
-    <thead>
-        <tr>
-            <th scope="col">File Name</th>
-            <th scope="col">File Extension</th>
-            <th scope="col">File Path</th>
-            <th scope="col">Index Date Utc</th>
-            <th scope="col">Last Write Utc</th>
-            <th scope="col">Content</th>
-            <th scope="col">Details</th>
-        </tr>
-    </thead>
-    <tbody>
-        @if (FetchResult?.Result != null && FetchResult.Result.Any())
-        {
-            foreach (var item in FetchResult.Result)
+<div class="table-responsive">
+    <table class="table">
+        <thead>
+            <tr>
+                <th scope="col">File Name</th>
+                <th scope="col">File Extension</th>
+                <th scope="col">File Path</th>
+                <th scope="col">Index Date Utc</th>
+                <th scope="col">Last Write Utc</th>
+                <th scope="col">Content</th>
+                <th scope="col">Details</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (FetchResult?.Result != null && FetchResult.Result.Any())
+            {
+                foreach (var item in FetchResult.Result)
+                {
+                    <tr>
+                        <td>@item.FileName</td>
+                        <td>@item.FileExtension</td>
+                        <td>@item.FilePath</td>
+                        <td>@item.IndexDate</td>
+                        <td>@item.LastWriteTimeUtc</td>
+                        <td>
+                            <pre>@((MarkupString)item.Content)</pre>
+                        </td>
+                        <td>
+                            <a href="/Details/@item.CodePK/@System.Web.HttpUtility.UrlEncode(ContentQuery ?? string.Empty)">Details</a>
+                        </td>
+                    </tr>
+                }
+            }
+            else
             {
                 <tr>
-                    <td>@item.FileName</td>
-                    <td>@item.FileExtension</td>
-                    <td>@item.FilePath</td>
-                    <td>@item.IndexDate</td>
-                    <td>@item.LastWriteTimeUtc</td>
-                    <td>
-                        <pre>@((MarkupString)item.Content)</pre>
-                    </td>
-                    <td>
-                        <a href="/Details/@item.CodePK/@System.Web.HttpUtility.UrlEncode(ContentQuery ?? string.Empty)">Details</a>
-                    </td>
+                    <td colspan="6" class="text-center">Empty</td>
                 </tr>
             }
-        }
-        else
-        {
-            <tr>
-                <td colspan="6" class="text-center">Empty</td>
-            </tr>
-        }
-    </tbody>
-</table>
+        </tbody>
+    </table>
+</div>
 
 @code {
 
@@ -126,6 +141,8 @@
     public string FileExtensionQuery { get; set; }
 
     public string FilePathQuery { get; set; }
+
+    public int ShowResults { get; set; } = 20;
 
 
     public FetchResult<IEnumerable<CodeSource>> FetchResult { get; set; }
@@ -167,7 +184,7 @@
             var searchQuery = System.Web.HttpUtility.UrlEncode(SearchQuery);
             if (!string.IsNullOrEmpty(searchQuery))
             {
-                FetchResult = await Client.GetJsonAsync<FetchResult<IEnumerable<CodeSource>>>("api/lucene/GetCodeSources?searchQuery=" + System.Web.HttpUtility.UrlEncode(SearchQuery) + "&preview=true" + "&contentQuery=" + System.Web.HttpUtility.UrlEncode(ContentQuery ?? string.Empty));
+                FetchResult = await Client.GetJsonAsync<FetchResult<IEnumerable<CodeSource>>>("api/lucene/GetCodeSources?searchQuery=" + System.Web.HttpUtility.UrlEncode(SearchQuery) + "&showResults=" + ShowResults + "&preview=true" + "&contentQuery=" + System.Web.HttpUtility.UrlEncode(ContentQuery ?? string.Empty));
             }
             else
             {
