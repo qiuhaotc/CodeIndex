@@ -34,11 +34,12 @@ namespace CodeIndex.Server.Controllers
         [Route(nameof(GetCodeSources))]
         public FetchResult<IEnumerable<CodeSource>> GetCodeSources(string searchQuery, bool preview, string contentQuery = "", int? showResults = 0)
         {
-            ArgumentValidation.RequireNotNullOrEmpty(searchQuery, nameof(searchQuery));
-
             FetchResult<IEnumerable<CodeSource>> result;
+
             try
             {
+                searchQuery.RequireNotNullOrEmpty(nameof(searchQuery));
+
                 var showResultsValue = showResults.HasValue && showResults.Value <= 100 && showResults.Value > 0 ? showResults.Value : 100;
 
                 result = new FetchResult<IEnumerable<CodeSource>>
@@ -67,11 +68,48 @@ namespace CodeIndex.Server.Controllers
                     }
                 }
 
-                log.Debug($"Request: '{searchQuery}' sucessful");
+                log.Debug($"Request: '{searchQuery}' successful");
             }
             catch (Exception ex)
             {
                 result = new FetchResult<IEnumerable<CodeSource>>
+                {
+                    Status = new Status
+                    {
+                        Success = false,
+                        StatusDesc = ex.ToString()
+                    }
+                };
+
+                log.Error(ex.ToString());
+            }
+
+            return result;
+        }
+
+        [HttpGet]
+        [Route(nameof(GetHints))]
+        public FetchResult<IEnumerable<string>> GetHints(string word)
+        {
+            FetchResult<IEnumerable<string>> result;
+            try
+            {
+                word.RequireNotNullOrEmpty(nameof(word));
+
+                result = new FetchResult<IEnumerable<string>>
+                {
+                    Result = CodeIndexSearcher.GetHints(word, reader),
+                    Status = new Status
+                    {
+                        Success = true
+                    }
+                };
+
+                log.Debug($"Get Hints For '{word}' successful");
+            }
+            catch (Exception ex)
+            {
+                result = new FetchResult<IEnumerable<string>>
                 {
                     Status = new Status
                     {

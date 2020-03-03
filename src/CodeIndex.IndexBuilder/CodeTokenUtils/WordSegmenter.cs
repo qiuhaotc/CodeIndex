@@ -98,14 +98,14 @@ namespace CodeIndex.IndexBuilder
             return st;
         }
 
-        static bool SpaceLike(char ch)
+        public static bool SpaceLike(char ch)
         {
             return ch == ' ' || ch == '\t' || ch == '\r' || ch == '\n' || ch == '　';
         }
 
-        static bool IsSpecialChar(int character) => (character >= 33 || character <= 126) && SpecialCharRange.Any(u => u.Start <= character && u.End >= character);
+        public static bool IsSpecialChar(int character) => (character >= 33 || character <= 126) && SpecialCharRange.Any(u => u.Start <= character && u.End >= character);
 
-        readonly static HashSet<(int Start, int End)> SpecialCharRange = new HashSet<(int, int)>()
+        static readonly HashSet<(int Start, int End)> SpecialCharRange = new HashSet<(int, int)>()
         {
             (33, 47),
             (58, 64),

@@ -24,9 +24,46 @@ namespace CodeIndex.IndexBuilder
 
                 var doc = GetDocumentFromSource(source);
                 documents.Add(doc);
+
+                var words = GetWords(source.Content);
+
+                foreach (var word in words)
+                {
+                    documents.Add(new Document
+                    {
+                        new StringField("Word", word, Field.Store.YES),
+                        new StringField("WordLower", word.ToLower(), Field.Store.YES),
+                    });
+                }
             }
 
             LucenePool.BuildIndex(luceneIndex, triggerMerge, applyAllDeletes, documents, needFlush);
+        }
+
+        static string[] GetWords(string content)
+        {
+            var words = new List<string>();
+            var chars = new List<char>();
+
+            foreach (var ch in content)
+            {
+                if (!WordSegmenter.IsSpecialChar(ch) && !WordSegmenter.SpaceLike(ch))
+                {
+                    chars.Add(ch);
+                }
+                else if (chars.Count > 0)
+                {
+                    words.Add(new string(chars.ToArray()));
+                    chars.Clear();
+                }
+            }
+
+            if (chars.Count > 0)
+            {
+                words.Add(new string(chars.ToArray()));
+            }
+
+            return words.ToArray();
         }
 
         public static void DeleteIndex(string luceneIndex, params Query[] searchQueries)

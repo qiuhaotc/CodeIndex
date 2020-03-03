@@ -41,7 +41,7 @@ namespace CodeIndex.Search
 
             var searcher = new IndexSearcher(reader);
             var hits = searcher.Search(query, maxResults).ScoreDocs;
-            return hits.Select(hit => GetCodeSourceFromDocumet(searcher.Doc(hit.Doc))).ToArray();
+            return hits.Select(hit => GetCodeSourceFromDocument(searcher.Doc(hit.Doc))).ToArray();
         }
 
         public static string GenerateHtmlPreviewText(Query query, string text, int length, Analyzer analyzer, string prefix = "<label class='highlight'>", string suffix = "</label>", bool returnRawContentWhenResultIsEmpty = false)
@@ -96,6 +96,25 @@ namespace CodeIndex.Search
             return hits.Select(hit => searcher.Doc(hit.Doc)).ToArray();
         }
 
+        public static string[] GetHints(string word, DirectoryReader reader, int maxResults = 20, bool caseSensitive = false)
+        {
+            PrefixQuery query;
+
+            if (caseSensitive)
+            {
+                query = new PrefixQuery(new Term(nameof(CodeWord.Word), word));
+            }
+            else
+            {
+                query = new PrefixQuery(new Term(nameof(CodeWord.WordLower), word.ToLower()));
+            }
+
+            var searcher = new IndexSearcher(reader);
+            var hits = searcher.Search(query, maxResults).ScoreDocs;
+
+            return hits.Select(hit => searcher.Doc(hit.Doc)).Select(u => u.Get(nameof(CodeWord.Word))).ToArray();
+        }
+
         public static void ClearDirectoryReadersPool()
         {
             foreach (var item in DirectoryReadersPool)
@@ -106,7 +125,7 @@ namespace CodeIndex.Search
             DirectoryReadersPool.Clear();
         }
 
-        public static CodeSource GetCodeSourceFromDocumet(Document document)
+        public static CodeSource GetCodeSourceFromDocument(Document document)
         {
             return new CodeSource
             {
