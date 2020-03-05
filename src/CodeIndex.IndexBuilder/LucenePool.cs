@@ -1,5 +1,7 @@
-﻿using System.Collections.Concurrent;
+﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading;
 using CodeIndex.Common;
 using Lucene.Net.Analysis;
@@ -13,6 +15,8 @@ namespace CodeIndex.IndexBuilder
 {
     public class LucenePool
     {
+        // TODO: refresh index reader and searcher when index changed
+
         internal static void BuildIndex(string luceneIndex, bool triggerMerge, bool applyAllDeletes, IEnumerable<Document> documents, bool needFlush)
         {
             try
@@ -92,6 +96,9 @@ namespace CodeIndex.IndexBuilder
             {
                 readWriteLock.ReleaseReaderLock();
             }
+
+            // TODO: Remove this logic
+            SaveResultsAndClearLucenePool(luceneIndex);
         }
 
         public static void SaveResultsAndClearLucenePool(string luceneIndex)
@@ -175,7 +182,7 @@ namespace CodeIndex.IndexBuilder
                 {
                     if (!IndexReaderPool.TryGetValue(luceneIndex, out indexReader))
                     {
-                        indexReader = CreateOrGetIndexWriter(luceneIndex).GetReader(false);
+                        indexReader = CreateOrGetIndexWriter(luceneIndex).GetReader(true);
                         IndexReaderPool.TryAdd(luceneIndex, indexReader);
                     }
                 }
@@ -200,6 +207,66 @@ namespace CodeIndex.IndexBuilder
             }
         }
 
+        public static Document[] Search(string luceneIndex, Query query, int maxResults)
+        {
+            try
+            {
+                readWriteLock.AcquireReaderLock(Constants.ReadWriteLockTimeOutMilliseconds);
+
+                var searcher = CreateOrGetIndexSearcher(luceneIndex);
+                var hits = searcher.Search(query, maxResults).ScoreDocs;
+                return hits.Select(hit => searcher.Doc(hit.Doc)).ToArray();
+            }
+            finally
+            {
+                readWriteLock.ReleaseReaderLock();
+            }
+        }
+
+        public static string[] GetHints(string luceneIndex, string word, int maxResults, bool caseSensitive)
+        {
+            PrefixQuery query;
+
+            try
+            {
+                readWriteLock.AcquireReaderLock(Constants.ReadWriteLockTimeOutMilliseconds);
+
+                var searcher = CreateOrGetIndexSearcher(luceneIndex);
+
+                if (caseSensitive)
+                {
+                    query = new PrefixQuery(new Term(nameof(CodeWord.Word), word));
+                }
+                else
+                {
+                    query = new PrefixQuery(new Term(nameof(CodeWord.WordLower), word.ToLower()));
+                }
+
+                var hits = searcher.Search(query, maxResults).ScoreDocs;
+                return hits.Select(hit => searcher.Doc(hit.Doc)).Select(u => u.Get(nameof(CodeWord.Word))).ToArray();
+            }
+            finally
+            {
+                readWriteLock.ReleaseReaderLock();
+            }
+        }
+
+        public static CodeSource[] SearchCode(string luceneIndex, Query query, int maxResults)
+        {
+            try
+            {
+                readWriteLock.AcquireReaderLock(Constants.ReadWriteLockTimeOutMilliseconds);
+
+                var searcher = CreateOrGetIndexSearcher(luceneIndex);
+                var hits = searcher.Search(query, maxResults).ScoreDocs;
+                return hits.Select(hit => GetCodeSourceFromDocument(searcher.Doc(hit.Doc))).ToArray();
+            }
+            finally
+            {
+                readWriteLock.ReleaseReaderLock();
+            }
+        }
+
         public static ConcurrentDictionary<string, IndexWriter> IndexWritesPool { get; } = new ConcurrentDictionary<string, IndexWriter>();
         static ConcurrentDictionary<string, IndexSearcher> IndexSearcherPool { get; } = new ConcurrentDictionary<string, IndexSearcher>();
         static ConcurrentDictionary<string, IndexReader> IndexReaderPool { get; } = new ConcurrentDictionary<string, IndexReader>();
@@ -214,6 +281,20 @@ namespace CodeIndex.IndexBuilder
         public static Analyzer GetAnalyzer()
         {
             return new CodeAnalyzer(Constants.AppLuceneVersion, true);
+        }
+
+        public static CodeSource GetCodeSourceFromDocument(Document document)
+        {
+            return new CodeSource
+            {
+                CodePK = document.Get(nameof(CodeSource.CodePK)),
+                Content = document.Get(nameof(CodeSource.Content)),
+                FileExtension = document.Get(nameof(CodeSource.FileExtension)),
+                FileName = document.Get(nameof(CodeSource.FileName)),
+                FilePath = document.Get(nameof(CodeSource.FilePath)),
+                IndexDate = new DateTime(long.Parse(document.Get(nameof(CodeSource.IndexDate)))),
+                LastWriteTimeUtc = new DateTime(long.Parse(document.Get(nameof(CodeSource.LastWriteTimeUtc))))
+            };
         }
     }
 }

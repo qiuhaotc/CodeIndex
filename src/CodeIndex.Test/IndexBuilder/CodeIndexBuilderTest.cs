@@ -129,7 +129,7 @@ namespace CodeIndex.Test
         }
 
         [Test]
-        public void TestDeleteIndexFolder()
+        public void TestDeleteAllIndex()
         {
             BuildIndex();
             LucenePool.SaveResultsAndClearLucenePool(TempIndexDir);

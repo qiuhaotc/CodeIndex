@@ -8,9 +8,7 @@ using Lucene.Net.Analysis;
 using Lucene.Net.Analysis.Core;
 using Lucene.Net.Analysis.Standard;
 using Lucene.Net.Analysis.TokenAttributes;
-using Lucene.Net.Index;
 using Lucene.Net.Search;
-using Lucene.Net.Store;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Configuration;
 
@@ -24,7 +22,6 @@ namespace CodeIndex.Server.Controllers
         {
             this.config = config;
             this.log = log;
-            SetReader(config);
         }
 
         readonly IConfiguration config;
@@ -98,7 +95,7 @@ namespace CodeIndex.Server.Controllers
 
                 result = new FetchResult<IEnumerable<string>>
                 {
-                    Result = CodeIndexSearcher.GetHints(word, reader),
+                    Result = CodeIndexSearcher.GetHints(LuceneIndex, word),
                     Status = new Status
                     {
                         Success = true
@@ -127,27 +124,11 @@ namespace CodeIndex.Server.Controllers
         CodeSource[] SearchCodeSource(string searchStr, out Query query, int showResults = 100)
         {
             query = generator.GetQueryFromStr(searchStr);
-            return CodeIndexSearcher.SearchCode(config["LuceneIndex"], reader, query, showResults > 100 ? 100 : showResults);
+            return CodeIndexSearcher.SearchCode(config["LuceneIndex"], query, showResults > 100 ? 100 : showResults);
         }
 
         static readonly QueryGenerator generator = new QueryGenerator();
-        static DirectoryReader reader;
-        void SetReader(IConfiguration config)
-        {
-            try
-            {
-                if (reader == null)
-                {
-                    var directory = FSDirectory.Open(config["LuceneIndex"]);
-                    reader = DirectoryReader.Open(directory);
-                }
-            }
-            catch (Exception ex)
-            {
-                log.Error(ex.ToString());
-                throw;
-            }
-        }
+        string LuceneIndex => config["LuceneIndex"];
 
         [HttpGet]
         [Route(nameof(GetTokenizeStr))]

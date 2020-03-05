@@ -70,10 +70,8 @@ namespace CodeIndex.Test
                 Content = "Test Content" + Environment.NewLine + "A New Line For Test"
             }});
 
-            var reader = LucenePool.IndexWritesPool[TempIndexDir].GetReader(true);
-            var results = CodeIndexSearcher.Search(TempIndexDir, reader, new TermQuery(new Term(nameof(CodeSource.FileExtension), "xml")), 10);
+            var results = CodeIndexSearcher.Search(TempIndexDir, new TermQuery(new Term(nameof(CodeSource.FileExtension), "xml")), 10);
             Assert.That(results.Length, Is.EqualTo(1));
-            reader.Dispose();
         }
 
         [Test]
@@ -120,10 +118,8 @@ It&#39;s <label class='highlight'>Abc</label>", result);
                 Content = "Test Content" + Environment.NewLine + "A New Line For Test"
             }});
 
-            var reader = LucenePool.IndexWritesPool[TempIndexDir].GetReader(true);
-            var results = CodeIndexSearcher.SearchCode(TempIndexDir, reader, new TermQuery(new Term(nameof(CodeSource.FileExtension), "cs")), 10);
+            var results = CodeIndexSearcher.SearchCode(TempIndexDir, new TermQuery(new Term(nameof(CodeSource.FileExtension), "cs")), 10);
             Assert.That(results.Length, Is.EqualTo(1));
-            reader.Dispose();
         }
     }
 }
