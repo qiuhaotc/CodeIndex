@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Linq;
 using System.Net.Http;
 using CodeIndex.Common;
@@ -27,6 +28,11 @@ namespace CodeIndex.Server
         // For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=398940
         public void ConfigureServices(IServiceCollection services)
         {
+            if (File.Exists("Nlog.config") && NLog.LogManager.Configuration == null)
+            {
+                NLog.LogManager.Configuration = new NLog.Config.XmlLoggingConfiguration("Nlog.config");
+            }
+
             services.AddMvc();
             services.AddRazorPages();
             services.AddServerSideBlazor();
