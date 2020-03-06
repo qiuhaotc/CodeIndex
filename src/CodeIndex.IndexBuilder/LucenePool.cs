@@ -15,8 +15,6 @@ namespace CodeIndex.IndexBuilder
 {
     public class LucenePool
     {
-        // TODO: refresh index reader and searcher when index changed
-
         internal static void BuildIndex(string luceneIndex, bool triggerMerge, bool applyAllDeletes, IEnumerable<Document> documents, bool needFlush)
         {
             try
@@ -30,6 +28,8 @@ namespace CodeIndex.IndexBuilder
                 {
                     writer.Flush(triggerMerge, applyAllDeletes);
                 }
+
+                IndexGotChanged.AddOrUpdate(luceneIndex, u => 0, (u, v) => v + 1);
             }
             finally
             {
@@ -45,6 +45,8 @@ namespace CodeIndex.IndexBuilder
 
                 var indexWriter = CreateOrGetIndexWriter(luceneIndex);
                 indexWriter.DeleteDocuments(searchQueries);
+
+                IndexGotChanged.AddOrUpdate(luceneIndex, u => 0, (u, v) => v + 1);
             }
             finally
             {
@@ -60,6 +62,8 @@ namespace CodeIndex.IndexBuilder
 
                 var indexWriter = CreateOrGetIndexWriter(luceneIndex);
                 indexWriter.DeleteDocuments(terms);
+
+                IndexGotChanged.AddOrUpdate(luceneIndex, u => 0, (u, v) => v + 1);
             }
             finally
             {
@@ -75,6 +79,8 @@ namespace CodeIndex.IndexBuilder
 
                 var indexWriter = CreateOrGetIndexWriter(luceneIndex);
                 indexWriter.UpdateDocument(term, document);
+
+                IndexGotChanged.AddOrUpdate(luceneIndex, u => 0, (u, v) => v + 1);
             }
             finally
             {
@@ -91,14 +97,13 @@ namespace CodeIndex.IndexBuilder
                 var indexWriter = CreateOrGetIndexWriter(luceneIndex);
                 indexWriter.DeleteAll();
                 indexWriter.Commit();
+
+                IndexGotChanged.AddOrUpdate(luceneIndex, u => 0, (u, v) => v + 1);
             }
             finally
             {
                 readWriteLock.ReleaseReaderLock();
             }
-
-            // TODO: Remove this logic
-            SaveResultsAndClearLucenePool(luceneIndex);
         }
 
         public static void SaveResultsAndClearLucenePool(string luceneIndex)
@@ -118,6 +123,8 @@ namespace CodeIndex.IndexBuilder
                 }
 
                 IndexSearcherPool.Clear();
+
+                IndexGotChanged.AddOrUpdate(luceneIndex, u => 0, (u, v) => 0);
             }
             finally
             {
@@ -125,7 +132,7 @@ namespace CodeIndex.IndexBuilder
             }
         }
 
-        static object syncLockForWriter = new object();
+        static readonly object syncLockForWriter = new object();
 
         static IndexWriter CreateOrGetIndexWriter(string luceneIndex)
         {
@@ -151,19 +158,26 @@ namespace CodeIndex.IndexBuilder
             return indexWriter;
         }
 
-        static object syncLockForSearcher = new object();
+        static readonly object syncLockForSearcher = new object();
+
         static IndexSearcher CreateOrGetIndexSearcher(string luceneIndex)
         {
             IndexSearcher indexSearcher;
 
-            if (!IndexSearcherPool.TryGetValue(luceneIndex, out indexSearcher))
+            if (!IndexSearcherPool.TryGetValue(luceneIndex, out indexSearcher) || IndexGotChanged.TryGetValue(luceneIndex, out var indexChangedTimes) && indexChangedTimes > 0)
             {
                 lock (syncLockForSearcher)
                 {
                     if (!IndexSearcherPool.TryGetValue(luceneIndex, out indexSearcher))
                     {
-                        indexSearcher = new IndexSearcher(CreateOrGetIndexReader(luceneIndex));
+                        indexSearcher = new IndexSearcher(CreateOrGetIndexReader(luceneIndex, false));
                         IndexSearcherPool.TryAdd(luceneIndex, indexSearcher);
+                    }
+                    else if (IndexGotChanged.TryGetValue(luceneIndex, out indexChangedTimes) && indexChangedTimes > 0)
+                    {
+                        indexSearcher = new IndexSearcher(CreateOrGetIndexReader(luceneIndex, true));
+                        IndexSearcherPool.AddOrUpdate(luceneIndex, indexSearcher, (u, v) => indexSearcher);
+                        IndexGotChanged.AddOrUpdate(luceneIndex, 0, (u, v) => 0);
                     }
                 }
             }
@@ -171,12 +185,13 @@ namespace CodeIndex.IndexBuilder
             return indexSearcher;
         }
 
-        static object syncLockForReader = new object();
-        static IndexReader CreateOrGetIndexReader(string luceneIndex)
+        static readonly object syncLockForReader = new object();
+
+        static IndexReader CreateOrGetIndexReader(string luceneIndex, bool forceRefresh)
         {
             IndexReader indexReader;
 
-            if (!IndexReaderPool.TryGetValue(luceneIndex, out indexReader))
+            if (!IndexReaderPool.TryGetValue(luceneIndex, out indexReader) || forceRefresh)
             {
                 lock (syncLockForReader)
                 {
@@ -184,6 +199,12 @@ namespace CodeIndex.IndexBuilder
                     {
                         indexReader = CreateOrGetIndexWriter(luceneIndex).GetReader(true);
                         IndexReaderPool.TryAdd(luceneIndex, indexReader);
+                    }
+                    else if (forceRefresh)
+                    {
+                        indexReader.Dispose();
+                        indexReader = CreateOrGetIndexWriter(luceneIndex).GetReader(true);
+                        IndexReaderPool.AddOrUpdate(luceneIndex, indexReader, (u, v) => indexReader);
                     }
                 }
             }
@@ -269,6 +290,7 @@ namespace CodeIndex.IndexBuilder
 
         public static ConcurrentDictionary<string, IndexWriter> IndexWritesPool { get; } = new ConcurrentDictionary<string, IndexWriter>();
         static ConcurrentDictionary<string, IndexSearcher> IndexSearcherPool { get; } = new ConcurrentDictionary<string, IndexSearcher>();
+        static ConcurrentDictionary<string, int> IndexGotChanged { get; } = new ConcurrentDictionary<string, int>();
         static ConcurrentDictionary<string, IndexReader> IndexReaderPool { get; } = new ConcurrentDictionary<string, IndexReader>();
 
         public static QueryParser GetQueryParser()

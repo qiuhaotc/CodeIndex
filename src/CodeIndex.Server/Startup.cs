@@ -2,6 +2,8 @@ using System;
 using System.Linq;
 using System.Net.Http;
 using CodeIndex.Common;
+using CodeIndex.IndexBuilder;
+using CodeIndex.MaintainIndex;
 using CodeIndex.Server.Data;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Components;
@@ -49,7 +51,7 @@ namespace CodeIndex.Server
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, IHostApplicationLifetime lifeTime, ILog log)
         {
             if (env.IsDevelopment())
             {
@@ -73,6 +75,37 @@ namespace CodeIndex.Server
                 endpoints.MapBlazorHub();
                 endpoints.MapFallbackToPage("/_Host");
             });
+
+            lifeTime.ApplicationStopping.Register(OnShutdown);
+
+            System.Threading.Tasks.Task.Run(() => {
+                try
+                {
+                    var initializer = new IndexInitializer(log);
+                    initializer.InitializeIndex(MonitorFolder, LuceneIndex, new[] { ".dll", ".pbd" }, new[] { "DEBUG/", "RELEASE/", "RELEASES/", "BIN/", "OBJ/", "LOG/", "DEBUGPUBLIC/" }, "*", new[] { ".cs", ".xml", ".xaml", ".js", ".txt" });
+
+                    log.Info("Initialize complete");
+
+                    maintainer = new CodeFilesIndexMaintainer(MonitorFolder, LuceneIndex, new[] { ".dll", ".pbd" }, new[] { "DEBUG/", "RELEASE/", "RELEASES/", "BIN/", "OBJ/", "LOG/", "DEBUGPUBLIC/" }, 300, new[] { ".cs", ".xml", ".xaml", ".js", ".txt" }, log);
+
+                    log.Info("Start monitoring");
+                }
+                catch (Exception ex)
+                {
+                    log.Error(ex.ToString());
+                }
+            });
         }
+
+        CodeFilesIndexMaintainer maintainer;
+
+        void OnShutdown()
+        {
+            maintainer?.Dispose();
+            LucenePool.SaveResultsAndClearLucenePool(Configuration.GetValue<string>("LuceneIndex"));
+        }
+
+        string LuceneIndex => Configuration.GetValue<string>("LuceneIndex");
+        string MonitorFolder => Configuration.GetValue<string>("MonitorFolder");
     }
 }

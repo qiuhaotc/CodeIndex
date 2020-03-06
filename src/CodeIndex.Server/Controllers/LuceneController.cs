@@ -1,6 +1,10 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
+using System.Linq;
+using System.Reflection;
 using System.Text;
+using System.Threading.Tasks;
 using CodeIndex.Common;
 using CodeIndex.IndexBuilder;
 using CodeIndex.Search;
@@ -161,6 +165,51 @@ namespace CodeIndex.Server.Controllers
             }
 
             return stringBuilder.ToString();
+        }
+
+        [HttpGet]
+        [Route(nameof(GetLogs))]
+        public async Task<FetchResult<string>> GetLogs()
+        {
+            FetchResult<string> result;
+            try
+            {
+                var logPath = Path.Combine(Path.GetDirectoryName(Assembly.GetEntryAssembly().Location), "Logs", "CodeIndex.log");
+
+                result = new FetchResult<string>
+                {
+                    Status = new Status
+                    {
+                        Success = true
+                    }
+                };
+
+                if (System.IO.File.Exists(logPath))
+                {
+                    using var fs = new FileStream(logPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                    using var sr = new StreamReader(fs, Encoding.Default);
+                    result.Result = await sr.ReadToEndAsync();
+                }
+                else
+                {
+                    result.Result = $"Log Not Exist In {logPath}";
+                }
+            }
+            catch (Exception ex)
+            {
+                result = new FetchResult<string>
+                {
+                    Status = new Status
+                    {
+                        Success = false,
+                        StatusDesc = ex.ToString()
+                    }
+                };
+
+                log.Error(ex.ToString());
+            }
+
+            return result;
         }
     }
 }

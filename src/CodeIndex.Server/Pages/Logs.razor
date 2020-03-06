@@ -1,0 +1,28 @@
+﻿@page "/Logs"
+@inject HttpClient Client
+@inject IJSRuntime JSRuntime
+
+<h3>Logs</h3>
+<div class="input-group mb-3">
+    Fetch Result: @Result?.Status?.Success @Result?.Status?.StatusDesc
+</div>
+<div class="form-group">
+    <label for="exampleFormControlTextarea1">Logs</label>
+    <textarea class="form-control" id="textAreaForLogs" rows="20">@Result?.Result</textarea>
+</div>
+
+@code {
+    FetchResult<string> Result { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+        Result = await Client.GetJsonAsync<FetchResult<string>>("api/lucene/GetLogs");
+    }
+
+    protected override async Task OnAfterRenderAsync(bool firstRender)
+    {
+        await base.OnAfterRenderAsync(firstRender);
+        await JSRuntime.InvokeVoidAsync("ScorllTextAreaToBottom", "textAreaForLogs");
+    }
+}
