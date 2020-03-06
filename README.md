@@ -2,6 +2,10 @@
 
 A fast code searching tools based on Lucene.Net
 
+## Demo Page
+
+https://codeindex.qhnetdisk.tk/
+
 ## Use It On Your Local
 
 ### Run CodeIndex.ConsoleApp build your code index
