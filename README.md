@@ -2,7 +2,7 @@
 
 A fast code searching tools based on Lucene.Net
 
-## Demo Page
+## Demonstrate Site
 
 https://codeindex.qhnetdisk.tk/
 
