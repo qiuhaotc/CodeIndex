@@ -1,5 +1,5 @@
-﻿using System.Collections.Generic;
-using System.Linq;
+﻿using System;
+using System.Collections.Generic;
 using CodeIndex.IndexBuilder;
 using Lucene.Net.Analysis;
 using Lucene.Net.Analysis.TokenAttributes;
@@ -51,6 +51,15 @@ Line Four");
                 "Line",
                 "Four"
             }, result);
+        }
+
+        [Test]
+        public void TestGetWords()
+        {
+            var content = "It's a content for test" + Environment.NewLine + "这是一个例句,我知道了";
+            CollectionAssert.AreEquivalent(new[] { "It", "s", "a", "content", "for", "test", "这是一个例句", "我知道了" }, WordSegmenter.GetWords(content));
+
+            Assert.Throws<ArgumentException>(() => WordSegmenter.GetWords(null));
         }
 
         List<string> GetTokens(Analyzer analyzer, string content)
