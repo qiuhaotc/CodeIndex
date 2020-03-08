@@ -8,14 +8,12 @@ https://codeindex.qhnetdisk.tk/
 
 ## Use It On Your Local
 
-### Run CodeIndex.ConsoleApp build your code index
+### Config the index file path and the code folder you want to index
 
-Change the "Program.cs" code folder and lucene index folder to your local one
-Wait the index finished build
+Change CodeIndex.Server => appsettings.json => LuceneIndex and MonitorFolder to your local
 
-### Run CodeIndex.Server
+### Run Server
 
-Config the appsetting.json => LuceneIndex to your local index folder
 Run server and doing the searching
 
 #### Test
