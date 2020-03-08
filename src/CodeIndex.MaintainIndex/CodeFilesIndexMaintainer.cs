@@ -133,7 +133,7 @@ namespace CodeIndex.MaintainIndex
 
                     if (fileInfo.Exists)
                     {
-                        var content = File.ReadAllText(fullPath, FilesEncodingHelper.GetEncoding(fullPath));
+                        var content = FilesContentHelper.ReadAllText(fullPath);
                         CodeIndexBuilder.BuildIndex(luceneIndex, false, false, false, new[] { CodeSource.GetCodeSource(fileInfo, content) });
                     }
                 }
@@ -155,7 +155,7 @@ namespace CodeIndex.MaintainIndex
 
                     if (fileInfo.Exists)
                     {
-                        var content = File.ReadAllText(fullPath, FilesEncodingHelper.GetEncoding(fullPath));
+                        var content = FilesContentHelper.ReadAllText(fullPath);
                         // TODO: When Date Not Change, Not Update
                         var document = CodeIndexBuilder.GetDocumentFromSource(CodeSource.GetCodeSource(fileInfo, content));
                         CodeIndexBuilder.UpdateIndex(luceneIndex, GetNoneTokenizeFieldTerm(nameof(CodeSource.FilePath), fullPath), document);
@@ -179,7 +179,7 @@ namespace CodeIndex.MaintainIndex
                 {
                     if (fileInfo.Exists)
                     {
-                        var content = File.ReadAllText(fullPath, FilesEncodingHelper.GetEncoding(fullPath));
+                        var content = FilesContentHelper.ReadAllText(fullPath);
                         var document = CodeIndexBuilder.GetDocumentFromSource(CodeSource.GetCodeSource(fileInfo, content));
                         // TODO: When Date Not Change, Not Update
                         CodeIndexBuilder.UpdateIndex(luceneIndex, GetNoneTokenizeFieldTerm(nameof(CodeSource.FilePath), oldFullPath), document);

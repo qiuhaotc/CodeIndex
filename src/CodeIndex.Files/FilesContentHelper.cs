@@ -1,25 +1,42 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
+using System.Linq;
 using System.Text;
 
 namespace CodeIndex.Files
 {
-    public static class FilesEncodingHelper
+    public static class FilesContentHelper
     {
+        public static string ReadAllText(string fullName)
+        {
+            byte[] contents;
+
+            using (var fileStream = new FileStream(fullName, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+            {
+                var fsLen = (int)fileStream.Length;
+                contents = new byte[fsLen];
+                fileStream.Read(contents, 0, contents.Length);
+            }
+
+            var bom = new byte[4];
+            for (int index = 0; index < contents.Length && index < 4; index++)
+            {
+                bom[index] = contents[index];
+            }
+
+            var encoding = GetEncoding(bom);
+
+            return encoding.GetString(contents);
+        }
+
         /// <summary>
         /// Determines a text file's encoding by analyzing its byte order mark (BOM).
         /// Defaults to ASCII when detection of the text file's endianness fails.
         /// </summary>
         /// <param name="filename">The text file to analyze.</param>
         /// <returns>The detected encoding.</returns>
-        public static Encoding GetEncoding(string filename)
+        static Encoding GetEncoding(byte[] bom)
         {
-            // Read the BOM
-            var bom = new byte[4];
-            using (var file = new FileStream(filename, FileMode.Open, FileAccess.Read))
-            {
-                file.Read(bom, 0, 4);
-            }
-
             // Analyze the BOM
             if (bom[0] == 0x2b && bom[1] == 0x2f && bom[2] == 0x76) return Encoding.UTF7;
             if (bom[0] == 0xef && bom[1] == 0xbb && bom[2] == 0xbf) return Encoding.UTF8;
