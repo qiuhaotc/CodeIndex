@@ -37,6 +37,25 @@ namespace CodeIndex.IndexBuilder
             }
         }
 
+        internal static List<(string FilePath, DateTime LastWriteTimeUtc)> GetAllIndexedCodeSource(string luceneIndex)
+        {
+            try
+            {
+                readWriteLock.AcquireReaderLock(Constants.ReadWriteLockTimeOutMilliseconds);
+
+                var searcher = CreateOrGetIndexSearcher(luceneIndex);
+                var query = new MatchAllDocsQuery();
+                var filter = new FieldValueFilter(nameof(CodeSource.FilePath));
+                var hits = searcher.Search(query, filter, int.MaxValue).ScoreDocs;
+
+                return hits.Select(hit => searcher.Doc(hit.Doc)).Select(u => (u.Get(nameof(CodeSource.FilePath)), new DateTime(long.Parse(u.Get(nameof(CodeSource.LastWriteTimeUtc)))))).ToList();
+            }
+            finally
+            {
+                readWriteLock.ReleaseReaderLock();
+            }
+        }
+
         internal static void DeleteIndex(string luceneIndex, params Query[] searchQueries)
         {
             try

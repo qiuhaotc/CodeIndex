@@ -1,7 +1,7 @@
 ﻿using CodeIndex.Common;
 using NUnit.Framework;
 
-namespace CodeIndex.Test.Common
+namespace CodeIndex.Test
 {
     public class StorageTest
     {

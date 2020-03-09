@@ -5,7 +5,7 @@ using Lucene.Net.Analysis;
 using Lucene.Net.Analysis.TokenAttributes;
 using NUnit.Framework;
 
-namespace CodeIndex.Test.IndexBuilder
+namespace CodeIndex.Test
 {
     public class CodeAnalyzerTest
     {

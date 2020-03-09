@@ -303,7 +303,7 @@ namespace CodeIndex.MaintainIndex
             }
         }
 
-        Term GetNoneTokenizeFieldTerm(string fieldName, string termValue)
+        public static Term GetNoneTokenizeFieldTerm(string fieldName, string termValue)
         {
             return new Term($"{fieldName}{Constants.NoneTokenizeFieldSuffix}", termValue);
         }

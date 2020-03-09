@@ -1,4 +1,5 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using CodeIndex.Common;
 using Lucene.Net.Documents;
 using Lucene.Net.Index;
@@ -9,24 +10,33 @@ namespace CodeIndex.IndexBuilder
 {
     public static class CodeIndexBuilder
     {
-        public static void BuildIndex(string luceneIndex, bool triggerMerge, bool applyAllDeletes, bool needFlush, IEnumerable<CodeSource> codeSources)
+        public static void BuildIndex(string luceneIndex, bool triggerMerge, bool applyAllDeletes, bool needFlush, IEnumerable<CodeSource> codeSources, bool deleteExistIndex = true, ILog log = null)
         {
             luceneIndex.RequireNotNullOrEmpty(nameof(luceneIndex));
             codeSources.RequireNotNull(nameof(codeSources));
-            var indexExist = IndexExists(luceneIndex);
+            var needDeleteExistIndex = deleteExistIndex && IndexExists(luceneIndex);
             var documents = new List<Document>();
             foreach (var source in codeSources)
             {
-                if (indexExist)
+                if (needDeleteExistIndex)
                 {
                     DeleteIndex(luceneIndex, new Term(nameof(CodeSource.FilePath) + Constants.NoneTokenizeFieldSuffix, source.FilePath));
                 }
 
                 var doc = GetDocumentFromSource(source);
                 documents.Add(doc);
+
+                log?.Info($"Add index For {source.FilePath}");
             }
 
+            log?.Info($"Build index start");
             LucenePool.BuildIndex(luceneIndex, triggerMerge, applyAllDeletes, documents, needFlush);
+            log?.Info($"Build index finished");
+        }
+
+        public static List<(string FilePath, DateTime LastWriteTimeUtc)> GetAllIndexedCodeSource(string luceneIndex)
+        {
+            return LucenePool.GetAllIndexedCodeSource(luceneIndex);
         }
 
         public static void DeleteIndex(string luceneIndex, params Query[] searchQueries)

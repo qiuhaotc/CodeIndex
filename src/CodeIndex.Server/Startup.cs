@@ -1,5 +1,4 @@
 using System;
-using System.IO;
 using System.Linq;
 using System.Net.Http;
 using CodeIndex.Common;
@@ -28,11 +27,6 @@ namespace CodeIndex.Server
         // For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=398940
         public void ConfigureServices(IServiceCollection services)
         {
-            if (File.Exists("Nlog.config") && NLog.LogManager.Configuration == null)
-            {
-                NLog.LogManager.Configuration = new NLog.Config.XmlLoggingConfiguration("Nlog.config");
-            }
-
             services.AddMvc();
             services.AddRazorPages();
             services.AddServerSideBlazor();
@@ -87,7 +81,7 @@ namespace CodeIndex.Server
             System.Threading.Tasks.Task.Run(() => {
                 try
                 {
-                    var initializer = new IndexInitializer(log);
+                    initializer = new IndexInitializer(log);
                     initializer.InitializeIndex(MonitorFolder, LuceneIndex, new[] { ".dll", ".pbd" }, new[] { "DEBUG/", "RELEASE/", "RELEASES/", "BIN/", "OBJ/", "LOG/", "DEBUGPUBLIC/" }, "*", new[] { ".cs", ".xml", ".xaml", ".js", ".txt" });
 
                     log.Info("Initialize complete");
@@ -103,6 +97,7 @@ namespace CodeIndex.Server
             });
         }
 
+        IndexInitializer initializer;
         CodeFilesIndexMaintainer maintainer;
 
         void OnShutdown()
