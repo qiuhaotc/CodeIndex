@@ -34,7 +34,7 @@ namespace CodeIndex.Test
 
             initializer.InitializeIndex(codeFilePath, TempIndexDir, Array.Empty<string>(), Array.Empty<string>());
 
-            StringAssert.Contains("Compare index different", log.LogsContent);
+            StringAssert.Contains("Compare index difference", log.LogsContent);
             StringAssert.Contains($"File {Path.Combine(codeFilePath, "A.txt")} modified", log.LogsContent);
             StringAssert.Contains($"File {Path.Combine(codeFilePath, "Sub", "B.txt")} deleted", log.LogsContent);
             StringAssert.Contains($"Found new file {Path.Combine(codeFilePath, "C.txt")}", log.LogsContent);

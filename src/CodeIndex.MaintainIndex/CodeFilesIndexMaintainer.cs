@@ -40,6 +40,8 @@ namespace CodeIndex.MaintainIndex
             {
                 SaveLuceneResultsWhenNeeded(tokenSource.Token);
             }, tokenSource.Token);
+
+            log?.Info("Start monitoring files change");
         }
 
         public void Dispose()

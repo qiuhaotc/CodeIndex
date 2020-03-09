@@ -21,6 +21,8 @@ namespace CodeIndex.MaintainIndex
         {
             codeFolder.RequireNotNull(nameof(codeFolder));
             luceneIndex.RequireNotNull(nameof(luceneIndex));
+            
+            log?.Info("Initialize start");
 
             var allFiles = FilesFetcher.FetchAllFiles(codeFolder, excludedExtensions, excludedPaths, includedExtenstion, includedExtensions).ToList();
             List<FileInfo> needToBuildIndex = null;
@@ -34,7 +36,7 @@ namespace CodeIndex.MaintainIndex
                 }
                 else
                 {
-                    log?.Info("Compare index different");
+                    log?.Info("Compare index difference");
 
                     var allCodeSource = CodeIndexBuilder.GetAllIndexedCodeSource(luceneIndex);
                     needToBuildIndex = new List<FileInfo>();
@@ -81,7 +83,7 @@ namespace CodeIndex.MaintainIndex
 
             LucenePool.SaveResultsAndClearLucenePool(luceneIndex);
 
-            log?.Info("Index initialized");
+            log?.Info("Initialize finished");
         }
     }
 }
