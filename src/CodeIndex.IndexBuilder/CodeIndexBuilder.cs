@@ -1,6 +1,8 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.IO;
 using CodeIndex.Common;
+using CodeIndex.Files;
 using Lucene.Net.Documents;
 using Lucene.Net.Index;
 using Lucene.Net.Search;
@@ -10,12 +12,62 @@ namespace CodeIndex.IndexBuilder
 {
     public static class CodeIndexBuilder
     {
+        public static void BuildIndex(string luceneIndex, bool triggerMerge, bool applyAllDeletes, bool needFlush, IEnumerable<FileInfo> fileInfos, bool deleteExistIndex, ILog log, out List<FileInfo> failedIndexFiles, int batchSize = 1000)
+        {
+            luceneIndex.RequireNotNullOrEmpty(nameof(luceneIndex));
+            fileInfos.RequireNotNull(nameof(fileInfos));
+            batchSize.RequireRange(nameof(batchSize), int.MaxValue, 50);
+
+            var needDeleteExistIndex = deleteExistIndex && IndexExists(luceneIndex);
+            var documents = new List<Document>();
+            failedIndexFiles = new List<FileInfo>();
+
+            foreach (var fileInfo in fileInfos)
+            {
+                try
+                {
+                    if (fileInfo.Exists)
+                    {
+                        var source = CodeSource.GetCodeSource(fileInfo, FilesContentHelper.ReadAllText(fileInfo.FullName));
+
+                        if (needDeleteExistIndex)
+                        {
+                            DeleteIndex(luceneIndex, new Term(nameof(CodeSource.FilePath) + Constants.NoneTokenizeFieldSuffix, source.FilePath));
+                        }
+
+                        var doc = GetDocumentFromSource(source);
+                        documents.Add(doc);
+
+                        log?.Info($"Add index For {source.FilePath}");
+                    }
+                }
+                catch (Exception ex)
+                {
+                    failedIndexFiles.Add(fileInfo);
+                    log?.Error($"Add index for {fileInfo.FullName} failed, exception: " + ex.ToString());
+                }
+
+                if (documents.Count >= batchSize)
+                {
+                    BuildIndex(luceneIndex, triggerMerge, applyAllDeletes, documents, needFlush, log);
+                    documents.Clear();
+                }
+            }
+
+            if(documents.Count > 0)
+            {
+                BuildIndex(luceneIndex, triggerMerge, applyAllDeletes, documents, needFlush, log);
+            }
+        }
+
         public static void BuildIndex(string luceneIndex, bool triggerMerge, bool applyAllDeletes, bool needFlush, IEnumerable<CodeSource> codeSources, bool deleteExistIndex = true, ILog log = null)
         {
             luceneIndex.RequireNotNullOrEmpty(nameof(luceneIndex));
             codeSources.RequireNotNull(nameof(codeSources));
+
             var needDeleteExistIndex = deleteExistIndex && IndexExists(luceneIndex);
             var documents = new List<Document>();
+
             foreach (var source in codeSources)
             {
                 if (needDeleteExistIndex)
@@ -29,7 +81,12 @@ namespace CodeIndex.IndexBuilder
                 log?.Info($"Add index For {source.FilePath}");
             }
 
-            log?.Info($"Build index start");
+            BuildIndex(luceneIndex, triggerMerge, applyAllDeletes, documents, needFlush, log);
+        }
+
+        static void BuildIndex(string luceneIndex, bool triggerMerge, bool applyAllDeletes, List<Document> documents, bool needFlush, ILog log)
+        {
+            log?.Info($"Build index start, documents count {documents.Count}");
             LucenePool.BuildIndex(luceneIndex, triggerMerge, applyAllDeletes, documents, needFlush);
             log?.Info($"Build index finished");
         }

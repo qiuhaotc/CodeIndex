@@ -21,7 +21,7 @@ namespace CodeIndex.Test
 
             var log = new DummyLog();
             var initializer = new IndexInitializer(log);
-            initializer.InitializeIndex(codeFilePath, TempIndexDir, Array.Empty<string>(), Array.Empty<string>());
+            initializer.InitializeIndex(codeFilePath, TempIndexDir, Array.Empty<string>(), Array.Empty<string>(), out _);
             StringAssert.Contains($"Create index {TempIndexDir}", log.LogsContent);
 
             var codeSources = CodeIndexBuilder.GetAllIndexedCodeSource(TempIndexDir);
@@ -32,7 +32,7 @@ namespace CodeIndex.Test
             File.AppendAllText(Path.Combine(codeFilePath, "A.txt"), "Now I have two apples");
             File.Delete(Path.Combine(codeFilePath, "Sub", "B.txt"));
 
-            initializer.InitializeIndex(codeFilePath, TempIndexDir, Array.Empty<string>(), Array.Empty<string>());
+            initializer.InitializeIndex(codeFilePath, TempIndexDir, Array.Empty<string>(), Array.Empty<string>(), out _);
 
             StringAssert.Contains("Compare index difference", log.LogsContent);
             StringAssert.Contains($"File {Path.Combine(codeFilePath, "A.txt")} modified", log.LogsContent);
@@ -53,7 +53,7 @@ namespace CodeIndex.Test
             File.WriteAllText(Path.Combine(codeFilePath, "B.txt"), "I have two apples");
 
             var initializer = new IndexInitializer(null);
-            initializer.InitializeIndex(codeFilePath, TempIndexDir, Array.Empty<string>(), Array.Empty<string>());
+            initializer.InitializeIndex(codeFilePath, TempIndexDir, Array.Empty<string>(), Array.Empty<string>(), out _);
 
             var codeSources = CodeIndexBuilder.GetAllIndexedCodeSource(TempIndexDir);
             Assert.AreEqual(2, codeSources.Count);

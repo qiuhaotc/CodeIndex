@@ -1,4 +1,5 @@
 using System;
+using System.IO;
 using System.Linq;
 using CodeIndex.Common;
 using CodeIndex.IndexBuilder;
@@ -175,6 +176,17 @@ namespace CodeIndex.Test
             CodeIndexBuilder.UpdateCodeFilePath(document, "BBB/DDD/", "AAA/EEE/");
             Assert.AreEqual(@"AAA/EEE/1.txt", document.Get(nameof(CodeSource.FilePath)));
             Assert.AreEqual(@"AAA/EEE/1.txt", document.Get(nameof(CodeSource.FilePath) + Constants.NoneTokenizeFieldSuffix));
+        }
+
+        [Test]
+        public void TestBuildIndex_ReturnFailedFiles()
+        {
+            File.WriteAllText(Path.Combine(TempDir, "A.txt"), "ABCD");
+            CodeIndexBuilder.BuildIndex(TempIndexDir, true, true, true, new[] { new FileInfo(Path.Combine(TempDir, "A.txt")) }, false, new DummyLog { ThrowExceptionWhenLogContains = "Add index For " + Path.Combine(TempDir, "A.txt") }, out var failedIndexFiles);
+            Assert.AreEqual(1, failedIndexFiles.Count);
+
+            CodeIndexBuilder.BuildIndex(TempIndexDir, true, true, true, new[] { new FileInfo(Path.Combine(TempDir, "A.txt")), new FileInfo("BlaBla\\a.txt") }, false, null, out failedIndexFiles);
+            Assert.AreEqual(0, failedIndexFiles.Count);
         }
 
         void BuildIndex()

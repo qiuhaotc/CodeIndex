@@ -82,9 +82,9 @@ namespace CodeIndex.Server
                 try
                 {
                     initializer = new IndexInitializer(log);
-                    initializer.InitializeIndex(MonitorFolder, LuceneIndex, new[] { ".dll", ".pbd" }, new[] { "DEBUG/", "RELEASE/", "RELEASES/", "BIN/", "OBJ/", "LOG/", "DEBUGPUBLIC/" }, "*", new[] { ".cs", ".xml", ".xaml", ".js", ".txt" });
+                    initializer.InitializeIndex(MonitorFolder, LuceneIndex, new[] { ".dll", ".pbd" }, new[] { "DEBUG/", "RELEASE/", "RELEASES/", "BIN/", "OBJ/", "LOG/", "DEBUGPUBLIC/" }, out var failedIndexFiles, "*", new[] { ".cs", ".xml", ".xaml", ".js", ".txt" });
 
-                    maintainer = new CodeFilesIndexMaintainer(MonitorFolder, LuceneIndex, new[] { ".dll", ".pbd" }, new[] { "DEBUG/", "RELEASE/", "RELEASES/", "BIN/", "OBJ/", "LOG/", "DEBUGPUBLIC/" }, 300, new[] { ".cs", ".xml", ".xaml", ".js", ".txt" }, log);
+                    maintainer = new CodeFilesIndexMaintainer(MonitorFolder, LuceneIndex, new[] { ".dll", ".pbd" }, new[] { "DEBUG/", "RELEASE/", "RELEASES/", "BIN/", "OBJ/", "LOG/", "DEBUGPUBLIC/" }, 300, new[] { ".cs", ".xml", ".xaml", ".js", ".txt" }, log, failedIndexFiles);
                 }
                 catch (Exception ex)
                 {

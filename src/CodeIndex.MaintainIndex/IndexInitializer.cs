@@ -17,7 +17,7 @@ namespace CodeIndex.MaintainIndex
             this.log = log;
         }
 
-        public void InitializeIndex(string codeFolder, string luceneIndex, string[] excludedExtensions, string[] excludedPaths, string includedExtenstion = "*", string[] includedExtensions = null, bool forceDeleteAllIndex = false)
+        public void InitializeIndex(string codeFolder, string luceneIndex, string[] excludedExtensions, string[] excludedPaths, out List<FileInfo> failedIndexFiles, string includedExtenstion = "*", string[] includedExtensions = null, bool forceDeleteAllIndex = false)
         {
             codeFolder.RequireNotNull(nameof(codeFolder));
             luceneIndex.RequireNotNull(nameof(luceneIndex));
@@ -78,8 +78,7 @@ namespace CodeIndex.MaintainIndex
                 Directory.CreateDirectory(luceneIndex);
             }
 
-            // TODO: Add retry logic like maintainer
-            CodeIndexBuilder.BuildIndex(luceneIndex, true, true, true, (needToBuildIndex ?? allFiles).Select(u => CodeSource.GetCodeSource(u, FilesContentHelper.ReadAllText(u.FullName))), false, log);
+            CodeIndexBuilder.BuildIndex(luceneIndex, true, true, true, needToBuildIndex ?? allFiles, false, log, out failedIndexFiles);
 
             LucenePool.SaveResultsAndClearLucenePool(luceneIndex);
 

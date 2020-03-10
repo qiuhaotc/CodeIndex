@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Concurrent;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -15,7 +16,7 @@ namespace CodeIndex.MaintainIndex
 {
     public class CodeFilesIndexMaintainer : IDisposable
     {
-        public CodeFilesIndexMaintainer(string watchPath, string luceneIndex, string[] excludedExtensions, string[] excludedPaths, int saveIntervalSeconds = 300, string[] includedExtensions = null, ILog log = null)
+        public CodeFilesIndexMaintainer(string watchPath, string luceneIndex, string[] excludedExtensions, string[] excludedPaths, int saveIntervalSeconds = 300, string[] includedExtensions = null, ILog log = null, List<FileInfo> initalizeFailedFiles = null)
         {
             watchPath.RequireNotNullOrEmpty(nameof(watchPath));
             excludedExtensions.RequireNotNull(nameof(watchPath));
@@ -30,6 +31,21 @@ namespace CodeIndex.MaintainIndex
             this.log = log;
             FileSystemWatcher = FilesWatcherHelper.StartWatch(watchPath, OnFileChange, RenamedEventHandler);
             tokenSource = new CancellationTokenSource();
+
+            if (initalizeFailedFiles?.Count > 0)
+            {
+                var retryDate = DateTime.UtcNow.AddDays(-1);
+
+                foreach (var failedFiles in initalizeFailedFiles)
+                {
+                    pendingRetryCodeSources.Enqueue(new PendingRetrySource
+                    {
+                        ChangesType = WatcherChangeTypes.Created,
+                        FilePath = failedFiles.FullName,
+                        LastRetryUTCDate = retryDate
+                    });
+                }
+            }
 
             Task.Run(() =>
             {
@@ -81,11 +97,9 @@ namespace CodeIndex.MaintainIndex
                         break;
 
                     case WatcherChangeTypes.Deleted:
-                        CodeIndexBuilder.DeleteIndex(luceneIndex, GetNoneTokenizeFieldTerm(nameof(CodeSource.FilePath), e.FullPath));
+                        DeleteIndex(e.FullPath);
                         break;
                 }
-
-                pendingChanges++;
             }
         }
 
@@ -101,8 +115,6 @@ namespace CodeIndex.MaintainIndex
                         FileRenamed(e.OldFullPath, e.FullPath);
                         break;
                 }
-
-                pendingChanges++;
             }
         }
 
@@ -121,6 +133,11 @@ namespace CodeIndex.MaintainIndex
                 excluded = excludedPaths.Any(u => e.FullPath.ToUpperInvariant().Contains(u));
             }
 
+            if (excluded)
+            {
+                log?.Info($"{e.FullPath} is excluded from index");
+            }
+
             return excluded;
         }
 
@@ -137,11 +154,16 @@ namespace CodeIndex.MaintainIndex
                     {
                         var content = FilesContentHelper.ReadAllText(fullPath);
                         CodeIndexBuilder.BuildIndex(luceneIndex, false, false, false, new[] { CodeSource.GetCodeSource(fileInfo, content) });
+                        pendingChanges++;
                     }
                 }
                 catch (IOException)
                 {
                     HandleFileLoadException(fullPath, WatcherChangeTypes.Created, pendingRetrySource);
+                }
+                catch (Exception ex)
+                {
+                    log?.Error(ex.ToString());
                 }
             }
         }
@@ -161,47 +183,72 @@ namespace CodeIndex.MaintainIndex
                         // TODO: When Date Not Change, Not Update
                         var document = CodeIndexBuilder.GetDocumentFromSource(CodeSource.GetCodeSource(fileInfo, content));
                         CodeIndexBuilder.UpdateIndex(luceneIndex, GetNoneTokenizeFieldTerm(nameof(CodeSource.FilePath), fullPath), document);
+                        pendingChanges++;
                     }
                 }
                 catch (IOException)
                 {
                     HandleFileLoadException(fullPath, WatcherChangeTypes.Changed, pendingRetrySource);
                 }
+                catch (Exception ex)
+                {
+                    log?.Error(ex.ToString());
+                }
+            }
+        }
+
+        void DeleteIndex(string fullPath)
+        {
+            try
+            {
+                CodeIndexBuilder.DeleteIndex(luceneIndex, GetNoneTokenizeFieldTerm(nameof(CodeSource.FilePath), fullPath));
+                pendingChanges++;
+            }
+            catch (Exception ex)
+            {
+                log?.Error(ex.ToString());
             }
         }
 
         void FileRenamed(string oldFullPath, string fullPath, PendingRetrySource pendingRetrySource = null)
         {
-            if (IsFile(fullPath))
+            try
             {
-                CodeIndexBuilder.DeleteIndex(luceneIndex, GetNoneTokenizeFieldTerm(nameof(CodeSource.FilePath), oldFullPath));
-
-                var fileInfo = new FileInfo(fullPath);
-                try
+                if (IsFile(fullPath))
                 {
-                    if (fileInfo.Exists)
+                    var fileInfo = new FileInfo(fullPath);
+
+                    try
                     {
-                        var content = FilesContentHelper.ReadAllText(fullPath);
-                        var document = CodeIndexBuilder.GetDocumentFromSource(CodeSource.GetCodeSource(fileInfo, content));
-                        // TODO: When Date Not Change, Not Update
-                        CodeIndexBuilder.UpdateIndex(luceneIndex, GetNoneTokenizeFieldTerm(nameof(CodeSource.FilePath), oldFullPath), document);
+                        if (fileInfo.Exists)
+                        {
+                            var content = FilesContentHelper.ReadAllText(fullPath);
+                            var document = CodeIndexBuilder.GetDocumentFromSource(CodeSource.GetCodeSource(fileInfo, content));
+                            CodeIndexBuilder.UpdateIndex(luceneIndex, GetNoneTokenizeFieldTerm(nameof(CodeSource.FilePath), oldFullPath), document);
+                            pendingChanges++;
+                        }
+                    }
+                    catch (IOException)
+                    {
+                        HandleFileLoadException(fullPath, WatcherChangeTypes.Renamed, pendingRetrySource, oldFullPath);
                     }
                 }
-                catch (IOException)
+                else if (IsDirectory(fullPath))
                 {
-                    HandleFileLoadException(fullPath, WatcherChangeTypes.Renamed, pendingRetrySource, oldFullPath);
+                    // Rebuild All Sub Directory Index File, rename the index path
+                    var term = new PrefixQuery(GetNoneTokenizeFieldTerm(nameof(CodeSource.FilePath), oldFullPath));
+                    var docs = CodeIndexSearcher.Search(luceneIndex, term, int.MaxValue);
+                    foreach (var doc in docs)
+                    {
+                        CodeIndexBuilder.UpdateCodeFilePath(doc, oldFullPath, fullPath);
+                        CodeIndexBuilder.UpdateIndex(luceneIndex, new Term(nameof(CodeSource.CodePK), doc.Get(nameof(CodeSource.CodePK))), doc);
+                        pendingChanges++;
+                    }
                 }
             }
-            else if (IsDirectory(fullPath))
+            catch (Exception ex)
             {
-                // Rebuild All Sub Directory Index File, rename the index path
-                var term = new PrefixQuery(GetNoneTokenizeFieldTerm(nameof(CodeSource.FilePath), oldFullPath));
-                var docs = CodeIndexSearcher.Search(luceneIndex, term, int.MaxValue);
-                foreach (var doc in docs)
-                {
-                    CodeIndexBuilder.UpdateCodeFilePath(doc, oldFullPath, fullPath);
-                    CodeIndexBuilder.UpdateIndex(luceneIndex, new Term(nameof(CodeSource.CodePK), doc.Get(nameof(CodeSource.CodePK))), doc);
-                }
+                log?.Error(ex.ToString());
             }
         }
 
@@ -294,9 +341,10 @@ namespace CodeIndex.MaintainIndex
 
                 if (pendingChanges > 100 || (DateTime.UtcNow - lastSaveDate).Seconds >= saveIntervalSeconds)
                 {
-                    LucenePool.SaveResultsAndClearLucenePool(luceneIndex);
                     pendingChanges = 0;
+                    LucenePool.SaveResultsAndClearLucenePool(luceneIndex);
                     lastSaveDate = DateTime.UtcNow;
+                    log?.Info($"Save all pending changes successful");
                 }
                 else
                 {
