@@ -53,18 +53,23 @@ namespace CodeIndex.Server.Controllers
 
                 var queryForContent = string.IsNullOrWhiteSpace(contentQuery) ? null : generator.GetQueryFromStr(contentQuery);
 
+                if (!int.TryParse(config["MaxContentHighlightLength"], out var maxContentHighlightLength))
+                {
+                    maxContentHighlightLength = Constants.DefaultMaxContentHighlightLength;
+                }
+
                 if (preview)
                 {
                     foreach (var item in result.Result)
                     {
-                        item.Content = CodeIndexSearcher.GenerateHtmlPreviewText(queryForContent, item.Content, 30, generator.Analyzer);
+                        item.Content = CodeIndexSearcher.GenerateHtmlPreviewText(queryForContent, item.Content, 30, generator.Analyzer, maxContentHighlightLength: maxContentHighlightLength);
                     }
                 }
                 else if (!preview)
                 {
                     foreach (var item in result.Result)
                     {
-                        item.Content = CodeIndexSearcher.GenerateHtmlPreviewText(queryForContent, item.Content, int.MaxValue, generator.Analyzer, returnRawContentWhenResultIsEmpty: true);
+                        item.Content = CodeIndexSearcher.GenerateHtmlPreviewText(queryForContent, item.Content, int.MaxValue, generator.Analyzer, returnRawContentWhenResultIsEmpty: true, maxContentHighlightLength: maxContentHighlightLength);
                     }
                 }
 

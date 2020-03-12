@@ -9,5 +9,7 @@ namespace CodeIndex
         public const int ReadWriteLockTimeOutMilliseconds = 60000; // 60 seconds
 
         public const string NoneTokenizeFieldSuffix = "NoneTokenize";
+
+        public const int DefaultMaxContentHighlightLength = 3000000;
     }
 }

@@ -1,6 +1,7 @@
 ﻿@page "/"
 @inject HttpClient Client
 @inject CodeIndex.Common.Storage Storage
+@inject IConfiguration Config
 
 <div class="row">
     <div class="col-sm">
@@ -108,7 +109,9 @@
                     <tr>
                         <td>@item.FileName</td>
                         <td>@item.FileExtension</td>
-                        <td>@item.FilePath</td>
+                        <td>
+                            <a href="@Config["OpenIDEUriFormat"].Replace("{FilePath}", item.FilePath)" title="@item.FilePath">@item.FilePath?.SubStringSafe(item.FilePath.Length - 30, 30)</a>
+                        </td>
                         <td>@item.IndexDate</td>
                         <td>@item.LastWriteTimeUtc</td>
                         <td>

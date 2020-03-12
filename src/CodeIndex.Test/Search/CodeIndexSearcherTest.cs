@@ -108,6 +108,15 @@ It&#39;s <label class='highlight'>Abc</label>", result);
         }
 
         [Test]
+        public void TestGenerateHtmlPreviewText_ContentTooLong()
+        {
+            var generator = new QueryGenerator();
+            var content = "My ABC\r\nIs A ABC CONTENT\r\nIt's abc in lowercase\r\nIt's Abc in mix\r\nNot AB with C";
+            var result = CodeIndexSearcher.GenerateHtmlPreviewText(generator.GetQueryFromStr("ABC"), content, int.MaxValue, LucenePool.GetAnalyzer(), maxContentHighlightLength: 20);
+            Assert.AreEqual(@"Content is too long to highlight", result);
+        }
+
+        [Test]
         public void TestSearchCode()
         {
             CodeIndexBuilder.BuildIndex(TempIndexDir, true, true, true, new[] { new CodeSource

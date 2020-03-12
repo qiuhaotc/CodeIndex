@@ -4,7 +4,6 @@ using System.Linq;
 using CodeIndex.Common;
 using CodeIndex.Files;
 using CodeIndex.IndexBuilder;
-using Lucene.Net.Index;
 
 namespace CodeIndex.MaintainIndex
 {

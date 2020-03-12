@@ -20,27 +20,35 @@ namespace CodeIndex.Search
             return LucenePool.SearchCode(luceneIndex, query, maxResults);
         }
 
-        public static string GenerateHtmlPreviewText(Query query, string text, int length, Analyzer analyzer, string prefix = "<label class='highlight'>", string suffix = "</label>", bool returnRawContentWhenResultIsEmpty = false)
+        public static string GenerateHtmlPreviewText(Query query, string text, int length, Analyzer analyzer, string prefix = "<label class='highlight'>", string suffix = "</label>", bool returnRawContentWhenResultIsEmpty = false, int maxContentHighlightLength = Constants.DefaultMaxContentHighlightLength)
         {
             string result = null;
 
-            if(query != null)
+            if (text.Length <= maxContentHighlightLength) // For performance
             {
-                var scorer = new QueryScorer(query);
-                var formatter = new SimpleHTMLFormatter(CodeContentProcessing.HighLightPrefix, CodeContentProcessing.HighLightSuffix);
+                if (query != null)
+                {
+                    var scorer = new QueryScorer(query);
+                    var formatter = new SimpleHTMLFormatter(CodeContentProcessing.HighLightPrefix, CodeContentProcessing.HighLightSuffix);
 
-                var highlighter = new Highlighter(formatter, scorer);
-                highlighter.TextFragmenter = new SimpleFragmenter(length);
-                highlighter.MaxDocCharsToAnalyze = int.MaxValue;
+                    var highlighter = new Highlighter(formatter, scorer);
+                    highlighter.TextFragmenter = new SimpleFragmenter(length);
+                    highlighter.MaxDocCharsToAnalyze = maxContentHighlightLength;
 
-                var stream = analyzer.GetTokenStream(nameof(CodeSource.Content), new StringReader(text));
+                    var stream = analyzer.GetTokenStream(nameof(CodeSource.Content), new StringReader(text));
 
-                result = highlighter.GetBestFragments(stream, text, 3, "...");
+                    result = highlighter.GetBestFragments(stream, text, 3, "...");
+                }
+
+
+                result = string.IsNullOrEmpty(result) ?
+                        (returnRawContentWhenResultIsEmpty ? HttpUtility.HtmlEncode(text) : string.Empty)
+                        : HttpUtility.HtmlEncode(result).Replace(CodeContentProcessing.HighLightPrefix, prefix).Replace(CodeContentProcessing.HighLightSuffix, suffix);
             }
-
-            result = string.IsNullOrEmpty(result) ?
-                    (returnRawContentWhenResultIsEmpty ? HttpUtility.HtmlEncode(text) : string.Empty)
-                    : HttpUtility.HtmlEncode(result).Replace(CodeContentProcessing.HighLightPrefix, prefix).Replace(CodeContentProcessing.HighLightSuffix, suffix);
+            else
+            {
+                result = "Content is too long to highlight";
+            }
 
             return result;
         }
