@@ -1,8 +1,6 @@
 ﻿using System.Collections.Generic;
 using System.Linq;
 using CodeIndex.Common;
-using Lucene.Net.Analysis.Cn.Smart;
-using Lucene.Net.Analysis.Cn.Smart.Hhmm;
 
 namespace CodeIndex.IndexBuilder
 {
@@ -16,13 +14,13 @@ namespace CodeIndex.IndexBuilder
         /// </summary>
         /// <param name="sentence">input sentence</param>
         /// <param name="startOffset"> start offset of sentence</param>
-        /// <returns><see cref="IList{T}"/> of <see cref="SegToken"/>.</returns>
-        public virtual IList<SegToken> SegmentSentence(string sentence, int startOffset)
+        /// <returns><see cref="IList{T}"/> of <see cref="SimpleSegToken"/>.</returns>
+        public virtual IList<SimpleSegToken> SegmentSentence(string sentence, int startOffset)
         {
 
             var segTokenList = GetSegToken(sentence);
 
-            foreach (SegToken st in segTokenList)
+            foreach (SimpleSegToken st in segTokenList)
             {
                 ConvertSegToken(st, sentence, startOffset);
             }
@@ -31,9 +29,9 @@ namespace CodeIndex.IndexBuilder
         }
 
 
-        List<SegToken> emptySegTokenList = new List<SegToken>();
+        List<SimpleSegToken> emptySegTokenList = new List<SimpleSegToken>();
 
-        IList<SegToken> GetSegToken(string sentence)
+        IList<SimpleSegToken> GetSegToken(string sentence)
         {
             var segTokenList = emptySegTokenList;
 
@@ -41,7 +39,7 @@ namespace CodeIndex.IndexBuilder
             {
                 var charArray = sentence.ToCharArray();
 
-                segTokenList = new List<SegToken>();
+                segTokenList = new List<SimpleSegToken>();
                 var length = 0;
                 var startIndex = -1;
 
@@ -54,7 +52,7 @@ namespace CodeIndex.IndexBuilder
                         {
                             AddSegTokenIfNeeded();
 
-                            segTokenList.Add(new SegToken(charArray, index, index + 1, WordType.STRING, 0));
+                            segTokenList.Add(new SimpleSegToken(charArray, index, index + 1));
                         }
                         else
                         {
@@ -78,7 +76,7 @@ namespace CodeIndex.IndexBuilder
                 {
                     if (length > 0)
                     {
-                        segTokenList.Add(new SegToken(charArray, startIndex, startIndex + length, WordType.STRING, 0));
+                        segTokenList.Add(new SimpleSegToken(charArray, startIndex, startIndex + length));
                         length = 0;
                         startIndex = -1;
                     }
@@ -88,7 +86,7 @@ namespace CodeIndex.IndexBuilder
             return segTokenList;
         }
 
-        public virtual SegToken ConvertSegToken(SegToken st, string sentence,
+        public virtual SimpleSegToken ConvertSegToken(SimpleSegToken st, string sentence,
             int sentenceStartOffset)
         {
 

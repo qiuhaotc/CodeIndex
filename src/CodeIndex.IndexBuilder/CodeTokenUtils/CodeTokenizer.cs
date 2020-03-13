@@ -2,7 +2,6 @@
 using System.Globalization;
 using System.IO;
 using ICU4N.Text;
-using Lucene.Net.Analysis.Cn.Smart.Hhmm;
 using Lucene.Net.Analysis.TokenAttributes;
 using Lucene.Net.Analysis.Util;
 
@@ -18,15 +17,13 @@ namespace CodeIndex.IndexBuilder
 
         readonly ICharTermAttribute termAtt;
         readonly IOffsetAttribute offsetAtt;
-        readonly ITypeAttribute typeAtt;
 
-        IEnumerator<SegToken> tokens;
+        IEnumerator<SimpleSegToken> tokens;
 
         public CodeTokenizer(TextReader reader) : base(AttributeFactory.DEFAULT_ATTRIBUTE_FACTORY, reader, (BreakIterator)sentenceProto.Clone())
         {
             termAtt = AddAttribute<ICharTermAttribute>();
             offsetAtt = AddAttribute<IOffsetAttribute>();
-            typeAtt = AddAttribute<ITypeAttribute>();
         }
 
         protected override void SetNextSentence(int sentenceStart, int sentenceEnd)
@@ -47,7 +44,6 @@ namespace CodeIndex.IndexBuilder
                 ClearAttributes();
                 termAtt.CopyBuffer(token.CharArray, 0, token.CharArray.Length);
                 offsetAtt.SetOffset(CorrectOffset(token.StartOffset), CorrectOffset(token.EndOffset));
-                typeAtt.Type = "word";
                 return true;
             }
         }
