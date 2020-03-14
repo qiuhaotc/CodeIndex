@@ -125,6 +125,12 @@ namespace CodeIndex.IndexBuilder
             }
         }
 
+        public static void SaveResultsAndClearLucenePool(CodeIndexConfiguration config)
+        {
+            SaveResultsAndClearLucenePool(config.LuceneIndexForCode);
+            SaveResultsAndClearLucenePool(config.LuceneIndexForHint);
+        }
+
         public static void SaveResultsAndClearLucenePool(string luceneIndex)
         {
             try
@@ -141,7 +147,7 @@ namespace CodeIndex.IndexBuilder
                     indexWriter.Dispose();
                 }
 
-                IndexSearcherPool.Clear();
+                IndexSearcherPool.TryRemove(luceneIndex, out _);
 
                 IndexGotChanged.AddOrUpdate(luceneIndex, u => 0, (u, v) => 0);
             }

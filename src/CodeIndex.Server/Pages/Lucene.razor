@@ -14,7 +14,7 @@
             <div class="input-group-prepend">
                 <span class="input-group-text" id="basic-addon1">Content</span>
             </div>
-            <input type="text" class="form-control" placeholder="Put Your Content Here" aria-label="Put Your Content Here" @bind-value="@ContentQuery" @bind-value:event="oninput" @onkeydown="@(async e => await KeyPress(e))" />
+            <input type="text" class="form-control" placeholder="Put Your Content Here" aria-label="Put Your Content Here" @bind-value="@ContentQuery" @bind-value:event="oninput" @onkeyup="@(async e => await KeyPressForContent(e))" />
         </div>
     </div>
 </div>
@@ -65,7 +65,7 @@
     </div>
 </div>
 <div class="row">
-    <div class="col-sm">
+    <div class="col-sm-4">
         <div class="input-group mb-3">
             @if (!FetchResult?.Status?.Success ?? false)
             {
@@ -83,6 +83,35 @@
             {
                 <div class="alert alert-info" role="alert">
                     Waiting For Search
+                </div>
+            }
+        </div>
+    </div>
+    <div class="col-sm-8">
+        <div class="input-group mb-3">
+            @if (!HintWords?.Status?.Success ?? false)
+            {
+                <div class="alert alert-danger" role="alert">
+                    @HintWords.Status.StatusDesc
+                </div>
+            }
+            else if (HintWords?.Status?.Success ?? false)
+            {
+                <div class="alert alert-success" role="alert">
+                    @if (HintWords.Result.Any())
+                    {
+                        <text>Find Hint: @string.Join(", ", HintWords.Result)</text>
+                    }
+                    else
+                    {
+                        <text>No hint</text>
+                    }
+                </div>
+            }
+            else
+            {
+                <div class="alert alert-info" role="alert">
+                    Wait Hint
                 </div>
             }
         </div>
@@ -149,6 +178,7 @@
 
 
     public FetchResult<IEnumerable<CodeSource>> FetchResult { get; set; }
+    public FetchResult<IEnumerable<string>> HintWords { get; set; }
 
     bool IsSearching;
 
@@ -212,6 +242,22 @@
         if (e.Key == "Enter")
         {
             await SearchLuceneIndex();
+        }
+    }
+
+    private async Task KeyPressForContent(KeyboardEventArgs e)
+    {
+        if (e.Key != "Enter" && ContentQuery != null && !ContentQuery.EndsWith(" "))
+        {
+            var inputWord = ContentQuery.Split(" ", StringSplitOptions.RemoveEmptyEntries).LastOrDefault();
+            if (inputWord?.Length >= 3)
+            {
+                HintWords = await Client.GetJsonAsync<FetchResult<IEnumerable<string>>>("api/lucene/GetHints?word=" + System.Web.HttpUtility.UrlEncode(inputWord));
+            }
+        }
+        else
+        {
+            await KeyPress(e);
         }
     }
 }

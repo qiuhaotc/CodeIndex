@@ -21,13 +21,15 @@ namespace CodeIndex.Server.Controllers
     [ApiController]
     public class LuceneController : ControllerBase
     {
-        public LuceneController(IConfiguration config, ILog log)
+        public LuceneController(IConfiguration config, CodeIndexConfiguration codeIndexConfiguration, ILog log)
         {
             this.config = config;
+            this.codeIndexConfiguration = codeIndexConfiguration;
             this.log = log;
         }
 
         readonly IConfiguration config;
+        readonly CodeIndexConfiguration codeIndexConfiguration;
         readonly ILog log;
 
         [HttpGet]
@@ -103,7 +105,7 @@ namespace CodeIndex.Server.Controllers
 
                 result = new FetchResult<IEnumerable<string>>
                 {
-                    Result = CodeIndexSearcher.GetHints(LuceneIndex, word),
+                    Result = CodeIndexSearcher.GetHints(codeIndexConfiguration.LuceneIndexForHint, word),
                     Status = new Status
                     {
                         Success = true
@@ -132,11 +134,10 @@ namespace CodeIndex.Server.Controllers
         CodeSource[] SearchCodeSource(string searchStr, out Query query, int showResults = 100)
         {
             query = generator.GetQueryFromStr(searchStr);
-            return CodeIndexSearcher.SearchCode(config["LuceneIndex"], query, showResults > 100 ? 100 : showResults);
+            return CodeIndexSearcher.SearchCode(codeIndexConfiguration.LuceneIndexForCode, query, showResults > 100 ? 100 : showResults);
         }
 
         static readonly QueryGenerator generator = new QueryGenerator();
-        string LuceneIndex => config["LuceneIndex"];
 
         [HttpGet]
         [Route(nameof(GetTokenizeStr))]

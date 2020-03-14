@@ -1,5 +1,6 @@
 ﻿using System;
 using System.IO;
+using CodeIndex.Common;
 using CodeIndex.IndexBuilder;
 using CodeIndex.Search;
 using NUnit.Framework;
@@ -8,12 +9,17 @@ namespace CodeIndex.Test
 {
     public class BaseTest
     {
-        protected const string IndexDirName = "CodeIndex";
         protected string TempDir { get; set; }
-        protected string TempIndexDir => Path.Combine(TempDir, IndexDirName);
+        string TempIndexDir => Path.Combine(TempDir, "IndexFolder");
+        public string MonitorFolder => Path.Combine(TempDir, "CodeFolder");
+        public CodeIndexConfiguration Config => new CodeIndexConfiguration
+        {
+            LuceneIndex = TempIndexDir,
+            MonitorFolder = MonitorFolder
+        };
 
         QueryGenerator generator;
-        protected QueryGenerator Generator => generator ?? (generator = new QueryGenerator());
+        protected QueryGenerator Generator => generator ??= new QueryGenerator();
 
         [SetUp]
         protected virtual void SetUp()
@@ -30,7 +36,7 @@ namespace CodeIndex.Test
         [TearDown]
         protected virtual void TearDown()
         {
-            LucenePool.SaveResultsAndClearLucenePool(TempIndexDir);
+            LucenePool.SaveResultsAndClearLucenePool(Config);
             DeleteAllFilesInTempDir(TempDir);
         }
 

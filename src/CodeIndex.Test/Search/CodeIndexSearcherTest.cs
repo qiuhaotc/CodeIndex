@@ -14,7 +14,7 @@ namespace CodeIndex.Test
         [Test]
         public void TestSearch_NewReader()
         {
-            CodeIndexBuilder.BuildIndex(TempIndexDir, true, true, true, new[] { new CodeSource
+            CodeIndexBuilder.BuildIndex(Config, true, true, true, new[] { new CodeSource
             {
                 FileName = "Dummy File 1",
                 FileExtension = "cs",
@@ -36,19 +36,19 @@ namespace CodeIndex.Test
                 Content = "Test Content" + Environment.NewLine + "A New Line For Test"
             }});
 
-            LucenePool.SaveResultsAndClearLucenePool(TempIndexDir);
+            LucenePool.SaveResultsAndClearLucenePool(Config.LuceneIndexForCode);
 
-            var results1 = CodeIndexSearcher.Search(TempIndexDir, new TermQuery(new Term(nameof(CodeSource.FileExtension), "cs")), 10);
+            var results1 = CodeIndexSearcher.Search(Config.LuceneIndexForCode, new TermQuery(new Term(nameof(CodeSource.FileExtension), "cs")), 10);
             Assert.That(results1.Length, Is.EqualTo(2));
 
-            var results2 = CodeIndexSearcher.Search(TempIndexDir, new TermQuery(new Term(nameof(CodeSource.FileExtension), "cs")), 1);
+            var results2 = CodeIndexSearcher.Search(Config.LuceneIndexForCode, new TermQuery(new Term(nameof(CodeSource.FileExtension), "cs")), 1);
             Assert.That(results2.Length, Is.EqualTo(1));
         }
 
         [Test]
         public void TestSearch_ReaderFromWriter()
         {
-            CodeIndexBuilder.BuildIndex(TempIndexDir, true, true, true, new[] { new CodeSource
+            CodeIndexBuilder.BuildIndex(Config, true, true, true, new[] { new CodeSource
             {
                 FileName = "Dummy File 1",
                 FileExtension = "cs",
@@ -70,7 +70,7 @@ namespace CodeIndex.Test
                 Content = "Test Content" + Environment.NewLine + "A New Line For Test"
             }});
 
-            var results = CodeIndexSearcher.Search(TempIndexDir, new TermQuery(new Term(nameof(CodeSource.FileExtension), "xml")), 10);
+            var results = CodeIndexSearcher.Search(Config.LuceneIndexForCode, new TermQuery(new Term(nameof(CodeSource.FileExtension), "xml")), 10);
             Assert.That(results.Length, Is.EqualTo(1));
         }
 
@@ -119,7 +119,7 @@ It&#39;s <label class='highlight'>Abc</label>", result);
         [Test]
         public void TestSearchCode()
         {
-            CodeIndexBuilder.BuildIndex(TempIndexDir, true, true, true, new[] { new CodeSource
+            CodeIndexBuilder.BuildIndex(Config, true, true, true, new[] { new CodeSource
             {
                 FileName = "Dummy File 1",
                 FileExtension = "cs",
@@ -127,7 +127,7 @@ It&#39;s <label class='highlight'>Abc</label>", result);
                 Content = "Test Content" + Environment.NewLine + "A New Line For Test"
             }});
 
-            var results = CodeIndexSearcher.SearchCode(TempIndexDir, new TermQuery(new Term(nameof(CodeSource.FileExtension), "cs")), 10);
+            var results = CodeIndexSearcher.SearchCode(Config.LuceneIndexForCode, new TermQuery(new Term(nameof(CodeSource.FileExtension), "cs")), 10);
             Assert.That(results.Length, Is.EqualTo(1));
         }
     }

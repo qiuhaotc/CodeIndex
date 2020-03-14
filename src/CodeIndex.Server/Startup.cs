@@ -34,6 +34,14 @@ namespace CodeIndex.Server
             services.AddSingleton<ILog>(new NLogger());
             services.AddScoped<Storage>();
 
+            config = new CodeIndexConfiguration
+            {
+                LuceneIndex = Configuration["LuceneIndex"],
+                MonitorFolder = Configuration["MonitorFolder"]
+            };
+
+            services.AddSingleton(config);
+
             // Server Side Blazor doesn't register HttpClient by default
             if (!services.Any(x => x.ServiceType == typeof(HttpClient)))
             {
@@ -82,9 +90,11 @@ namespace CodeIndex.Server
                 try
                 {
                     initializer = new IndexInitializer(log);
-                    initializer.InitializeIndex(MonitorFolder, LuceneIndex, new[] { ".dll", ".pbd" }, new[] { "DEBUG/", "RELEASE/", "RELEASES/", "BIN/", "OBJ/", "LOG/", "DEBUGPUBLIC/" }, out var failedIndexFiles, "*", new[] { ".cs", ".xml", ".xaml", ".js", ".txt" });
+                    maintainer = new CodeFilesIndexMaintainer(config, new[] { ".dll", ".pbd" }, new[] { "DEBUG/", "RELEASE/", "RELEASES/", "BIN/", "OBJ/", "LOG/", "DEBUGPUBLIC/" }, 300, new[] { ".cs", ".xml", ".xaml", ".js", ".txt" }, log);
+                    maintainer.StartWatch();
+                    initializer.InitializeIndex(config, new[] { ".dll", ".pbd" }, new[] { "DEBUG/", "RELEASE/", "RELEASES/", "BIN/", "OBJ/", "LOG/", "DEBUGPUBLIC/" }, out var failedIndexFiles, "*", new[] { ".cs", ".xml", ".xaml", ".js", ".txt" });
 
-                    maintainer = new CodeFilesIndexMaintainer(MonitorFolder, LuceneIndex, new[] { ".dll", ".pbd" }, new[] { "DEBUG/", "RELEASE/", "RELEASES/", "BIN/", "OBJ/", "LOG/", "DEBUGPUBLIC/" }, 300, new[] { ".cs", ".xml", ".xaml", ".js", ".txt" }, log, failedIndexFiles);
+                    maintainer.SetInitalizeFinishedToTrue(failedIndexFiles);
                 }
                 catch (Exception ex)
                 {
@@ -95,11 +105,12 @@ namespace CodeIndex.Server
 
         IndexInitializer initializer;
         CodeFilesIndexMaintainer maintainer;
+        CodeIndexConfiguration config;
 
         void OnShutdown()
         {
             maintainer?.Dispose();
-            LucenePool.SaveResultsAndClearLucenePool(Configuration.GetValue<string>("LuceneIndex"));
+            LucenePool.SaveResultsAndClearLucenePool(config);
         }
 
         string LuceneIndex => Configuration.GetValue<string>("LuceneIndex");

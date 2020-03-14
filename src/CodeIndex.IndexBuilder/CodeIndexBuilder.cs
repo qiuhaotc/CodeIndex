@@ -12,13 +12,13 @@ namespace CodeIndex.IndexBuilder
 {
     public static class CodeIndexBuilder
     {
-        public static void BuildIndex(string luceneIndex, bool triggerMerge, bool applyAllDeletes, bool needFlush, IEnumerable<FileInfo> fileInfos, bool deleteExistIndex, ILog log, out List<FileInfo> failedIndexFiles, int batchSize = 1000)
+        public static void BuildIndexByBatch(CodeIndexConfiguration config, bool triggerMerge, bool applyAllDeletes, bool needFlush, IEnumerable<FileInfo> fileInfos, bool deleteExistIndex, ILog log, out List<FileInfo> failedIndexFiles, int batchSize = 1000, bool needHint = true)
         {
-            luceneIndex.RequireNotNullOrEmpty(nameof(luceneIndex));
+            config.RequireNotNull(nameof(config));
             fileInfos.RequireNotNull(nameof(fileInfos));
             batchSize.RequireRange(nameof(batchSize), int.MaxValue, 50);
 
-            var needDeleteExistIndex = deleteExistIndex && IndexExists(luceneIndex);
+            var needDeleteExistIndex = deleteExistIndex && IndexExists(config.LuceneIndexForCode);
             var documents = new List<Document>();
             failedIndexFiles = new List<FileInfo>();
 
@@ -32,7 +32,12 @@ namespace CodeIndex.IndexBuilder
 
                         if (needDeleteExistIndex)
                         {
-                            DeleteIndex(luceneIndex, new Term(nameof(CodeSource.FilePath) + Constants.NoneTokenizeFieldSuffix, source.FilePath));
+                            DeleteIndex(config.LuceneIndexForCode, new Term(nameof(CodeSource.FilePath) + Constants.NoneTokenizeFieldSuffix, source.FilePath));
+                        }
+
+                        if (needHint)
+                        {
+                            WordsHintBuilder.AddWords(WordSegmenter.GetWords(source.Content));
                         }
 
                         var doc = GetDocumentFromSource(source);
@@ -49,30 +54,30 @@ namespace CodeIndex.IndexBuilder
 
                 if (documents.Count >= batchSize)
                 {
-                    BuildIndex(luceneIndex, triggerMerge, applyAllDeletes, documents, needFlush, log);
+                    BuildIndex(config, triggerMerge, applyAllDeletes, documents, needFlush, log);
                     documents.Clear();
                 }
             }
 
             if(documents.Count > 0)
             {
-                BuildIndex(luceneIndex, triggerMerge, applyAllDeletes, documents, needFlush, log);
+                BuildIndex(config, triggerMerge, applyAllDeletes, documents, needFlush, log);
             }
         }
 
-        public static void BuildIndex(string luceneIndex, bool triggerMerge, bool applyAllDeletes, bool needFlush, IEnumerable<CodeSource> codeSources, bool deleteExistIndex = true, ILog log = null)
+        public static void BuildIndex(CodeIndexConfiguration config, bool triggerMerge, bool applyAllDeletes, bool needFlush, IEnumerable<CodeSource> codeSources, bool deleteExistIndex = true, ILog log = null)
         {
-            luceneIndex.RequireNotNullOrEmpty(nameof(luceneIndex));
+            config.RequireNotNull(nameof(config));
             codeSources.RequireNotNull(nameof(codeSources));
 
-            var needDeleteExistIndex = deleteExistIndex && IndexExists(luceneIndex);
+            var needDeleteExistIndex = deleteExistIndex && IndexExists(config.LuceneIndexForCode);
             var documents = new List<Document>();
 
             foreach (var source in codeSources)
             {
                 if (needDeleteExistIndex)
                 {
-                    DeleteIndex(luceneIndex, new Term(nameof(CodeSource.FilePath) + Constants.NoneTokenizeFieldSuffix, source.FilePath));
+                    DeleteIndex(config.LuceneIndexForCode, new Term(nameof(CodeSource.FilePath) + Constants.NoneTokenizeFieldSuffix, source.FilePath));
                 }
 
                 var doc = GetDocumentFromSource(source);
@@ -81,18 +86,34 @@ namespace CodeIndex.IndexBuilder
                 log?.Info($"Add index For {source.FilePath}");
             }
 
-            BuildIndex(luceneIndex, triggerMerge, applyAllDeletes, documents, needFlush, log);
+            BuildIndex(config, triggerMerge, applyAllDeletes, documents, needFlush, log);
         }
 
-        static void BuildIndex(string luceneIndex, bool triggerMerge, bool applyAllDeletes, List<Document> documents, bool needFlush, ILog log)
+        static void BuildIndex(CodeIndexConfiguration config, bool triggerMerge, bool applyAllDeletes, List<Document> documents, bool needFlush, ILog log)
         {
             log?.Info($"Build index start, documents count {documents.Count}");
-            LucenePool.BuildIndex(luceneIndex, triggerMerge, applyAllDeletes, documents, needFlush);
+            LucenePool.BuildIndex(config.LuceneIndexForCode, triggerMerge, applyAllDeletes, documents, needFlush);
             log?.Info($"Build index finished");
+        }
+
+        public static void InitIndexFolderIfNeeded(CodeIndexConfiguration config, ILog log)
+        {
+            if (!System.IO.Directory.Exists(config.LuceneIndexForCode))
+            {
+                log?.Info($"Create index folder {config.LuceneIndexForCode}");
+                System.IO.Directory.CreateDirectory(config.LuceneIndexForCode);
+            }
+
+            if (!System.IO.Directory.Exists(config.LuceneIndexForHint))
+            {
+                log?.Info($"Create index folder {config.LuceneIndexForHint}");
+                System.IO.Directory.CreateDirectory(config.LuceneIndexForHint);
+            }
         }
 
         public static List<(string FilePath, DateTime LastWriteTimeUtc)> GetAllIndexedCodeSource(string luceneIndex)
         {
+            luceneIndex.RequireNotNullOrEmpty(nameof(luceneIndex));
             return LucenePool.GetAllIndexedCodeSource(luceneIndex);
         }
 
@@ -128,13 +149,18 @@ namespace CodeIndex.IndexBuilder
             return DirectoryReader.IndexExists(FSDirectory.Open(luceneIndex));
         }
 
-        public static void DeleteAllIndex(string luceneIndex)
+        public static void DeleteAllIndex(CodeIndexConfiguration config)
         {
-            luceneIndex.RequireNotNullOrEmpty(nameof(luceneIndex));
+            config.RequireNotNull(nameof(config));
 
-            if (IndexExists(luceneIndex))
+            if (IndexExists(config.LuceneIndexForCode))
             {
-                LucenePool.DeleteAllIndex(luceneIndex);
+                LucenePool.DeleteAllIndex(config.LuceneIndexForCode);
+            }
+
+            if (IndexExists(config.LuceneIndexForHint))
+            {
+                LucenePool.DeleteAllIndex(config.LuceneIndexForHint);
             }
         }
 

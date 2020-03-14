@@ -16,9 +16,9 @@ namespace CodeIndex.Test
         public void TestBuildIndex()
         {
             BuildIndex();
-            LucenePool.SaveResultsAndClearLucenePool(TempIndexDir);
+            LucenePool.SaveResultsAndClearLucenePool(Config.LuceneIndexForCode);
 
-            var result1 = CodeIndexSearcher.Search(TempIndexDir, Generator.GetQueryFromStr($"{nameof(CodeSource.FileName)}:\"Dummy File\""), 10);
+            var result1 = CodeIndexSearcher.Search(Config.LuceneIndexForCode, Generator.GetQueryFromStr($"{nameof(CodeSource.FileName)}:\"Dummy File\""), 10);
             Assert.That(result1.Length, Is.EqualTo(1));
             Assert.AreEqual(@"Dummy File", result1[0].Get(nameof(CodeSource.FileName)));
             Assert.AreEqual(@"cs", result1[0].Get(nameof(CodeSource.FileExtension)));
@@ -28,12 +28,12 @@ namespace CodeIndex.Test
             Assert.AreEqual(new DateTime(2020, 1, 1).Ticks, result1[0].GetField(nameof(CodeSource.IndexDate)).GetInt64Value());
 
             var generator = new QueryGenerator();
-            var result2 = CodeIndexSearcher.Search(TempIndexDir, generator.GetQueryFromStr("FFFF test"), 10);
+            var result2 = CodeIndexSearcher.Search(Config.LuceneIndexForCode, generator.GetQueryFromStr("FFFF test"), 10);
             Assert.That(result2.Length, Is.EqualTo(2));
             Assert.IsTrue(result2.Any(u => u.Get(nameof(CodeSource.FileName)) == "Dummy File"));
             Assert.IsTrue(result2.Any(u => u.Get(nameof(CodeSource.FileName)) == "A new File"));
 
-            var result3 = CodeIndexSearcher.Search(TempIndexDir, generator.GetQueryFromStr("FFFF"), 10);
+            var result3 = CodeIndexSearcher.Search(Config.LuceneIndexForCode, generator.GetQueryFromStr("FFFF"), 10);
             Assert.That(result3.Length, Is.EqualTo(1));
             Assert.IsTrue(result3.Any(u => u.Get(nameof(CodeSource.FileName)) == "A new File"));
         }
@@ -42,12 +42,12 @@ namespace CodeIndex.Test
         public void TestBuildIndex_DeleteOldIndexWithSamePath()
         {
             BuildIndex();
-            LucenePool.SaveResultsAndClearLucenePool(TempIndexDir);
+            LucenePool.SaveResultsAndClearLucenePool(Config.LuceneIndexForCode);
 
-            var result = CodeIndexSearcher.Search(TempIndexDir, Generator.GetQueryFromStr($"{nameof(CodeSource.FileName)}:\"Dummy File\""), 10);
+            var result = CodeIndexSearcher.Search(Config.LuceneIndexForCode, Generator.GetQueryFromStr($"{nameof(CodeSource.FileName)}:\"Dummy File\""), 10);
             Assert.AreEqual("Test Content" + Environment.NewLine + "A New Line For Test", result.Single().Get(nameof(CodeSource.Content)));
 
-            CodeIndexBuilder.BuildIndex(TempIndexDir, true, true, true, new[] { new CodeSource
+            CodeIndexBuilder.BuildIndex(Config, true, true, true, new[] { new CodeSource
             {
                 FileName = "Dummy File New",
                 FileExtension = "cs",
@@ -55,9 +55,9 @@ namespace CodeIndex.Test
                 Content = "ABC",
                 IndexDate = new DateTime(2020, 1, 1)
             }});
-            LucenePool.SaveResultsAndClearLucenePool(TempIndexDir);
+            LucenePool.SaveResultsAndClearLucenePool(Config.LuceneIndexForCode);
 
-            result = CodeIndexSearcher.Search(TempIndexDir, Generator.GetQueryFromStr($"{nameof(CodeSource.FileName)}:\"Dummy File New\""), 10);
+            result = CodeIndexSearcher.Search(Config.LuceneIndexForCode, Generator.GetQueryFromStr($"{nameof(CodeSource.FileName)}:\"Dummy File New\""), 10);
             Assert.AreEqual("ABC", result.Single().Get(nameof(CodeSource.Content)));
         }
 
@@ -65,20 +65,20 @@ namespace CodeIndex.Test
         public void TestDeleteIndex()
         {
             BuildIndex();
-            LucenePool.SaveResultsAndClearLucenePool(TempIndexDir);
+            LucenePool.SaveResultsAndClearLucenePool(Config.LuceneIndexForCode);
 
             var generator = new QueryGenerator();
-            var result = CodeIndexSearcher.Search(TempIndexDir, generator.GetQueryFromStr("FFFF test"), 10);
+            var result = CodeIndexSearcher.Search(Config.LuceneIndexForCode, generator.GetQueryFromStr("FFFF test"), 10);
             Assert.That(result.Length, Is.EqualTo(2));
 
-            CodeIndexBuilder.DeleteIndex(TempIndexDir, new Term(nameof(CodeSource.FileExtension), "xml"));
-            LucenePool.SaveResultsAndClearLucenePool(TempIndexDir);
-            result = CodeIndexSearcher.Search(TempIndexDir, generator.GetQueryFromStr("FFFF test"), 10);
+            CodeIndexBuilder.DeleteIndex(Config.LuceneIndexForCode, new Term(nameof(CodeSource.FileExtension), "xml"));
+            LucenePool.SaveResultsAndClearLucenePool(Config.LuceneIndexForCode);
+            result = CodeIndexSearcher.Search(Config.LuceneIndexForCode, generator.GetQueryFromStr("FFFF test"), 10);
             Assert.That(result.Length, Is.EqualTo(1));
 
-            CodeIndexBuilder.DeleteIndex(TempIndexDir, generator.GetQueryFromStr("Test"));
-            LucenePool.SaveResultsAndClearLucenePool(TempIndexDir);
-            result = CodeIndexSearcher.Search(TempIndexDir, generator.GetQueryFromStr("FFFF test"), 10);
+            CodeIndexBuilder.DeleteIndex(Config.LuceneIndexForCode, generator.GetQueryFromStr("Test"));
+            LucenePool.SaveResultsAndClearLucenePool(Config.LuceneIndexForCode);
+            result = CodeIndexSearcher.Search(Config.LuceneIndexForCode, generator.GetQueryFromStr("FFFF test"), 10);
             Assert.That(result.Length, Is.EqualTo(0));
         }
 
@@ -86,12 +86,12 @@ namespace CodeIndex.Test
         public void TestUpdateIndex()
         {
             BuildIndex();
-            LucenePool.SaveResultsAndClearLucenePool(TempIndexDir);
+            LucenePool.SaveResultsAndClearLucenePool(Config.LuceneIndexForCode);
 
-            var result = CodeIndexSearcher.Search(TempIndexDir, new TermQuery(new Term(nameof(CodeSource.FilePath) + Constants.NoneTokenizeFieldSuffix, @"D:\DDDD\A new Name.cs")), 10);
+            var result = CodeIndexSearcher.Search(Config.LuceneIndexForCode, new TermQuery(new Term(nameof(CodeSource.FilePath) + Constants.NoneTokenizeFieldSuffix, @"D:\DDDD\A new Name.cs")), 10);
             Assert.That(result.Length, Is.EqualTo(1));
 
-            CodeIndexBuilder.UpdateIndex(TempIndexDir, new Term(nameof(CodeSource.FilePath) + Constants.NoneTokenizeFieldSuffix, @"d:\dddd\a new name.cs"), CodeIndexBuilder.GetDocumentFromSource(new CodeSource()
+            CodeIndexBuilder.UpdateIndex(Config.LuceneIndexForCode, new Term(nameof(CodeSource.FilePath) + Constants.NoneTokenizeFieldSuffix, @"d:\dddd\a new name.cs"), CodeIndexBuilder.GetDocumentFromSource(new CodeSource()
             {
                 Content = "AAA",
                 FileExtension = "CCC",
@@ -100,12 +100,12 @@ namespace CodeIndex.Test
                 IndexDate = new DateTime(1999, 12, 31),
                 LastWriteTimeUtc = new DateTime(2000, 1, 1)
             }));
-            LucenePool.SaveResultsAndClearLucenePool(TempIndexDir);
+            LucenePool.SaveResultsAndClearLucenePool(Config.LuceneIndexForCode);
 
-            result = CodeIndexSearcher.Search(TempIndexDir, new TermQuery(new Term(nameof(CodeSource.FilePath) + Constants.NoneTokenizeFieldSuffix, @"d:\dddd\a new name.cs")), 10);
+            result = CodeIndexSearcher.Search(Config.LuceneIndexForCode, new TermQuery(new Term(nameof(CodeSource.FilePath) + Constants.NoneTokenizeFieldSuffix, @"d:\dddd\a new name.cs")), 10);
             Assert.That(result.Length, Is.EqualTo(0));
 
-            result = CodeIndexSearcher.Search(TempIndexDir, new TermQuery(new Term(nameof(CodeSource.FilePath) + Constants.NoneTokenizeFieldSuffix, "BBB")), 10);
+            result = CodeIndexSearcher.Search(Config.LuceneIndexForCode, new TermQuery(new Term(nameof(CodeSource.FilePath) + Constants.NoneTokenizeFieldSuffix, "BBB")), 10);
             Assert.That(result.Length, Is.EqualTo(1));
             Assert.AreEqual(@"DDD", result[0].Get(nameof(CodeSource.FileName)));
             Assert.AreEqual(@"CCC", result[0].Get(nameof(CodeSource.FileExtension)));
@@ -118,34 +118,34 @@ namespace CodeIndex.Test
         [Test]
         public void TestIndexExists()
         {
-            Assert.IsFalse(CodeIndexBuilder.IndexExists(TempIndexDir));
+            Assert.IsFalse(CodeIndexBuilder.IndexExists(Config.LuceneIndexForCode));
 
             BuildIndex();
 
-            Assert.IsFalse(CodeIndexBuilder.IndexExists(TempIndexDir));
+            Assert.IsFalse(CodeIndexBuilder.IndexExists(Config.LuceneIndexForCode));
 
-            LucenePool.SaveResultsAndClearLucenePool(TempIndexDir);
+            LucenePool.SaveResultsAndClearLucenePool(Config.LuceneIndexForCode);
 
-            Assert.IsTrue(CodeIndexBuilder.IndexExists(TempIndexDir));
+            Assert.IsTrue(CodeIndexBuilder.IndexExists(Config.LuceneIndexForCode));
         }
 
         [Test]
         public void TestDeleteAllIndex()
         {
             BuildIndex();
-            LucenePool.SaveResultsAndClearLucenePool(TempIndexDir);
-            Assert.AreEqual(1, CodeIndexSearcher.Search(TempIndexDir, Generator.GetQueryFromStr($"{nameof(CodeSource.FileName)}:\"Dummy File\""), 10).Length);
-            Assert.AreEqual(1, CodeIndexSearcher.Search(TempIndexDir, Generator.GetQueryFromStr($"{nameof(CodeSource.FileName)}:\"A new File\""), 10).Length);
+            LucenePool.SaveResultsAndClearLucenePool(Config.LuceneIndexForCode);
+            Assert.AreEqual(1, CodeIndexSearcher.Search(Config.LuceneIndexForCode, Generator.GetQueryFromStr($"{nameof(CodeSource.FileName)}:\"Dummy File\""), 10).Length);
+            Assert.AreEqual(1, CodeIndexSearcher.Search(Config.LuceneIndexForCode, Generator.GetQueryFromStr($"{nameof(CodeSource.FileName)}:\"A new File\""), 10).Length);
 
-            CodeIndexBuilder.DeleteAllIndex(TempIndexDir);
-            Assert.AreEqual(0, CodeIndexSearcher.Search(TempIndexDir, Generator.GetQueryFromStr($"{nameof(CodeSource.FileName)}:\"Dummy File\""), 10).Length);
-            Assert.AreEqual(0, CodeIndexSearcher.Search(TempIndexDir, Generator.GetQueryFromStr($"{nameof(CodeSource.FileName)}:\"A new File\""), 10).Length);
+            CodeIndexBuilder.DeleteAllIndex(Config);
+            Assert.AreEqual(0, CodeIndexSearcher.Search(Config.LuceneIndexForCode, Generator.GetQueryFromStr($"{nameof(CodeSource.FileName)}:\"Dummy File\""), 10).Length);
+            Assert.AreEqual(0, CodeIndexSearcher.Search(Config.LuceneIndexForCode, Generator.GetQueryFromStr($"{nameof(CodeSource.FileName)}:\"A new File\""), 10).Length);
         }
 
         [Test]
         public void TestGetDocument()
         {
-            CodeIndexBuilder.BuildIndex(TempIndexDir, true, true, true, new[] { new CodeSource
+            CodeIndexBuilder.BuildIndex(Config, true, true, true, new[] { new CodeSource
             {
                 FileName = "Dummy File 1",
                 FileExtension = "cs",
@@ -153,10 +153,10 @@ namespace CodeIndex.Test
                 Content = "Test Content" + Environment.NewLine + "A New Line For Test"
             }});
 
-            var result = CodeIndexBuilder.GetDocument(TempIndexDir, new Term(nameof(CodeSource.FilePath) + Constants.NoneTokenizeFieldSuffix, @"C:\Dummy File 1.cs"));
+            var result = CodeIndexBuilder.GetDocument(Config.LuceneIndexForCode, new Term(nameof(CodeSource.FilePath) + Constants.NoneTokenizeFieldSuffix, @"C:\Dummy File 1.cs"));
             Assert.NotNull(result);
 
-            result = CodeIndexBuilder.GetDocument(TempIndexDir, new Term(nameof(CodeSource.FilePath) + Constants.NoneTokenizeFieldSuffix, @"C:\AAAAA.cs"));
+            result = CodeIndexBuilder.GetDocument(Config.LuceneIndexForCode, new Term(nameof(CodeSource.FilePath) + Constants.NoneTokenizeFieldSuffix, @"C:\AAAAA.cs"));
             Assert.Null(result);
         }
 
@@ -179,19 +179,19 @@ namespace CodeIndex.Test
         }
 
         [Test]
-        public void TestBuildIndex_ReturnFailedFiles()
+        public void TestBuildIndexByBatch_ReturnFailedFiles()
         {
             File.WriteAllText(Path.Combine(TempDir, "A.txt"), "ABCD");
-            CodeIndexBuilder.BuildIndex(TempIndexDir, true, true, true, new[] { new FileInfo(Path.Combine(TempDir, "A.txt")) }, false, new DummyLog { ThrowExceptionWhenLogContains = "Add index For " + Path.Combine(TempDir, "A.txt") }, out var failedIndexFiles);
+            CodeIndexBuilder.BuildIndexByBatch(Config, true, true, true, new[] { new FileInfo(Path.Combine(TempDir, "A.txt")) }, false, new DummyLog { ThrowExceptionWhenLogContains = "Add index For " + Path.Combine(TempDir, "A.txt") }, out var failedIndexFiles);
             Assert.AreEqual(1, failedIndexFiles.Count);
 
-            CodeIndexBuilder.BuildIndex(TempIndexDir, true, true, true, new[] { new FileInfo(Path.Combine(TempDir, "A.txt")), new FileInfo("BlaBla\\a.txt") }, false, null, out failedIndexFiles);
+            CodeIndexBuilder.BuildIndexByBatch(Config, true, true, true, new[] { new FileInfo(Path.Combine(TempDir, "A.txt")), new FileInfo("BlaBla\\a.txt") }, false, null, out failedIndexFiles);
             Assert.AreEqual(0, failedIndexFiles.Count);
         }
 
         void BuildIndex()
         {
-            CodeIndexBuilder.BuildIndex(TempIndexDir, true, true, true, new[] { new CodeSource
+            CodeIndexBuilder.BuildIndex(Config, true, true, true, new[] { new CodeSource
             {
                 FileName = "Dummy File",
                 FileExtension = "cs",
@@ -206,6 +206,18 @@ namespace CodeIndex.Test
                 FilePath = @"D:\DDDD\A new Name.cs",
                 Content = "FFFF Content A new Line"
             }});
+        }
+
+        [Test]
+        public void TestInitIndexFolderIfNeeded()
+        {
+            Assert.IsFalse(Directory.Exists(Config.LuceneIndexForCode));
+            Assert.IsFalse(Directory.Exists(Config.LuceneIndexForHint));
+
+            CodeIndexBuilder.InitIndexFolderIfNeeded(Config, null);
+
+            Assert.IsTrue(Directory.Exists(Config.LuceneIndexForCode));
+            Assert.IsTrue(Directory.Exists(Config.LuceneIndexForHint));
         }
     }
 }

@@ -16,28 +16,29 @@ namespace CodeIndex.MaintainIndex
             this.log = log;
         }
 
-        public void InitializeIndex(string codeFolder, string luceneIndex, string[] excludedExtensions, string[] excludedPaths, out List<FileInfo> failedIndexFiles, string includedExtenstion = "*", string[] includedExtensions = null, bool forceDeleteAllIndex = false)
+        public void InitializeIndex(CodeIndexConfiguration config, string[] excludedExtensions, string[] excludedPaths, out List<FileInfo> failedIndexFiles, string includedExtenstion = "*", string[] includedExtensions = null, bool forceDeleteAllIndex = false)
         {
-            codeFolder.RequireNotNull(nameof(codeFolder));
-            luceneIndex.RequireNotNull(nameof(luceneIndex));
+            config.RequireNotNull(nameof(config));
             
-            log?.Info("Initialize start");
+            log?.Info($"Initialize start for {config.LuceneIndex}");
 
-            var allFiles = FilesFetcher.FetchAllFiles(codeFolder, excludedExtensions, excludedPaths, includedExtenstion, includedExtensions).ToList();
+            var allFiles = FilesFetcher.FetchAllFiles(config.MonitorFolder, excludedExtensions, excludedPaths, includedExtenstion, includedExtensions).ToList();
             List<FileInfo> needToBuildIndex = null;
 
-            if (CodeIndexBuilder.IndexExists(luceneIndex))
+            CodeIndexBuilder.InitIndexFolderIfNeeded(config, log);
+
+            if (CodeIndexBuilder.IndexExists(config.LuceneIndexForCode))
             {
                 if (forceDeleteAllIndex)
                 {
                     log?.Info("Delete exist index");
-                    CodeIndexBuilder.DeleteAllIndex(luceneIndex);
+                    CodeIndexBuilder.DeleteAllIndex(config);
                 }
                 else
                 {
                     log?.Info("Compare index difference");
 
-                    var allCodeSource = CodeIndexBuilder.GetAllIndexedCodeSource(luceneIndex);
+                    var allCodeSource = CodeIndexBuilder.GetAllIndexedCodeSource(config.LuceneIndexForCode);
                     needToBuildIndex = new List<FileInfo>();
 
                     foreach (var codeSource in allCodeSource)
@@ -50,7 +51,7 @@ namespace CodeIndex.MaintainIndex
                             {
                                 log?.Info($"File {fileInfo.FullName} modified");
 
-                                CodeIndexBuilder.DeleteIndex(luceneIndex, CodeFilesIndexMaintainer.GetNoneTokenizeFieldTerm(nameof(CodeSource.FilePath), codeSource.FilePath));
+                                CodeIndexBuilder.DeleteIndex(config.LuceneIndexForCode, CodeFilesIndexMaintainer.GetNoneTokenizeFieldTerm(nameof(CodeSource.FilePath), codeSource.FilePath));
                                 needToBuildIndex.Add(fileInfo);
                             }
 
@@ -60,7 +61,7 @@ namespace CodeIndex.MaintainIndex
                         {
                             log?.Info($"File {codeSource.FilePath} deleted");
 
-                            CodeIndexBuilder.DeleteIndex(luceneIndex, CodeFilesIndexMaintainer.GetNoneTokenizeFieldTerm(nameof(CodeSource.FilePath), codeSource.FilePath));
+                            CodeIndexBuilder.DeleteIndex(config.LuceneIndexForCode, CodeFilesIndexMaintainer.GetNoneTokenizeFieldTerm(nameof(CodeSource.FilePath), codeSource.FilePath));
                         }
                     }
 
@@ -71,17 +72,14 @@ namespace CodeIndex.MaintainIndex
                     }
                 }
             }
-            else if (!Directory.Exists(luceneIndex))
-            {
-                log?.Info($"Create index {luceneIndex}");
-                Directory.CreateDirectory(luceneIndex);
-            }
 
-            CodeIndexBuilder.BuildIndex(luceneIndex, true, true, true, needToBuildIndex ?? allFiles, false, log, out failedIndexFiles);
+            CodeIndexBuilder.BuildIndexByBatch(config, true, true, true, needToBuildIndex ?? allFiles, false, log, out failedIndexFiles);
 
-            LucenePool.SaveResultsAndClearLucenePool(luceneIndex);
+            LucenePool.SaveResultsAndClearLucenePool(config.LuceneIndexForCode);
 
-            log?.Info("Initialize finished");
+            WordsHintBuilder.BuildIndexByBatch(config, true, true, true, log);
+
+            log?.Info($"Initialize finished for {config.LuceneIndex}");
         }
     }
 }
