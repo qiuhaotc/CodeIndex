@@ -7,6 +7,7 @@ namespace CodeIndex.Common
         public static string SubStringSafe(this string str, int startIndex, int length)
         {
             var result = string.Empty;
+            startIndex = startIndex >= 0 ? startIndex : 0;
 
             if (!string.IsNullOrEmpty(str))
             {

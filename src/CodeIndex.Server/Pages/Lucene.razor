@@ -139,7 +139,7 @@
                         <td>@item.FileName</td>
                         <td>@item.FileExtension</td>
                         <td>
-                            <a href="@Config["OpenIDEUriFormat"].Replace("{FilePath}", item.FilePath)" title="@item.FilePath">@item.FilePath?.SubStringSafe(item.FilePath.Length - 30, 30)</a>
+                            <a href="@Config["OpenIDEUriFormat"].Replace("{FilePath}", GetPath(item.FilePath))" title="@item.FilePath">@item.FilePath?.SubStringSafe(item.FilePath.Length - 30, 30)</a>
                         </td>
                         <td>@item.IndexDate</td>
                         <td>@item.LastWriteTimeUtc</td>
@@ -217,7 +217,7 @@
             var searchQuery = System.Web.HttpUtility.UrlEncode(SearchQuery);
             if (!string.IsNullOrEmpty(searchQuery))
             {
-                FetchResult = await Client.GetJsonAsync<FetchResult<IEnumerable<CodeSource>>>("api/lucene/GetCodeSources?searchQuery=" + System.Web.HttpUtility.UrlEncode(SearchQuery) + "&showResults=" + ShowResults + "&preview=true" + "&contentQuery=" + System.Web.HttpUtility.UrlEncode(ContentQuery ?? string.Empty));
+                FetchResult = await Client.GetJsonAsync<FetchResult<IEnumerable<CodeSource>>>($"{Config["LocalUrl"]}api/lucene/GetCodeSources?searchQuery=" + System.Web.HttpUtility.UrlEncode(SearchQuery) + "&showResults=" + ShowResults + "&preview=true" + "&contentQuery=" + System.Web.HttpUtility.UrlEncode(ContentQuery ?? string.Empty));
             }
             else
             {
@@ -252,12 +252,24 @@
             var inputWord = ContentQuery.Split(" ", StringSplitOptions.RemoveEmptyEntries).LastOrDefault();
             if (inputWord?.Length >= 3)
             {
-                HintWords = await Client.GetJsonAsync<FetchResult<IEnumerable<string>>>("api/lucene/GetHints?word=" + System.Web.HttpUtility.UrlEncode(inputWord));
+                HintWords = await Client.GetJsonAsync<FetchResult<IEnumerable<string>>>($"{Config["LocalUrl"]}api/lucene/GetHints?word=" + System.Web.HttpUtility.UrlEncode(inputWord));
             }
         }
         else
         {
             await KeyPress(e);
+        }
+    }
+
+    string GetPath(string path)
+    {
+        if (path != null && path.StartsWith("/monitorfolder") && !string.IsNullOrEmpty(Config["MonitorFolderRealPath"]))
+        {
+            return Config["MonitorFolderRealPath"] + path.SubStringSafe("/monitorfolder".Length, path.Length);
+        }
+        else
+        {
+            return path;
         }
     }
 }

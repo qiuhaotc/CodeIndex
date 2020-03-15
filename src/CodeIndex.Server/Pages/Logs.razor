@@ -1,6 +1,7 @@
 ﻿@page "/Logs"
 @inject HttpClient Client
 @inject IJSRuntime JSRuntime
+@inject IConfiguration Config
 
 <h3>Logs</h3>
 <div class="input-group mb-3">
@@ -17,7 +18,7 @@
     protected override async Task OnInitializedAsync()
     {
         await base.OnInitializedAsync();
-        Result = await Client.GetJsonAsync<FetchResult<string>>("api/lucene/GetLogs");
+        Result = await Client.GetJsonAsync<FetchResult<string>>($"{Config["LocalUrl"]}api/lucene/GetLogs");
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)

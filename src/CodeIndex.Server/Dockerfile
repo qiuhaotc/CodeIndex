@@ -2,6 +2,13 @@
 
 FROM mcr.microsoft.com/dotnet/core/aspnet:3.1-buster-slim AS base
 WORKDIR /app
+ENV ASPNETCORE_ENVIRONMENT Development
+ENV LuceneIndex /luceneindex
+ENV MonitorFolder /monitorfolder
+ENV MaxContentHighlightLength 3000000
+ENV OpenIDEUriFormat vscode://file/{FilePath}
+ENV LocalUrl http://localhost:80/
+ENV MonitorFolderRealPath=""
 EXPOSE 80
 EXPOSE 443
 

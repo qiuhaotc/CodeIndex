@@ -10,7 +10,7 @@ namespace CodeIndex.IndexBuilder
 
         static HashSet<string> Words { get; } = new HashSet<string>();
 
-        public static void BuildIndexByBatch(CodeIndexConfiguration config, bool triggerMerge, bool applyAllDeletes, bool needFlush, ILog log, int batchSize = 1000)
+        public static void BuildIndexByBatch(CodeIndexConfiguration config, bool triggerMerge, bool applyAllDeletes, bool needFlush, ILog log, int batchSize = 10000)
         {
             config.RequireNotNull(nameof(config));
             batchSize.RequireRange(nameof(batchSize), int.MaxValue, 50);

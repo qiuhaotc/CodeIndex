@@ -19,7 +19,7 @@ namespace CodeIndex.MaintainIndex
         public void InitializeIndex(CodeIndexConfiguration config, string[] excludedExtensions, string[] excludedPaths, out List<FileInfo> failedIndexFiles, string includedExtenstion = "*", string[] includedExtensions = null, bool forceDeleteAllIndex = false)
         {
             config.RequireNotNull(nameof(config));
-            
+
             log?.Info($"Initialize start for {config.LuceneIndex}");
 
             var allFiles = FilesFetcher.FetchAllFiles(config.MonitorFolder, excludedExtensions, excludedPaths, includedExtenstion, includedExtensions).ToList();
