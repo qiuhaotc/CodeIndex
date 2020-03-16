@@ -23,3 +23,11 @@ Main Page
 
 Details Page
 <div><img src="https://raw.githubusercontent.com/qiuhaotc/CodeIndex/master/doc/WebServer-Details.png"/></div>
+
+### Run with docker
+example
+
+```bash
+docker pull qiuhaotc/codeindex
+docker run -d --name codeindex -p 8080:80 -v "You index folder":/luceneindex -v "You code folder":/monitorfolder -v "your logs folder":/app/Logs -e MonitorFolderRealPath="You real folder path" --restart=always qiuhaotc/codeindex
+```
