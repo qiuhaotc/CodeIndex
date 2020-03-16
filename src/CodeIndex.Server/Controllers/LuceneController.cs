@@ -194,6 +194,7 @@ namespace CodeIndex.Server.Controllers
                     using var fs = new FileStream(logPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
                     using var sr = new StreamReader(fs, Encoding.Default);
                     result.Result = await sr.ReadToEndAsync();
+                    result.Result = result.Result.SubStringSafe(result.Result.Length - 100000, 100000);
                 }
                 else
                 {

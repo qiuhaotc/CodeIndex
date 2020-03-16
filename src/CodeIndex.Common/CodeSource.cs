@@ -1,4 +1,5 @@
 ﻿using System;
+using System.Globalization;
 using System.IO;
 
 namespace CodeIndex.Common
@@ -12,6 +13,7 @@ namespace CodeIndex.Common
         public DateTime IndexDate { get; set; }
         public DateTime LastWriteTimeUtc { get; set; }
         public string CodePK { get; set; } = Guid.NewGuid().ToString("N");
+        public string Info => $"FileName: {FileName}{Environment.NewLine}FilePath: {FilePath}{Environment.NewLine}Index Date: {IndexDate.ToLocalTime()}{Environment.NewLine}Last Modify Date:{LastWriteTimeUtc.ToLocalTime()}";
 
         public static CodeSource GetCodeSource(FileInfo fileInfo, string content)
         {

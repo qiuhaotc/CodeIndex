@@ -30,6 +30,11 @@ namespace CodeIndex.Search
 
             if (!string.IsNullOrWhiteSpace(filePath))
             {
+                if (SurroundWithQuotation(filePath))
+                {
+                    filePath = filePath.Replace("\\", "\\\\");
+                }
+
                 searchQueries.Add($"{nameof(CodeSource.FilePath)}:{filePath}");
             }
 
@@ -41,6 +46,11 @@ namespace CodeIndex.Search
             searchStr.RequireNotNullOrEmpty(nameof(searchStr));
 
             return parser.Parse(searchStr);
+        }
+
+        static bool SurroundWithQuotation(string content)
+        {
+            return !string.IsNullOrWhiteSpace(content) && content.StartsWith("\"") && content.EndsWith("\"");
         }
 
         public Analyzer Analyzer => parser.Analyzer;

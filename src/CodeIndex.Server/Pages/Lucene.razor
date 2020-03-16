@@ -5,7 +5,7 @@
 
 <div class="row">
     <div class="col-sm">
-        <h1>Lucene Search Test Page</h1>
+        <h3>Search Page</h3>
     </div>
 </div>
 <div class="row">
@@ -111,7 +111,7 @@
             else
             {
                 <div class="alert alert-info" role="alert">
-                    Wait Hint
+                    Wait Input
                 </div>
             }
         </div>
@@ -122,11 +122,9 @@
         <thead>
             <tr>
                 <th scope="col">File Name</th>
-                <th scope="col">File Extension</th>
+                <th scope="col">Match Info</th>
                 <th scope="col">File Path</th>
-                <th scope="col">Index Date Utc</th>
-                <th scope="col">Last Write Utc</th>
-                <th scope="col">Content</th>
+                <th scope="col">File Extension</th>
                 <th scope="col">Details</th>
             </tr>
         </thead>
@@ -136,16 +134,14 @@
                 foreach (var item in FetchResult.Result)
                 {
                     <tr>
-                        <td>@item.FileName</td>
-                        <td>@item.FileExtension</td>
-                        <td>
-                            <a href="@Config["OpenIDEUriFormat"].Replace("{FilePath}", GetPath(item.FilePath))" title="@item.FilePath">@item.FilePath?.SubStringSafe(item.FilePath.Length - 30, 30)</a>
-                        </td>
-                        <td>@item.IndexDate</td>
-                        <td>@item.LastWriteTimeUtc</td>
+                        <td title="@item.Info">@item.FileName</td>
                         <td>
                             <pre>@((MarkupString)item.Content)</pre>
                         </td>
+                        <td>
+                            <a href="@Config["OpenIDEUriFormat"].Replace("{FilePath}", GetPath(item.FilePath))">@item.FilePath?.SubStringSafeWithEllipsis(item.FilePath.Length - 50, 50)</a>
+                        </td>
+                        <td>@item.FileExtension</td>
                         <td>
                             <a href="/Details/@item.CodePK/@System.Web.HttpUtility.UrlEncode(ContentQuery ?? string.Empty)">Details</a>
                         </td>
@@ -191,6 +187,11 @@
         FileExtensionQuery = Storage.GetValue("FileExtensionQuery")?.ToString();
         FilePathQuery = Storage.GetValue("FilePathQuery")?.ToString();
 
+        if (int.TryParse(Storage.GetValue(nameof(ShowResults))?.ToString(), out var result))
+        {
+            ShowResults = result;
+        }
+
         if (!string.IsNullOrEmpty(SearchQuery))
         {
             await SearchLuceneIndex();
@@ -208,6 +209,7 @@
         Storage.SetOrUpdate("FileNameQuery", FileNameQuery);
         Storage.SetOrUpdate("FileExtensionQuery", FileExtensionQuery);
         Storage.SetOrUpdate("FilePathQuery", FilePathQuery);
+        Storage.SetOrUpdate(nameof(ShowResults), ShowResults);
 
         IsSearching = true;
         FetchResult = null;
