@@ -1,4 +1,5 @@
 ﻿using System.Collections.Generic;
+using System.Linq;
 using CodeIndex.Common;
 using Lucene.Net.Documents;
 
@@ -6,9 +7,7 @@ namespace CodeIndex.IndexBuilder
 {
     public static class WordsHintBuilder
     {
-        // TODO: Add test
-
-        static HashSet<string> Words { get; } = new HashSet<string>();
+        public static HashSet<string> Words { get; } = new HashSet<string>();
 
         public static void BuildIndexByBatch(CodeIndexConfiguration config, bool triggerMerge, bool applyAllDeletes, bool needFlush, ILog log, int batchSize = 10000)
         {
@@ -44,7 +43,7 @@ namespace CodeIndex.IndexBuilder
             log?.Info($"Finished build hint words for {config.LuceneIndexForHint}");
         }
 
-        internal static void AddWords(string[] words)
+        public static void AddWords(string[] words)
         {
             foreach (var word in words)
             {
@@ -53,6 +52,25 @@ namespace CodeIndex.IndexBuilder
                     Words.Add(word);
                 }
             }
+        }
+
+        public static void UpdateWordsAndUpdateIndex(CodeIndexConfiguration config, string[] words, ILog log)
+        {
+            log?.Info($"Update hint index start, words count {words.Length}");
+            words = words.Where(u => u.Length > 3).Distinct().ToArray();
+
+            foreach (var word in words)
+            {
+                var document = new Document
+                {
+                     new StringField(nameof(CodeWord.Word), word, Field.Store.YES),
+                     new StringField(nameof(CodeWord.WordLower), word.ToLowerInvariant(), Field.Store.YES)
+                };
+
+                LucenePool.UpdateIndex(config.LuceneIndexForHint, new Lucene.Net.Index.Term(nameof(CodeWord.Word), word), document);
+            }
+
+            log?.Info($"Update hint index finished");
         }
 
         static void BuildIndex(CodeIndexConfiguration config, bool triggerMerge, bool applyAllDeletes, List<Document> documents, bool needFlush, ILog log)

@@ -16,8 +16,6 @@ namespace CodeIndex.MaintainIndex
 {
     public class CodeFilesIndexMaintainer : IDisposable
     {
-        // TODO: Add word hint when file changed
-
         public CodeFilesIndexMaintainer(CodeIndexConfiguration config, string[] excludedExtensions, string[] excludedPaths, int saveIntervalSeconds = 300, string[] includedExtensions = null, ILog log = null)
         {
             config.RequireNotNull(nameof(config));
@@ -80,7 +78,6 @@ namespace CodeIndex.MaintainIndex
             LucenePool.SaveResultsAndClearLucenePool(config);
         }
 
-        // TODO: Add a boolean field to determine initialize is finished
         FileSystemWatcher FileSystemWatcher { get; set; }
         const int WaitMilliseconds = 100;
 
@@ -157,18 +154,10 @@ namespace CodeIndex.MaintainIndex
 
         bool IsExcludedFromIndex(FileSystemEventArgs e)
         {
-            var excluded = true;
-
-            if (IsFile(e.FullPath))
-            {
-                excluded = excludedPaths.Any(u => e.FullPath.ToUpperInvariant().Contains(u))
+            var excluded = excludedPaths.Any(u => e.FullPath.ToUpperInvariant().Contains(u))
+                    || excludedPaths.Any(u => e.FullPath.ToUpperInvariant().Contains(u))
                     || excludedExtensions.Any(u => e.FullPath.EndsWith(u, StringComparison.InvariantCultureIgnoreCase))
                     || includedExtensions != null && !includedExtensions.Any(u => e.FullPath.EndsWith(u, StringComparison.InvariantCultureIgnoreCase));
-            }
-            else if (IsDirectory(e.FullPath))
-            {
-                excluded = excludedPaths.Any(u => e.FullPath.ToUpperInvariant().Contains(u));
-            }
 
             if (excluded)
             {
@@ -191,6 +180,7 @@ namespace CodeIndex.MaintainIndex
                     {
                         var content = FilesContentHelper.ReadAllText(fullPath);
                         CodeIndexBuilder.BuildIndex(config, false, false, false, new[] { CodeSource.GetCodeSource(fileInfo, content) });
+                        WordsHintBuilder.UpdateWordsAndUpdateIndex(config, WordSegmenter.GetWords(content), log);
                         pendingChanges++;
                     }
                 }
@@ -217,9 +207,9 @@ namespace CodeIndex.MaintainIndex
                     if (fileInfo.Exists)
                     {
                         var content = FilesContentHelper.ReadAllText(fullPath);
-                        // TODO: When Date Not Change, Not Update
                         var document = CodeIndexBuilder.GetDocumentFromSource(CodeSource.GetCodeSource(fileInfo, content));
                         CodeIndexBuilder.UpdateIndex(config.LuceneIndexForCode, GetNoneTokenizeFieldTerm(nameof(CodeSource.FilePath), fullPath), document);
+                        WordsHintBuilder.UpdateWordsAndUpdateIndex(config, WordSegmenter.GetWords(content), log);
                         pendingChanges++;
                     }
                 }
@@ -324,7 +314,7 @@ namespace CodeIndex.MaintainIndex
             pendingRetryCodeSources.Enqueue(pendingRetrySource);
         }
 
-        ConcurrentQueue<PendingRetrySource> pendingRetryCodeSources = new ConcurrentQueue<PendingRetrySource>();
+        protected ConcurrentQueue<PendingRetrySource> pendingRetryCodeSources = new ConcurrentQueue<PendingRetrySource>();
 
         bool IsFile(string path)
         {
@@ -348,9 +338,9 @@ namespace CodeIndex.MaintainIndex
 
                         Task.Run(() =>
                         {
-                            if (pendingRetrySource.LastRetryUTCDate > DateTime.UtcNow.AddSeconds(-10)) // Failed In 10 Seconds
+                            if (pendingRetrySource.LastRetryUTCDate > DateTime.UtcNow.AddSeconds(-5)) // Failed In 5 Seconds
                             {
-                                Thread.Sleep(10000);
+                                Thread.Sleep(5000);
                             }
 
                             switch (pendingRetrySource.ChangesType)
@@ -376,10 +366,12 @@ namespace CodeIndex.MaintainIndex
                 }
                 else
                 {
-                    Thread.Sleep(10000); // Sleep 10 seconds when nothing need to requeue
+                    Thread.Sleep(SleepMilliseconds); // Sleep when nothing need to requeue
                 }
             }
         }
+
+        protected virtual int SleepMilliseconds => 10000;
 
         int pendingChanges = 0;
         DateTime lastSaveDate = DateTime.UtcNow;

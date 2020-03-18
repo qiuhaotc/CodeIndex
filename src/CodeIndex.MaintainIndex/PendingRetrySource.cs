@@ -3,7 +3,7 @@ using System.IO;
 
 namespace CodeIndex.MaintainIndex
 {
-    class PendingRetrySource
+    public class PendingRetrySource
     {
         public string FilePath { get; set; }
         public string OldPath { get; set; }
