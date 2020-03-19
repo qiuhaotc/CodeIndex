@@ -14,7 +14,7 @@ namespace CodeIndex.Files
             var watcher = new FileSystemWatcher();
             watcher.Path = path;
             watcher.NotifyFilter = NotifyFilters.DirectoryName |
-                NotifyFilters.LastAccess |
+                //NotifyFilters.LastAccess | // No need this
                 NotifyFilters.LastWrite |
                 NotifyFilters.FileName |
                 NotifyFilters.Size |

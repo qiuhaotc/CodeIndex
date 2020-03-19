@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using System.Threading;
 using CodeIndex.Files;
 using NUnit.Framework;
@@ -60,6 +61,11 @@ namespace CodeIndex.Test
                 File.Create(Path.Combine(TempDir, "CCCC")).Close();
                 Thread.Sleep(waitMS);
                 Assert.AreEqual(8, changeHit);
+                Assert.AreEqual(2, renameHit);
+
+                File.SetLastAccessTime(Path.Combine(TempDir, "CCCC"), DateTime.Now.AddDays(1));
+                Thread.Sleep(waitMS);
+                Assert.AreEqual(8, changeHit, "Do not watch last access time for file");
                 Assert.AreEqual(2, renameHit);
             }
 

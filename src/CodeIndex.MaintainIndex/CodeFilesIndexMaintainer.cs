@@ -67,7 +67,7 @@ namespace CodeIndex.MaintainIndex
                 SaveLuceneResultsWhenNeeded(tokenSource.Token);
             }, tokenSource.Token);
 
-            log?.Info("Start monitoring files change");
+            log?.Info($"Start monitoring files change on {config.MonitorFolder}");
         }
 
         public void Dispose()
