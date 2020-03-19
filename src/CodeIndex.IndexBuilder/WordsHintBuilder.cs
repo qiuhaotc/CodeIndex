@@ -9,33 +9,40 @@ namespace CodeIndex.IndexBuilder
     {
         public static HashSet<string> Words { get; } = new HashSet<string>();
 
-        public static void BuildIndexByBatch(CodeIndexConfiguration config, bool triggerMerge, bool applyAllDeletes, bool needFlush, ILog log, int batchSize = 10000)
+        public static void BuildIndexByBatch(CodeIndexConfiguration config, bool triggerMerge, bool applyAllDeletes, bool needFlush, ILog log, bool firstInitialize, int batchSize = 10000)
         {
             config.RequireNotNull(nameof(config));
             batchSize.RequireRange(nameof(batchSize), int.MaxValue, 50);
 
             var documents = new List<Document>();
-            
+
             log?.Info($"Start build hint words for {config.LuceneIndexForHint}");
 
-            foreach (var word in Words)
+            if (firstInitialize)
             {
-                documents.Add(new Document
+                foreach (var word in Words)
                 {
-                     new StringField(nameof(CodeWord.Word), word, Field.Store.YES),
-                     new StringField(nameof(CodeWord.WordLower), word.ToLowerInvariant(), Field.Store.YES)
-                });
+                    documents.Add(new Document
+                    {
+                         new StringField(nameof(CodeWord.Word), word, Field.Store.YES),
+                         new StringField(nameof(CodeWord.WordLower), word.ToLowerInvariant(), Field.Store.YES)
+                    });
 
-                if (documents.Count > batchSize)
+                    if (documents.Count > batchSize)
+                    {
+                        BuildIndex(config, triggerMerge, applyAllDeletes, documents, needFlush, log);
+                        documents.Clear();
+                    }
+                }
+
+                if (documents.Count > 0)
                 {
                     BuildIndex(config, triggerMerge, applyAllDeletes, documents, needFlush, log);
-                    documents.Clear();
                 }
             }
-
-            if (documents.Count > 0)
+            else
             {
-                BuildIndex(config, triggerMerge, applyAllDeletes, documents, needFlush, log);
+                UpdateWordsAndUpdateIndexCore(config, Words.ToArray(), log, batchSize);
             }
 
             Words.Clear();
@@ -56,9 +63,16 @@ namespace CodeIndex.IndexBuilder
 
         public static void UpdateWordsAndUpdateIndex(CodeIndexConfiguration config, string[] words, ILog log)
         {
-            log?.Info($"Update hint index start, words count {words.Length}");
             words = words.Where(u => u.Length > 3).Distinct().ToArray();
 
+            UpdateWordsAndUpdateIndexCore(config, words, log);
+        }
+
+        static void UpdateWordsAndUpdateIndexCore(CodeIndexConfiguration config, string[] words, ILog log, int batchSize = -1)
+        {
+            var totalUpdate = 0;
+
+            log?.Info($"Update hint index start, words count {words.Length}");
             foreach (var word in words)
             {
                 var document = new Document
@@ -68,6 +82,19 @@ namespace CodeIndex.IndexBuilder
                 };
 
                 LucenePool.UpdateIndex(config.LuceneIndexForHint, new Lucene.Net.Index.Term(nameof(CodeWord.Word), word), document);
+
+                totalUpdate++;
+
+                if (batchSize > 0 && totalUpdate > batchSize)
+                {
+                    totalUpdate = 0;
+                    LucenePool.SaveResultsAndClearLucenePool(config.LuceneIndexForHint);
+                }
+            }
+
+            if (batchSize > 0 && totalUpdate > 0)
+            {
+                LucenePool.SaveResultsAndClearLucenePool(config.LuceneIndexForHint);
             }
 
             log?.Info($"Update hint index finished");

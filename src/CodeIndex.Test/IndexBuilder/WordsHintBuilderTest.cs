@@ -20,19 +20,52 @@ namespace CodeIndex.Test
         public void TestBuildIndexByBatch()
         {
             WordsHintBuilder.AddWords(new[] { "AAAA", "Bbbb", "DDDDD" });
-            WordsHintBuilder.BuildIndexByBatch(Config, true, true, true, null);
+            WordsHintBuilder.BuildIndexByBatch(Config, true, true, true, null, true);
 
             var docs = LucenePool.Search(Config.LuceneIndexForHint, new MatchAllDocsQuery(), 1000);
             Assert.AreEqual(3, docs.Length);
             CollectionAssert.AreEquivalent(new[] { "AAAA", "Bbbb", "DDDDD" }, docs.Select(u => u.Get(nameof(CodeWord.Word))));
             CollectionAssert.AreEquivalent(new[] { "aaaa", "bbbb", "ddddd" }, docs.Select(u => u.Get(nameof(CodeWord.WordLower))));
+            Assert.AreEqual(0, WordsHintBuilder.Words.Count);
+        }
+
+        [Test]
+        public void TestBuildIndexByBatch_FirstInit()
+        {
+            WordsHintBuilder.AddWords(new[] { "AAAA", "Bbbb", "DDDDD" });
+            WordsHintBuilder.BuildIndexByBatch(Config, true, true, true, null, true);
+
+            var docs = LucenePool.Search(Config.LuceneIndexForHint, new MatchAllDocsQuery(), 1000);
+            Assert.AreEqual(3, docs.Length);
+            CollectionAssert.AreEquivalent(new[] { "AAAA", "Bbbb", "DDDDD" }, docs.Select(u => u.Get(nameof(CodeWord.Word))));
+
+            WordsHintBuilder.AddWords(new[] { "AAAA" });
+            WordsHintBuilder.BuildIndexByBatch(Config, true, true, true, null, true);
+            docs = LucenePool.Search(Config.LuceneIndexForHint, new MatchAllDocsQuery(), 1000);
+            Assert.AreEqual(4, docs.Length, "When is first init, not do update documents");
+        }
+
+        [Test]
+        public void TestBuildIndexByBatch_NotFirstInit()
+        {
+            WordsHintBuilder.AddWords(new[] { "AAAA", "Bbbb", "DDDDD" });
+            WordsHintBuilder.BuildIndexByBatch(Config, true, true, true, null, true);
+
+            var docs = LucenePool.Search(Config.LuceneIndexForHint, new MatchAllDocsQuery(), 1000);
+            Assert.AreEqual(3, docs.Length);
+            CollectionAssert.AreEquivalent(new[] { "AAAA", "Bbbb", "DDDDD" }, docs.Select(u => u.Get(nameof(CodeWord.Word))));
+
+            WordsHintBuilder.AddWords(new[] { "AAAA" });
+            WordsHintBuilder.BuildIndexByBatch(Config, true, true, true, null, false);
+            docs = LucenePool.Search(Config.LuceneIndexForHint, new MatchAllDocsQuery(), 1000);
+            Assert.AreEqual(3, docs.Length, "When is not first init, do update documents");
         }
 
         [Test]
         public void TestUpdateWordsAndUpdateIndex()
         {
             WordsHintBuilder.AddWords(new[] { "AAAA", "Bbbbb", "DDDDD" });
-            WordsHintBuilder.BuildIndexByBatch(Config, true, true, true, null);
+            WordsHintBuilder.BuildIndexByBatch(Config, true, true, true, null, true);
 
             var docs = LucenePool.Search(Config.LuceneIndexForHint, new MatchAllDocsQuery(), 1000);
             Assert.AreEqual(3, docs.Length);

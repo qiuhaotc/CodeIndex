@@ -24,6 +24,7 @@ namespace CodeIndex.MaintainIndex
 
             var allFiles = FilesFetcher.FetchAllFiles(config.MonitorFolder, excludedExtensions, excludedPaths, includedExtenstion, includedExtensions).ToList();
             List<FileInfo> needToBuildIndex = null;
+            var firstInitialize = true;
 
             CodeIndexBuilder.InitIndexFolderIfNeeded(config, log);
 
@@ -36,6 +37,7 @@ namespace CodeIndex.MaintainIndex
                 }
                 else
                 {
+                    firstInitialize = false;
                     log?.Info("Compare index difference");
 
                     var allCodeSource = CodeIndexBuilder.GetAllIndexedCodeSource(config.LuceneIndexForCode);
@@ -77,7 +79,7 @@ namespace CodeIndex.MaintainIndex
 
             LucenePool.SaveResultsAndClearLucenePool(config.LuceneIndexForCode);
 
-            WordsHintBuilder.BuildIndexByBatch(config, true, true, true, log);
+            WordsHintBuilder.BuildIndexByBatch(config, true, true, true, log, firstInitialize);
 
             log?.Info($"Initialize finished for {config.LuceneIndex}");
         }
