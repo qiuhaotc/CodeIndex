@@ -76,19 +76,5 @@ namespace CodeIndex.Test
             CollectionAssert.AreEquivalent(new[] { "AAAA", "Bbbbb", "DDDDD", "EEEEE" }, docs.Select(u => u.Get(nameof(CodeWord.Word))));
             CollectionAssert.AreEquivalent(new[] { "aaaa", "bbbbb", "ddddd", "eeeee" }, docs.Select(u => u.Get(nameof(CodeWord.WordLower))));
         }
-
-        [SetUp]
-        protected override void SetUp()
-        {
-            base.SetUp();
-            WordsHintBuilder.Words.Clear();
-        }
-
-        [TearDown]
-        protected override void TearDown()
-        {
-            base.TearDown();
-            WordsHintBuilder.Words.Clear();
-        }
     }
 }

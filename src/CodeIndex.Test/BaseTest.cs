@@ -26,6 +26,8 @@ namespace CodeIndex.Test
         {
             TempDir = Path.Combine(Path.GetTempPath(), "CodeIndex.Test_" + Guid.NewGuid());
 
+            WordsHintBuilder.Words.Clear();
+
             var dir = new DirectoryInfo(TempDir);
             if (!dir.Exists)
             {
@@ -37,6 +39,9 @@ namespace CodeIndex.Test
         protected virtual void TearDown()
         {
             LucenePool.SaveResultsAndClearLucenePool(Config);
+
+            WordsHintBuilder.Words.Clear();
+
             DeleteAllFilesInTempDir(TempDir);
         }
 
