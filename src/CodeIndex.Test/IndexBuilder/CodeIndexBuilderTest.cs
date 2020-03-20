@@ -143,24 +143,6 @@ namespace CodeIndex.Test
         }
 
         [Test]
-        public void TestGetDocument()
-        {
-            CodeIndexBuilder.BuildIndex(Config, true, true, true, new[] { new CodeSource
-            {
-                FileName = "Dummy File 1",
-                FileExtension = "cs",
-                FilePath = @"C:\Dummy File 1.cs",
-                Content = "Test Content" + Environment.NewLine + "A New Line For Test"
-            }});
-
-            var result = CodeIndexBuilder.GetDocument(Config.LuceneIndexForCode, new Term(nameof(CodeSource.FilePath) + Constants.NoneTokenizeFieldSuffix, @"C:\Dummy File 1.cs"));
-            Assert.NotNull(result);
-
-            result = CodeIndexBuilder.GetDocument(Config.LuceneIndexForCode, new Term(nameof(CodeSource.FilePath) + Constants.NoneTokenizeFieldSuffix, @"C:\AAAAA.cs"));
-            Assert.Null(result);
-        }
-
-        [Test]
         public void TestUpdateCodeFilePath()
         {
             var document = CodeIndexBuilder.GetDocumentFromSource(new CodeSource
@@ -189,6 +171,18 @@ namespace CodeIndex.Test
             Assert.AreEqual(0, failedIndexFiles.Count);
         }
 
+        [Test]
+        public void TestInitIndexFolderIfNeeded()
+        {
+            Assert.IsFalse(Directory.Exists(Config.LuceneIndexForCode));
+            Assert.IsFalse(Directory.Exists(Config.LuceneIndexForHint));
+
+            CodeIndexBuilder.InitIndexFolderIfNeeded(Config, null);
+
+            Assert.IsTrue(Directory.Exists(Config.LuceneIndexForCode));
+            Assert.IsTrue(Directory.Exists(Config.LuceneIndexForHint));
+        }
+
         void BuildIndex()
         {
             CodeIndexBuilder.BuildIndex(Config, true, true, true, new[] { new CodeSource
@@ -206,18 +200,6 @@ namespace CodeIndex.Test
                 FilePath = @"D:\DDDD\A new Name.cs",
                 Content = "FFFF Content A new Line"
             }});
-        }
-
-        [Test]
-        public void TestInitIndexFolderIfNeeded()
-        {
-            Assert.IsFalse(Directory.Exists(Config.LuceneIndexForCode));
-            Assert.IsFalse(Directory.Exists(Config.LuceneIndexForHint));
-
-            CodeIndexBuilder.InitIndexFolderIfNeeded(Config, null);
-
-            Assert.IsTrue(Directory.Exists(Config.LuceneIndexForCode));
-            Assert.IsTrue(Directory.Exists(Config.LuceneIndexForHint));
         }
     }
 }

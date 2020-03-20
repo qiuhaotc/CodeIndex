@@ -227,6 +227,7 @@ namespace CodeIndex.IndexBuilder
                     }
                     else if (forceRefresh)
                     {
+                        // TODO: Became thread safe
                         indexReader.Dispose();
                         indexReader = CreateOrGetIndexWriter(luceneIndex).GetReader(true);
                         IndexReaderPool.AddOrUpdate(luceneIndex, indexReader, (u, v) => indexReader);

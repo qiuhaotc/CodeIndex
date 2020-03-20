@@ -130,5 +130,16 @@ It&#39;s <label class='highlight'>Abc</label>", result);
             var results = CodeIndexSearcher.SearchCode(Config.LuceneIndexForCode, new TermQuery(new Term(nameof(CodeSource.FileExtension), "cs")), 10);
             Assert.That(results.Length, Is.EqualTo(1));
         }
+
+        [Test]
+        public void TestGetHints()
+        {
+            WordsHintBuilder.Words.Add("Abcd");
+            WordsHintBuilder.BuildIndexByBatch(Config, true, true, true, null, true, 1000);
+
+            CollectionAssert.AreEquivalent(new[] { "Abcd" }, CodeIndexSearcher.GetHints(Config.LuceneIndexForHint, "abc", 20, false));
+            CollectionAssert.IsEmpty(CodeIndexSearcher.GetHints(Config.LuceneIndexForHint, "abc", 20, true));
+            CollectionAssert.AreEquivalent(new[] { "Abcd" }, CodeIndexSearcher.GetHints(Config.LuceneIndexForHint, "Abc", 20, true));
+        }
     }
 }

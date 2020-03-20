@@ -193,14 +193,5 @@ namespace CodeIndex.IndexBuilder
             codeSourceDocumnet.Add(new TextField(nameof(CodeSource.FilePath), pathField.Replace(oldFullPath, nowFullPath), Field.Store.YES));
             codeSourceDocumnet.Add(new StringField(nameof(CodeSource.FilePath) + Constants.NoneTokenizeFieldSuffix, pathField.Replace(oldFullPath, nowFullPath), Field.Store.YES));
         }
-
-        public static Document GetDocument(string luceneIndex, Term term)
-        {
-            luceneIndex.RequireNotNullOrEmpty(nameof(luceneIndex));
-            term.RequireNotNull(nameof(term));
-
-            var document = LucenePool.GetDocument(luceneIndex, term);
-            return document;
-        }
     }
 }
