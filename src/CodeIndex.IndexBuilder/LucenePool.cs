@@ -19,7 +19,7 @@ namespace CodeIndex.IndexBuilder
         {
             try
             {
-                readWriteLock.AcquireReaderLock(Constants.ReadWriteLockTimeOutMilliseconds);
+                readWriteLock.TryEnterReadLock(Constants.ReadWriteLockTimeOutMilliseconds);
 
                 var writer = CreateOrGetIndexWriter(luceneIndex);
                 writer.AddDocuments(documents);
@@ -33,7 +33,7 @@ namespace CodeIndex.IndexBuilder
             }
             finally
             {
-                readWriteLock.ReleaseReaderLock();
+                readWriteLock.ExitReadLock();
             }
         }
 
@@ -41,18 +41,16 @@ namespace CodeIndex.IndexBuilder
         {
             try
             {
-                readWriteLock.AcquireReaderLock(Constants.ReadWriteLockTimeOutMilliseconds);
+                readWriteLock.TryEnterReadLock(Constants.ReadWriteLockTimeOutMilliseconds);
 
-                var searcher = CreateOrGetIndexSearcher(luceneIndex);
                 var query = new MatchAllDocsQuery();
                 var filter = new FieldValueFilter(nameof(CodeSource.FilePath));
-                var hits = searcher.Search(query, filter, int.MaxValue).ScoreDocs;
 
-                return hits.Select(hit => searcher.Doc(hit.Doc)).Select(u => (u.Get(nameof(CodeSource.FilePath)), new DateTime(long.Parse(u.Get(nameof(CodeSource.LastWriteTimeUtc)))))).ToList();
+                return SearchDocuments(luceneIndex, query, int.MaxValue, filter).Select(u => (u.Get(nameof(CodeSource.FilePath)), new DateTime(long.Parse(u.Get(nameof(CodeSource.LastWriteTimeUtc)))))).ToList();
             }
             finally
             {
-                readWriteLock.ReleaseReaderLock();
+                readWriteLock.ExitReadLock();
             }
         }
 
@@ -60,7 +58,7 @@ namespace CodeIndex.IndexBuilder
         {
             try
             {
-                readWriteLock.AcquireReaderLock(Constants.ReadWriteLockTimeOutMilliseconds);
+                readWriteLock.TryEnterReadLock(Constants.ReadWriteLockTimeOutMilliseconds);
 
                 var indexWriter = CreateOrGetIndexWriter(luceneIndex);
                 indexWriter.DeleteDocuments(searchQueries);
@@ -69,7 +67,7 @@ namespace CodeIndex.IndexBuilder
             }
             finally
             {
-                readWriteLock.ReleaseReaderLock();
+                readWriteLock.ExitReadLock();
             }
         }
 
@@ -77,7 +75,7 @@ namespace CodeIndex.IndexBuilder
         {
             try
             {
-                readWriteLock.AcquireReaderLock(Constants.ReadWriteLockTimeOutMilliseconds);
+                readWriteLock.TryEnterReadLock(Constants.ReadWriteLockTimeOutMilliseconds);
 
                 var indexWriter = CreateOrGetIndexWriter(luceneIndex);
                 indexWriter.DeleteDocuments(terms);
@@ -86,7 +84,7 @@ namespace CodeIndex.IndexBuilder
             }
             finally
             {
-                readWriteLock.ReleaseReaderLock();
+                readWriteLock.ExitReadLock();
             }
         }
 
@@ -94,7 +92,7 @@ namespace CodeIndex.IndexBuilder
         {
             try
             {
-                readWriteLock.AcquireReaderLock(Constants.ReadWriteLockTimeOutMilliseconds);
+                readWriteLock.TryEnterReadLock(Constants.ReadWriteLockTimeOutMilliseconds);
 
                 var indexWriter = CreateOrGetIndexWriter(luceneIndex);
                 indexWriter.UpdateDocument(term, document);
@@ -103,7 +101,7 @@ namespace CodeIndex.IndexBuilder
             }
             finally
             {
-                readWriteLock.ReleaseReaderLock();
+                readWriteLock.ExitReadLock();
             }
         }
 
@@ -111,7 +109,7 @@ namespace CodeIndex.IndexBuilder
         {
             try
             {
-                readWriteLock.AcquireReaderLock(Constants.ReadWriteLockTimeOutMilliseconds);
+                readWriteLock.TryEnterReadLock(Constants.ReadWriteLockTimeOutMilliseconds);
 
                 var indexWriter = CreateOrGetIndexWriter(luceneIndex);
                 indexWriter.DeleteAll();
@@ -121,7 +119,7 @@ namespace CodeIndex.IndexBuilder
             }
             finally
             {
-                readWriteLock.ReleaseReaderLock();
+                readWriteLock.ExitReadLock();
             }
         }
 
@@ -135,7 +133,7 @@ namespace CodeIndex.IndexBuilder
         {
             try
             {
-                readWriteLock.AcquireWriterLock(Constants.ReadWriteLockTimeOutMilliseconds);
+                readWriteLock.TryEnterWriteLock(Constants.ReadWriteLockTimeOutMilliseconds);
 
                 if (IndexReaderPool.TryRemove(luceneIndex, out var indexReader))
                 {
@@ -153,7 +151,7 @@ namespace CodeIndex.IndexBuilder
             }
             finally
             {
-                readWriteLock.ReleaseWriterLock();
+                readWriteLock.ExitWriteLock();
             }
         }
 
@@ -207,7 +205,38 @@ namespace CodeIndex.IndexBuilder
                 }
             }
 
+            if (!indexSearcher.IndexReader.TryIncRef())
+            {
+                return CreateOrGetIndexSearcher(luceneIndex);
+            }
+
             return indexSearcher;
+        }
+
+        static Document[] SearchDocuments(string luceneIndex, Query query, int maxResult, FieldValueFilter fieldValueFilter = null)
+        {
+            Document[] documents = null;
+            IndexSearcher indexSearcher = null;
+
+            try
+            {
+                indexSearcher = CreateOrGetIndexSearcher(luceneIndex);
+
+                if (fieldValueFilter != null)
+                {
+                    documents = indexSearcher.Search(query, fieldValueFilter, maxResult).ScoreDocs.Select(hit => indexSearcher.Doc(hit.Doc)).ToArray();
+                }
+                else
+                {
+                    documents = indexSearcher.Search(query, maxResult).ScoreDocs.Select(hit => indexSearcher.Doc(hit.Doc)).ToArray();
+                }
+            }
+            finally
+            {
+                indexSearcher.IndexReader.DecRef();
+            }
+
+            return documents ?? Array.Empty<Document>();
         }
 
         static readonly object syncLockForReader = new object();
@@ -227,8 +256,7 @@ namespace CodeIndex.IndexBuilder
                     }
                     else if (forceRefresh)
                     {
-                        // TODO: Became thread safe
-                        indexReader.Dispose();
+                        indexReader.DecRef(); // Dispose safely
                         indexReader = CreateOrGetIndexWriter(luceneIndex).GetReader(true);
                         IndexReaderPool.AddOrUpdate(luceneIndex, indexReader, (u, v) => indexReader);
                     }
@@ -238,35 +266,17 @@ namespace CodeIndex.IndexBuilder
             return indexReader;
         }
 
-        internal static Document GetDocument(string luceneIndex, Term term)
-        {
-            try
-            {
-                readWriteLock.AcquireReaderLock(Constants.ReadWriteLockTimeOutMilliseconds);
-
-                var searcher = CreateOrGetIndexSearcher(luceneIndex);
-                var result = searcher.Search(new TermQuery(term), 1);
-                return result.ScoreDocs?.Length == 1 ? searcher.Doc(result.ScoreDocs[0].Doc) : null;
-            }
-            finally
-            {
-                readWriteLock.ReleaseReaderLock();
-            }
-        }
-
         public static Document[] Search(string luceneIndex, Query query, int maxResults)
         {
             try
             {
-                readWriteLock.AcquireReaderLock(Constants.ReadWriteLockTimeOutMilliseconds);
+                readWriteLock.TryEnterReadLock(Constants.ReadWriteLockTimeOutMilliseconds);
 
-                var searcher = CreateOrGetIndexSearcher(luceneIndex);
-                var hits = searcher.Search(query, maxResults).ScoreDocs;
-                return hits.Select(hit => searcher.Doc(hit.Doc)).ToArray();
+                return SearchDocuments(luceneIndex, query, maxResults);
             }
             finally
             {
-                readWriteLock.ReleaseReaderLock();
+                readWriteLock.ExitReadLock();
             }
         }
 
@@ -276,9 +286,7 @@ namespace CodeIndex.IndexBuilder
 
             try
             {
-                readWriteLock.AcquireReaderLock(Constants.ReadWriteLockTimeOutMilliseconds);
-
-                var searcher = CreateOrGetIndexSearcher(luceneIndex);
+                readWriteLock.TryEnterReadLock(Constants.ReadWriteLockTimeOutMilliseconds);
 
                 if (caseSensitive)
                 {
@@ -289,12 +297,11 @@ namespace CodeIndex.IndexBuilder
                     query = new PrefixQuery(new Term(nameof(CodeWord.WordLower), word.ToLower()));
                 }
 
-                var hits = searcher.Search(query, maxResults).ScoreDocs;
-                return hits.Select(hit => searcher.Doc(hit.Doc)).Select(u => u.Get(nameof(CodeWord.Word))).ToArray();
+                return SearchDocuments(luceneIndex, query, maxResults).Select(u => u.Get(nameof(CodeWord.Word))).ToArray();
             }
             finally
             {
-                readWriteLock.ReleaseReaderLock();
+                readWriteLock.ExitReadLock();
             }
         }
 
@@ -302,15 +309,13 @@ namespace CodeIndex.IndexBuilder
         {
             try
             {
-                readWriteLock.AcquireReaderLock(Constants.ReadWriteLockTimeOutMilliseconds);
+                readWriteLock.TryEnterReadLock(Constants.ReadWriteLockTimeOutMilliseconds);
 
-                var searcher = CreateOrGetIndexSearcher(luceneIndex);
-                var hits = searcher.Search(query, maxResults).ScoreDocs;
-                return hits.Select(hit => GetCodeSourceFromDocument(searcher.Doc(hit.Doc))).ToArray();
+                return SearchDocuments(luceneIndex, query, maxResults).Select(doc => GetCodeSourceFromDocument(doc)).ToArray();
             }
             finally
             {
-                readWriteLock.ReleaseReaderLock();
+                readWriteLock.ExitReadLock();
             }
         }
 
@@ -324,7 +329,7 @@ namespace CodeIndex.IndexBuilder
             return new QueryParser(Constants.AppLuceneVersion, nameof(CodeSource.Content), GetAnalyzer());
         }
 
-        static readonly ReaderWriterLock readWriteLock = new ReaderWriterLock();
+        static readonly ReaderWriterLockSlim readWriteLock = new ReaderWriterLockSlim();
 
         public static Analyzer GetAnalyzer()
         {
