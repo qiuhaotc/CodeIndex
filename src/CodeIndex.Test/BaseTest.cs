@@ -12,6 +12,7 @@ namespace CodeIndex.Test
         protected string TempDir { get; set; }
         string TempIndexDir => Path.Combine(TempDir, "IndexFolder");
         public string MonitorFolder => Path.Combine(TempDir, "CodeFolder");
+
         public CodeIndexConfiguration Config => new CodeIndexConfiguration
         {
             LuceneIndex = TempIndexDir,

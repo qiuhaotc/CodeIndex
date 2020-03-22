@@ -17,7 +17,6 @@ namespace CodeIndex.IndexBuilder
         /// <returns><see cref="IList{T}"/> of <see cref="SimpleSegToken"/>.</returns>
         public virtual IList<SimpleSegToken> SegmentSentence(string sentence, int startOffset)
         {
-
             var segTokenList = GetSegToken(sentence);
 
             foreach (SimpleSegToken st in segTokenList)
@@ -27,7 +26,6 @@ namespace CodeIndex.IndexBuilder
 
             return segTokenList;
         }
-
 
         List<SimpleSegToken> emptySegTokenList = new List<SimpleSegToken>();
 
@@ -89,7 +87,6 @@ namespace CodeIndex.IndexBuilder
         public virtual SimpleSegToken ConvertSegToken(SimpleSegToken st, string sentence,
             int sentenceStartOffset)
         {
-
             st.CharArray = sentence.Substring(st.StartOffset, st.EndOffset - st.StartOffset).ToCharArray();
             st.StartOffset += sentenceStartOffset;
             st.EndOffset += sentenceStartOffset;

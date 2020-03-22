@@ -24,17 +24,17 @@ namespace CodeIndex.Test
 
         public void Error(string message)
         {
-             Log(message);
+            Log(message);
         }
 
         public void Info(string message)
         {
-             Log(message);
+            Log(message);
         }
 
         public void Trace(string message)
         {
-             Log(message);
+            Log(message);
         }
 
         public void Warn(string message)
@@ -44,7 +44,7 @@ namespace CodeIndex.Test
 
         void Log(string message)
         {
-            if(!string.IsNullOrEmpty(ThrowExceptionWhenLogContains) && message.Contains(ThrowExceptionWhenLogContains))
+            if (!string.IsNullOrEmpty(ThrowExceptionWhenLogContains) && message.Contains(ThrowExceptionWhenLogContains))
             {
                 throw new Exception("Dummy Error");
             }

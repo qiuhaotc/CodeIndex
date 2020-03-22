@@ -15,7 +15,7 @@ namespace CodeIndex.Test
             Assert.AreEqual("12", "123".SubStringSafe(0, 2));
             Assert.AreEqual("12", "123".SubStringSafe(-10, 2));
         }
-        
+
         [Test]
         public void TestSubStringSafeWithEllipsis()
         {

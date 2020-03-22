@@ -16,7 +16,7 @@ namespace CodeIndex.ConsoleApp
             maintainer.SetInitalizeFinishedToTrue(failedIndexFiles);
 
             Console.WriteLine("Initialize complete");
-            
+
             Console.WriteLine("Start monitoring, press any key to stop");
             Console.ReadLine();
             Console.WriteLine("Stop");

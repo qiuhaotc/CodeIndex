@@ -59,7 +59,7 @@ namespace CodeIndex.IndexBuilder
                 }
             }
 
-            if(documents.Count > 0)
+            if (documents.Count > 0)
             {
                 BuildIndex(config, triggerMerge, applyAllDeletes, documents, needFlush, log);
             }

@@ -40,7 +40,6 @@ namespace CodeIndex.Search
                     result = highlighter.GetBestFragments(stream, text, 3, "...");
                 }
 
-
                 result = string.IsNullOrEmpty(result) ?
                         (returnRawContentWhenResultIsEmpty ? HttpUtility.HtmlEncode(text) : string.Empty)
                         : HttpUtility.HtmlEncode(result).Replace(CodeContentProcessing.HighLightPrefix, prefix).Replace(CodeContentProcessing.HighLightSuffix, suffix);

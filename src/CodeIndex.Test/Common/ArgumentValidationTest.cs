@@ -30,7 +30,6 @@ namespace CodeIndex.Test
             Assert.DoesNotThrow(() => ArgumentValidation.RequireNotNull(string.Empty, "A"));
         }
 
-
         [Test]
         public void TestRequireRange()
         {

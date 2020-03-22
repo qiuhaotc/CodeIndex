@@ -33,7 +33,7 @@
 
     string GetPath(string path)
     {
-        if(path != null && path.StartsWith("/monitorfolder") && !string.IsNullOrEmpty(Config["MonitorFolderRealPath"]))
+        if (path != null && path.StartsWith("/monitorfolder") && !string.IsNullOrEmpty(Config["MonitorFolderRealPath"]))
         {
             return Config["MonitorFolderRealPath"] + path.SubStringSafe("/monitorfolder".Length, path.Length);
         }

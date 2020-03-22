@@ -86,7 +86,8 @@ namespace CodeIndex.Server
 
             lifeTime.ApplicationStopping.Register(OnShutdown);
 
-            System.Threading.Tasks.Task.Run(() => {
+            System.Threading.Tasks.Task.Run(() =>
+            {
                 try
                 {
                     initializer = new IndexInitializer(log);
