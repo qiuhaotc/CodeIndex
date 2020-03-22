@@ -1,10 +1,12 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using CodeIndex.Common;
 using NUnit.Framework;
 
 namespace CodeIndex.Test
 {
+    [ExcludeFromCodeCoverage]
     public class ArgumentValidationTest
     {
         [Test]

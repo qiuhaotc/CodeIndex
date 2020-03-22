@@ -1,9 +1,11 @@
 ﻿using System;
+using System.Diagnostics.CodeAnalysis;
 using System.Text;
 using CodeIndex.Common;
 
 namespace CodeIndex.Test
 {
+    [ExcludeFromCodeCoverage]
     class DummyLog : ILog
     {
         readonly StringBuilder logs = new StringBuilder();

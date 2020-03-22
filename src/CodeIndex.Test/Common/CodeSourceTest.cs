@@ -29,6 +29,7 @@ namespace CodeIndex.Test
             Assert.LessOrEqual(dateTime, source.IndexDate);
             Assert.AreNotEqual(string.Empty, source.CodePK);
             Assert.DoesNotThrow(() => new Guid(source.CodePK));
+            Assert.AreEqual($"FileName: {source.FileName}{Environment.NewLine}FilePath: {source.FilePath}{Environment.NewLine}Index Date: {source.IndexDate.ToLocalTime()}{Environment.NewLine}Last Modify Date:{source.LastWriteTimeUtc.ToLocalTime()}", source.Info);
         }
     }
 }

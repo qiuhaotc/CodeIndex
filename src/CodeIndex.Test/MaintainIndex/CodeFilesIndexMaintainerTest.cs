@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Concurrent;
+using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -12,6 +13,7 @@ using NUnit.Framework;
 
 namespace CodeIndex.Test
 {
+    [ExcludeFromCodeCoverage]
     public class CodeFilesIndexMaintainerTest : BaseTest
     {
         [Test]

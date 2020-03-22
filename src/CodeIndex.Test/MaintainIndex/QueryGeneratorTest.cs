@@ -19,6 +19,7 @@ namespace CodeIndex.Test
                 Assert.AreEqual($"{nameof(CodeSource.FilePath)}:D", QueryGenerator.GetSearchStr(null, null, null, "D"));
                 Assert.AreEqual($"{nameof(CodeSource.FileName)}:A AND {nameof(CodeSource.Content)}:B AND {nameof(CodeSource.FileExtension)}:C AND {nameof(CodeSource.FilePath)}:D", QueryGenerator.GetSearchStr("A", "B", "C", "D"));
                 Assert.IsEmpty(QueryGenerator.GetSearchStr(" ", "   ", string.Empty, " "));
+                Assert.AreEqual(nameof(CodeSource.FilePath) + ":" + "\"C:\\\\WWWROOT\"", QueryGenerator.GetSearchStr(null, null, null, "\"C:\\WWWROOT\""));
             });
         }
 

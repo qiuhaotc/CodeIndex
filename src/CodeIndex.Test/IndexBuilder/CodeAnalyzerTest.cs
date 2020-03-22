@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Diagnostics.CodeAnalysis;
 using CodeIndex.IndexBuilder;
 using Lucene.Net.Analysis;
 using Lucene.Net.Analysis.TokenAttributes;
@@ -7,6 +8,7 @@ using NUnit.Framework;
 
 namespace CodeIndex.Test
 {
+    [ExcludeFromCodeCoverage]
     public class CodeAnalyzerTest
     {
         [Test]
