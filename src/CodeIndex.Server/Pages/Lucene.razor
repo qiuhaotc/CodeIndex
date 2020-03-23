@@ -1,7 +1,7 @@
 ﻿@page "/"
 @inject HttpClient Client
 @inject CodeIndex.Common.Storage Storage
-@inject IConfiguration Config
+@inject CodeIndexConfiguration Config
 
 <div class="row">
     <div class="col-sm">
@@ -139,7 +139,7 @@
                             <pre>@((MarkupString)item.Content)</pre>
                         </td>
                         <td>
-                            <a href="@Config["OpenIDEUriFormat"].Replace("{FilePath}", GetPath(item.FilePath))">@item.FilePath?.SubStringSafeWithEllipsis(item.FilePath.Length - 50, 50)</a>
+                            <a href="@Config.OpenIDEUriFormat.Replace("{FilePath}", GetPath(item.FilePath))">@item.FilePath?.SubStringSafeWithEllipsis(item.FilePath.Length - 50, 50)</a>
                         </td>
                         <td>@item.FileExtension</td>
                         <td>
@@ -219,7 +219,7 @@
             var searchQuery = System.Web.HttpUtility.UrlEncode(SearchQuery);
             if (!string.IsNullOrEmpty(searchQuery))
             {
-                FetchResult = await Client.GetJsonAsync<FetchResult<IEnumerable<CodeSource>>>($"{Config["LocalUrl"]}api/lucene/GetCodeSources?searchQuery=" + System.Web.HttpUtility.UrlEncode(SearchQuery) + "&showResults=" + ShowResults + "&preview=true" + "&contentQuery=" + System.Web.HttpUtility.UrlEncode(ContentQuery ?? string.Empty));
+                FetchResult = await Client.GetJsonAsync<FetchResult<IEnumerable<CodeSource>>>($"{Config.LocalUrl}api/lucene/GetCodeSources?searchQuery=" + System.Web.HttpUtility.UrlEncode(SearchQuery) + "&showResults=" + ShowResults + "&preview=true" + "&contentQuery=" + System.Web.HttpUtility.UrlEncode(ContentQuery ?? string.Empty));
             }
             else
             {
@@ -254,7 +254,7 @@
             var inputWord = ContentQuery.Split(" ", StringSplitOptions.RemoveEmptyEntries).LastOrDefault();
             if (inputWord?.Length >= 3)
             {
-                HintWords = await Client.GetJsonAsync<FetchResult<IEnumerable<string>>>($"{Config["LocalUrl"]}api/lucene/GetHints?word=" + System.Web.HttpUtility.UrlEncode(inputWord));
+                HintWords = await Client.GetJsonAsync<FetchResult<IEnumerable<string>>>($"{Config.LocalUrl}api/lucene/GetHints?word=" + System.Web.HttpUtility.UrlEncode(inputWord));
             }
         }
         else
@@ -265,9 +265,9 @@
 
     string GetPath(string path)
     {
-        if (path != null && path.StartsWith("/monitorfolder") && !string.IsNullOrEmpty(Config["MonitorFolderRealPath"]))
+        if (path != null && path.StartsWith("/monitorfolder") && !string.IsNullOrEmpty(Config.MonitorFolderRealPath))
         {
-            return Config["MonitorFolderRealPath"] + path.SubStringSafe("/monitorfolder".Length, path.Length);
+            return Config.MonitorFolderRealPath + path.SubStringSafe("/monitorfolder".Length, path.Length);
         }
         else
         {

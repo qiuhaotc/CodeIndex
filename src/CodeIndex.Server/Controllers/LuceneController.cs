@@ -21,14 +21,12 @@ namespace CodeIndex.Server.Controllers
     [ApiController]
     public class LuceneController : ControllerBase
     {
-        public LuceneController(IConfiguration config, CodeIndexConfiguration codeIndexConfiguration, ILog log)
+        public LuceneController(CodeIndexConfiguration codeIndexConfiguration, ILog log)
         {
-            this.config = config;
             this.codeIndexConfiguration = codeIndexConfiguration;
             this.log = log;
         }
 
-        readonly IConfiguration config;
         readonly CodeIndexConfiguration codeIndexConfiguration;
         readonly ILog log;
 
@@ -54,8 +52,9 @@ namespace CodeIndex.Server.Controllers
                 };
 
                 var queryForContent = string.IsNullOrWhiteSpace(contentQuery) ? null : generator.GetQueryFromStr(contentQuery);
+                var maxContentHighlightLength = codeIndexConfiguration.MaxContentHighlightLength;
 
-                if (!int.TryParse(config["MaxContentHighlightLength"], out var maxContentHighlightLength))
+                if (maxContentHighlightLength <= 0)
                 {
                     maxContentHighlightLength = Constants.DefaultMaxContentHighlightLength;
                 }

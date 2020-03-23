@@ -8,11 +8,21 @@ namespace CodeIndex.ConsoleApp
     {
         static void Main(string[] args)
         {
+            var config = new CodeIndexConfiguration
+            {
+                MonitorFolder = @"D:\TestFolder\CodeFolder",
+                LuceneIndex = @"D:\TestFolder\Index",
+                ExcludedExtensions = ".DLL|.PBD",
+                ExcludedPaths = "\\DEBUG\\|\\RELEASE\\|\\RELEASES\\|\\BIN\\|\\OBJ\\|\\DEBUGPUBLIC\\",
+                IncludedExtensions = ".CS|.XML|.XAML|.JS|.TXT",
+                SaveIntervalSeconds = 300
+            };
+
             var logger = new NLogger();
             var initializer = new IndexInitializer(logger);
-            var maintainer = new CodeFilesIndexMaintainer(new CodeIndexConfiguration { MonitorFolder = @"D:\TestFolder\CodeFolder", LuceneIndex = @"D:\TestFolder\Index" }, new[] { ".dll", ".pbd" }, new[] { "DEBUG/", "RELEASE/", "RELEASES/", "BIN/", "OBJ/", "LOG/", "DEBUGPUBLIC/" }, 300, new[] { ".cs", ".xml", ".xaml", ".js", ".txt" }, logger);
+            var maintainer = new CodeFilesIndexMaintainer(config, logger);
             maintainer.StartWatch();
-            initializer.InitializeIndex(new CodeIndexConfiguration { MonitorFolder = @"D:\TestFolder\CodeFolder", LuceneIndex = @"D:\TestFolder\Index" }, new[] { ".dll", ".pbd" }, new[] { "DEBUG/", "RELEASE/", "RELEASES/", "BIN/", "OBJ/", "LOG/", "DEBUGPUBLIC/" }, out var failedIndexFiles, "*", new[] { ".cs", ".xml", ".xaml", ".js", ".txt" });
+            initializer.InitializeIndex(config, out var failedIndexFiles);
             maintainer.SetInitalizeFinishedToTrue(failedIndexFiles);
 
             Console.WriteLine("Initialize complete");

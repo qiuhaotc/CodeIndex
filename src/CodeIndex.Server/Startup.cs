@@ -34,12 +34,8 @@ namespace CodeIndex.Server
             services.AddSingleton<ILog>(new NLogger());
             services.AddScoped<Storage>();
 
-            config = new CodeIndexConfiguration
-            {
-                LuceneIndex = Configuration["LuceneIndex"],
-                MonitorFolder = Configuration["MonitorFolder"]
-            };
-
+            config = new CodeIndexConfiguration();
+            Configuration.GetSection("CodeIndex").Bind(config);
             services.AddSingleton(config);
 
             // Server Side Blazor doesn't register HttpClient by default
@@ -91,9 +87,9 @@ namespace CodeIndex.Server
                 try
                 {
                     initializer = new IndexInitializer(log);
-                    maintainer = new CodeFilesIndexMaintainer(config, new[] { ".dll", ".pbd" }, new[] { "DEBUG/", "RELEASE/", "RELEASES/", "BIN/", "OBJ/", "LOG/", "DEBUGPUBLIC/" }, 300, new[] { ".cs", ".xml", ".xaml", ".js", ".txt" }, log);
+                    maintainer = new CodeFilesIndexMaintainer(config, log);
                     maintainer.StartWatch();
-                    initializer.InitializeIndex(config, new[] { ".dll", ".pbd" }, new[] { "DEBUG/", "RELEASE/", "RELEASES/", "BIN/", "OBJ/", "LOG/", "DEBUGPUBLIC/" }, out var failedIndexFiles, "*", new[] { ".cs", ".xml", ".xaml", ".js", ".txt" });
+                    initializer.InitializeIndex(config, out var failedIndexFiles);
 
                     maintainer.SetInitalizeFinishedToTrue(failedIndexFiles);
                 }
@@ -113,8 +109,5 @@ namespace CodeIndex.Server
             maintainer?.Dispose();
             LucenePool.SaveResultsAndClearLucenePool(config);
         }
-
-        string LuceneIndex => Configuration.GetValue<string>("LuceneIndex");
-        string MonitorFolder => Configuration.GetValue<string>("MonitorFolder");
     }
 }

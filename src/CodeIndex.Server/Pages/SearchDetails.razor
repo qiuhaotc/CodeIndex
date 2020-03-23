@@ -1,13 +1,13 @@
 ﻿@page "/Details/{CodePK}"
 @page "/Details/{CodePK}/{ContentQuery}"
 @inject HttpClient Client
-@inject IConfiguration Config
+@inject CodeIndexConfiguration Config
 
 <div class="jumbotron">
     <h1 class="display-4">Details For @Source?.FileName</h1>
     <p class="lead">Extension: @Source?.FileExtension | Index Date: @Source?.IndexDate | Last Write Time Utc: @Source?.LastWriteTimeUtc</p>
     <hr class="my-4">
-    <p>File Path: <a href="@Config["OpenIDEUriFormat"].Replace("{FilePath}", GetPath(Source?.FilePath))">@Source?.FilePath</a></p>
+    <p>File Path: <a href="@Config.OpenIDEUriFormat.Replace("{FilePath}", GetPath(Source?.FilePath))">@Source?.FilePath</a></p>
     <hr class="my-4">
     <p>Content:</p>
     <p>
@@ -26,16 +26,16 @@
 
     protected override async Task OnInitializedAsync()
     {
-        var result = await Client.GetJsonAsync<FetchResult<IEnumerable<CodeSource>>>($"{Config["LocalUrl"]}api/lucene/GetCodeSources?searchQuery=" + System.Web.HttpUtility.UrlEncode($"CodePK:\"{CodePK}\"") + "&contentQuery=" + ContentQuery);
+        var result = await Client.GetJsonAsync<FetchResult<IEnumerable<CodeSource>>>($"{Config.LocalUrl}api/lucene/GetCodeSources?searchQuery=" + System.Web.HttpUtility.UrlEncode($"CodePK:\"{CodePK}\"") + "&contentQuery=" + ContentQuery);
         Source = result.Result.FirstOrDefault();
         await base.OnInitializedAsync();
     }
 
     string GetPath(string path)
     {
-        if (path != null && path.StartsWith("/monitorfolder") && !string.IsNullOrEmpty(Config["MonitorFolderRealPath"]))
+        if (path != null && path.StartsWith("/monitorfolder") && !string.IsNullOrEmpty(Config.MonitorFolderRealPath))
         {
-            return Config["MonitorFolderRealPath"] + path.SubStringSafe("/monitorfolder".Length, path.Length);
+            return Config.MonitorFolderRealPath + path.SubStringSafe("/monitorfolder".Length, path.Length);
         }
         else
         {

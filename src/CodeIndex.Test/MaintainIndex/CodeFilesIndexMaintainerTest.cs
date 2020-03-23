@@ -19,6 +19,9 @@ namespace CodeIndex.Test
         [Test]
         public void TestMaintainerIndex()
         {
+            Config.ExcludedExtensions = ".dll";
+            Config.SaveIntervalSeconds = 1;
+
             var waitMS = 1500;
             Directory.CreateDirectory(MonitorFolder);
             Directory.CreateDirectory(Path.Combine(MonitorFolder, "FolderA"));
@@ -51,7 +54,7 @@ namespace CodeIndex.Test
             var codeSources = CodeIndexSearcher.SearchCode(Config.LuceneIndexForCode, new MatchAllDocsQuery(), 100);
             CollectionAssert.AreEquivalent(new[] { "AAA.cs", "BBB.xml", "CCC.xml" }, codeSources.Select(u => u.FileName));
 
-            using var maintainer = new CodeFilesIndexMaintainer(Config, new[] { ".dll" }, Array.Empty<string>(), 1);
+            using var maintainer = new CodeFilesIndexMaintainer(Config, new DummyLog());
             maintainer.StartWatch();
             maintainer.SetInitalizeFinishedToTrue();
 
@@ -84,7 +87,9 @@ namespace CodeIndex.Test
             File.Create(fileAPath).Close();
             File.AppendAllText(fileAPath, "12345");
 
-            using var maintainer = new CodeFilesIndexMaintainerForTest(Config, new[] { ".dll" }, Array.Empty<string>(), 1);
+            Config.SaveIntervalSeconds = 1;
+            Config.ExcludedExtensions = ".dll";
+            using var maintainer = new CodeFilesIndexMaintainerForTest(Config, new DummyLog());
             maintainer.StartWatch();
             maintainer.SetInitalizeFinishedToTrue();
 
@@ -116,7 +121,7 @@ namespace CodeIndex.Test
 
         class CodeFilesIndexMaintainerForTest : CodeFilesIndexMaintainer
         {
-            public CodeFilesIndexMaintainerForTest(CodeIndexConfiguration config, string[] excludedExtensions, string[] excludedPaths, int saveIntervalSeconds = 300, string[] includedExtensions = null, ILog log = null) : base(config, excludedExtensions, excludedPaths, saveIntervalSeconds, includedExtensions, log)
+            public CodeFilesIndexMaintainerForTest(CodeIndexConfiguration config, ILog log) : base(config, log)
             {
             }
 

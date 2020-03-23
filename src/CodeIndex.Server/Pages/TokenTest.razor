@@ -1,6 +1,6 @@
 ﻿@page "/TokenTest"
 @inject HttpClient Client
-@inject IConfiguration Config
+@inject CodeIndexConfiguration Config
 
 <h3>TokenTest</h3>
 <div class="input-group mb-3">
@@ -39,7 +39,7 @@
         }
 
         IsSearching = true;
-        Result = (await Client.GetJsonAsync<FetchResult<string>>($"{Config["LocalUrl"]}api/lucene/GetTokenizeStr?searchStr=" + System.Web.HttpUtility.UrlEncode(Content))).Result;
+        Result = (await Client.GetJsonAsync<FetchResult<string>>($"{Config.LocalUrl}api/lucene/GetTokenizeStr?searchStr=" + System.Web.HttpUtility.UrlEncode(Content))).Result;
         IsSearching = false;
     }
 }

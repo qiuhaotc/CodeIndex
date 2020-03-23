@@ -1,5 +1,4 @@
-﻿using System;
-using System.IO;
+﻿using System.IO;
 using System.Linq;
 using CodeIndex.IndexBuilder;
 using CodeIndex.MaintainIndex;
@@ -20,7 +19,7 @@ namespace CodeIndex.Test
 
             var log = new DummyLog();
             var initializer = new IndexInitializer(log);
-            initializer.InitializeIndex(Config, Array.Empty<string>(), Array.Empty<string>(), out _);
+            initializer.InitializeIndex(Config, out _);
             StringAssert.Contains($"Create index folder {Config.LuceneIndexForCode}", log.LogsContent);
             StringAssert.Contains($"Create index folder {Config.LuceneIndexForHint}", log.LogsContent);
 
@@ -32,7 +31,7 @@ namespace CodeIndex.Test
             File.AppendAllText(Path.Combine(MonitorFolder, "A.txt"), "Now I have two apples");
             File.Delete(Path.Combine(MonitorFolder, "Sub", "B.txt"));
 
-            initializer.InitializeIndex(Config, Array.Empty<string>(), Array.Empty<string>(), out _);
+            initializer.InitializeIndex(Config, out _);
 
             StringAssert.Contains("Compare index difference", log.LogsContent);
             StringAssert.Contains($"File {Path.Combine(MonitorFolder, "A.txt")} modified", log.LogsContent);
@@ -52,7 +51,7 @@ namespace CodeIndex.Test
             File.WriteAllText(Path.Combine(MonitorFolder, "B.txt"), "I have two apples");
 
             var initializer = new IndexInitializer(null);
-            initializer.InitializeIndex(Config, Array.Empty<string>(), Array.Empty<string>(), out _);
+            initializer.InitializeIndex(Config, out _);
 
             var codeSources = CodeIndexBuilder.GetAllIndexedCodeSource(Config.LuceneIndexForCode);
             Assert.AreEqual(2, codeSources.Count);

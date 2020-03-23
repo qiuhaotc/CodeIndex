@@ -11,18 +11,18 @@ namespace CodeIndex.MaintainIndex
     {
         readonly ILog log;
 
-        public IndexInitializer(ILog log = null)
+        public IndexInitializer(ILog log)
         {
             this.log = log;
         }
 
-        public void InitializeIndex(CodeIndexConfiguration config, string[] excludedExtensions, string[] excludedPaths, out List<FileInfo> failedIndexFiles, string includedExtenstion = "*", string[] includedExtensions = null, bool forceDeleteAllIndex = false)
+        public void InitializeIndex(CodeIndexConfiguration config, out List<FileInfo> failedIndexFiles, bool forceDeleteAllIndex = false)
         {
             config.RequireNotNull(nameof(config));
 
             log?.Info($"Initialize start for {config.LuceneIndex}");
 
-            var allFiles = FilesFetcher.FetchAllFiles(config.MonitorFolder, excludedExtensions, excludedPaths, includedExtenstion, includedExtensions).ToList();
+            var allFiles = FilesFetcher.FetchAllFiles(config.MonitorFolder, config.ExcludedExtensionsArray, config.ExcludedPathsArray, includedExtensions: config.IncludedExtensionsArray, isInLinux: config.IsInLinux).ToList();
             List<FileInfo> needToBuildIndex = null;
             var firstInitialize = true;
 

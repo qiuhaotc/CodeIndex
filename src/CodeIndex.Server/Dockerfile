@@ -3,12 +3,16 @@
 FROM mcr.microsoft.com/dotnet/core/aspnet:3.1-buster-slim AS base
 WORKDIR /app
 ENV ASPNETCORE_ENVIRONMENT Development
-ENV LuceneIndex /luceneindex
-ENV MonitorFolder /monitorfolder
-ENV MaxContentHighlightLength 3000000
-ENV OpenIDEUriFormat vscode://file/{FilePath}
-ENV LocalUrl http://localhost:80/
-ENV MonitorFolderRealPath=""
+ENV CodeIndex__LuceneIndex /luceneindex
+ENV CodeIndex__MonitorFolder /monitorfolder
+ENV CodeIndex__MaxContentHighlightLength 3000000
+ENV CodeIndex__OpenIDEUriFormat vscode://file/{FilePath}
+ENV CodeIndex__IsInLinux true
+ENV CodeIndex__LocalUrl http://localhost:80/
+ENV CodeIndex__MonitorFolderRealPath=""
+ENV CodeIndex__ExcludedExtensions=".DLL|.PBD"
+ENV CodeIndex__ExcludedPaths="\\DEBUG\\|\\RELEASE\\|\\RELEASES\\|\\BIN\\|\\OBJ\\|\\DEBUGPUBLIC\\"
+ENV CodeIndex__IncludedExtensions=".CS|.XML|.XAML|.JS|.TXT"
 EXPOSE 80
 EXPOSE 443
 

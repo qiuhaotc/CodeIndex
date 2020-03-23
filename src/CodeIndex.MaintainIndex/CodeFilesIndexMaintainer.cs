@@ -16,17 +16,17 @@ namespace CodeIndex.MaintainIndex
 {
     public class CodeFilesIndexMaintainer : IDisposable
     {
-        public CodeFilesIndexMaintainer(CodeIndexConfiguration config, string[] excludedExtensions, string[] excludedPaths, int saveIntervalSeconds = 300, string[] includedExtensions = null, ILog log = null)
+        public CodeFilesIndexMaintainer(CodeIndexConfiguration config, ILog log)
         {
             config.RequireNotNull(nameof(config));
-            excludedPaths.RequireNotNull(nameof(excludedPaths));
-            saveIntervalSeconds.RequireRange(nameof(saveIntervalSeconds), 3600, 1);
+            config.ExcludedPathsArray.RequireNotNull(nameof(config.ExcludedPathsArray));
+            config.SaveIntervalSeconds.RequireRange(nameof(config.SaveIntervalSeconds), 3600, 1);
 
             this.config = config;
-            this.excludedExtensions = excludedExtensions.Select(u => u.ToUpperInvariant()).ToArray();
-            this.excludedPaths = excludedPaths.Select(u => u.ToUpperInvariant()).ToArray();
-            this.saveIntervalSeconds = saveIntervalSeconds;
-            this.includedExtensions = includedExtensions?.Select(u => u.ToUpperInvariant()).ToArray();
+            excludedExtensions = config.ExcludedExtensionsArray.Select(u => u.ToUpperInvariant()).ToArray();
+            excludedPaths = FilePathHelper.GetPaths(config.ExcludedPathsArray, config.IsInLinux);
+            saveIntervalSeconds = config.SaveIntervalSeconds;
+            includedExtensions = config.IncludedExtensionsArray?.Select(u => u.ToUpperInvariant()).ToArray() ?? Array.Empty<string>();
             this.log = log;
             tokenSource = new CancellationTokenSource();
         }
@@ -155,9 +155,8 @@ namespace CodeIndex.MaintainIndex
         bool IsExcludedFromIndex(FileSystemEventArgs e)
         {
             var excluded = excludedPaths.Any(u => e.FullPath.ToUpperInvariant().Contains(u))
-                    || excludedPaths.Any(u => e.FullPath.ToUpperInvariant().Contains(u))
                     || excludedExtensions.Any(u => e.FullPath.EndsWith(u, StringComparison.InvariantCultureIgnoreCase))
-                    || includedExtensions != null && !includedExtensions.Any(u => e.FullPath.EndsWith(u, StringComparison.InvariantCultureIgnoreCase));
+                    || includedExtensions.Length > 0 && !includedExtensions.Any(u => e.FullPath.EndsWith(u, StringComparison.InvariantCultureIgnoreCase));
 
             if (excluded)
             {
