@@ -1,0 +1,137 @@
+﻿<UserControl x:Class="CodeIndex.VisualStudioExtension.CodeIndexSearchControl"
+             xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
+             xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
+             xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
+             xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             mc:Ignorable="d" 
+             d:DesignHeight="281.2" d:DesignWidth="987.2" Foreground="Black" Background="#FF2D2D30">
+    <Grid>
+        <DockPanel LastChildFill="True" Margin="6">
+            <WrapPanel HorizontalAlignment="Left" DockPanel.Dock="Top">
+                <Label Content="Content:"/>
+                <TextBox Height="23" TextWrapping="Wrap" Text="{Binding Content, UpdateSourceTrigger=PropertyChanged}" Width="240" KeyDown="TextBox_KeyDown"/>
+                <Label Content="File Name:"/>
+                <TextBox Height="23" TextWrapping="Wrap" Text="{Binding FileName, UpdateSourceTrigger=PropertyChanged}" Width="120" KeyDown="TextBox_KeyDown"/>
+                <Label Content="File Extension:"/>
+                <TextBox Height="23" TextWrapping="Wrap" Text="{Binding FileExtension, UpdateSourceTrigger=PropertyChanged}" Width="120" KeyDown="TextBox_KeyDown"/>
+                <Label Content="File Location:"/>
+                <TextBox Height="23" TextWrapping="Wrap" Text="{Binding FileLocation, UpdateSourceTrigger=PropertyChanged}" Width="120" KeyDown="TextBox_KeyDown"/>
+                <Label Content="Show Results: "/>
+                <ComboBox SelectedValue="{Binding ShowResultsNumber}" ItemsSource="{Binding Options}" DisplayMemberPath="Name" SelectedValuePath="Value" Width="100" VerticalAlignment="Center"/>
+                <Button x:Name="SearchButton" Margin="10 0 0 0" Content="Search" Command="{Binding SearchIndexCommand}" Style="{DynamicResource InfoButton}"/>
+                <Button Margin="10 0 0 0" Content="Stop Search" Command="{Binding StopSearchCommand}" Style="{DynamicResource WarnButton}"/>
+            </WrapPanel>
+            <WrapPanel DockPanel.Dock="Top">
+                <Label Content="Service Url:"/>
+                <TextBox Height="23" TextWrapping="NoWrap" Text="{Binding ServiceUrl}" Width="200"/>
+                <Label Content="Result Info:"/>
+                <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="60">
+                    <Label Content="{Binding ResultInfo}" Foreground="Yellow"/>
+                </ScrollViewer>
+            </WrapPanel>
+            <DataGrid Background="#FF2D2D30" Margin="0 6 0 0" ItemsSource="{Binding SearchResult}" AutoGenerateColumns="True" IsReadOnly="True" HeadersVisibility="Column"/>
+        </DockPanel>
+    </Grid>
+    <UserControl.Resources>
+        <Style TargetType="{x:Type Label}">
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Margin" Value="2"/>
+        </Style>
+        <Style TargetType="{x:Type TextBox}">
+            <Setter Property="Background" Value="#FF434343"/>
+            <Setter Property="Foreground" Value="White"/>
+        </Style>
+        <Style TargetType="{x:Type DataGridRow}">
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Background" Value="#FF2D2D30"/>
+        </Style>
+        <Style TargetType="{x:Type DataGridColumnHeader}">
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="Background" Value="#FF434343"/>
+        </Style>
+        <Style TargetType="{x:Type DataGridCell}">
+            <Setter Property="Background" Value="Transparent"/>
+            <Setter Property="BorderBrush" Value="Transparent"/>
+            <Setter Property="BorderThickness" Value="1"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="{x:Type DataGridCell}">
+                        <Border BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" Background="{TemplateBinding Background}" SnapsToDevicePixels="True">
+                            <ContentPresenter SnapsToDevicePixels="{TemplateBinding SnapsToDevicePixels}"/>
+                        </Border>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+            <Style.Triggers>
+                <Trigger Property="IsSelected" Value="True">
+                    <Setter Property="Background" Value="#FF0078D7"/>
+                    <Setter Property="Foreground" Value="White"/>
+                    <Setter Property="BorderBrush" Value="{DynamicResource {x:Static SystemColors.HighlightBrushKey}}"/>
+                </Trigger>
+                <Trigger Property="IsKeyboardFocusWithin" Value="True">
+                    <Setter Property="BorderBrush" Value="{DynamicResource {x:Static DataGrid.FocusBorderBrushKey}}"/>
+                </Trigger>
+                <MultiTrigger>
+                    <MultiTrigger.Conditions>
+                        <Condition Property="IsSelected" Value="true"/>
+                        <Condition Property="Selector.IsSelectionActive" Value="false"/>
+                    </MultiTrigger.Conditions>
+                    <Setter Property="Background" Value="#FF0078D7"/>
+                    <Setter Property="Foreground" Value="White"/>
+                    <Setter Property="BorderBrush" Value="{DynamicResource {x:Static SystemColors.InactiveSelectionHighlightBrushKey}}"/>
+                </MultiTrigger>
+                <Trigger Property="IsEnabled" Value="false">
+                    <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.GrayTextBrushKey}}"/>
+                </Trigger>
+            </Style.Triggers>
+        </Style>
+        <Style TargetType="{x:Type Button}" x:Key="InfoButton">
+            <Setter Property="Width" Value="70"/>
+            <Setter Property="Height" Value="25"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Background" Value="#43a9c7"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" SnapsToDevicePixels="True">
+                            <TextBlock Text="{TemplateBinding Content}" Foreground="{TemplateBinding Foreground}" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#2f96b4"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#2a89a4"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+        <Style TargetType="{x:Type Button}" x:Key="WarnButton">
+            <Setter Property="Width" Value="80"/>
+            <Setter Property="Height" Value="25"/>
+            <Setter Property="Foreground" Value="White"/>
+            <Setter Property="BorderThickness" Value="0"/>
+            <Setter Property="Background" Value="#FFFF3A18"/>
+            <Setter Property="Template">
+                <Setter.Value>
+                    <ControlTemplate TargetType="Button">
+                        <Border x:Name="border" Background="{TemplateBinding Background}" BorderBrush="{TemplateBinding BorderBrush}" BorderThickness="{TemplateBinding BorderThickness}" SnapsToDevicePixels="True">
+                            <TextBlock Text="{TemplateBinding Content}" Foreground="{TemplateBinding Foreground}" VerticalAlignment="Center" HorizontalAlignment="Center"/>
+                        </Border>
+                        <ControlTemplate.Triggers>
+                            <Trigger Property="IsMouseOver" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#FFFF6E54"/>
+                            </Trigger>
+                            <Trigger Property="IsPressed" Value="True">
+                                <Setter TargetName="border" Property="Background" Value="#FFFF9887"/>
+                            </Trigger>
+                        </ControlTemplate.Triggers>
+                    </ControlTemplate>
+                </Setter.Value>
+            </Setter>
+        </Style>
+    </UserControl.Resources>
+</UserControl>

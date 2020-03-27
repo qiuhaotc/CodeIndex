@@ -40,7 +40,7 @@ namespace CodeIndex.Server.Controllers
             {
                 searchQuery.RequireNotNullOrEmpty(nameof(searchQuery));
 
-                var showResultsValue = showResults.HasValue && showResults.Value <= 100 && showResults.Value > 0 ? showResults.Value : 100;
+                var showResultsValue = showResults.HasValue && showResults.Value <= 100 && showResults.Value > 0 ? showResults.Value : 1000;
 
                 result = new FetchResult<IEnumerable<CodeSource>>
                 {
