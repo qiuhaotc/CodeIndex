@@ -2,21 +2,31 @@
 
 A fast code searching tools based on Lucene.Net
 
+## Catalog
+
+[TOC]
+
 ## Demonstrate Site
 
-https://codeindex.qhnetdisk.tk/
+[https://codeindex.qhnetdisk.tk/](https://codeindex.qhnetdisk.tk/)
 
-## Use It On Your Local
+## Guide
 
-### Config the index file path and the code folder you want to index
+### Run On Your Local
+
+#### Config
 
 Change CodeIndex.Server => appsettings.json => LuceneIndex and MonitorFolder to your local
 
-### Run Server
+#### Run Server
 
 Run server and doing the searching
 
-#### Test
+```bash
+dotnet CodeIndex.Server.dll --urls "http://:5000;https://:5001"
+```
+
+#### Doing Search
 
 Main Page
 
@@ -26,7 +36,9 @@ Details Page
 
 ![Details Page](https://raw.githubusercontent.com/qiuhaotc/CodeIndex/master/doc/WebServer-Details.png)
 
-### Run with docker
+### Run With Docker
+
+Support docker container
 
 #### Example
 
@@ -48,3 +60,7 @@ Code Index Search Window
 ![Code Index Search Window](https://raw.githubusercontent.com/qiuhaotc/CodeIndex/master/doc/VSExtension-2.png)
 
 Config the service url to your own service and doing the searching
+
+## Search Syntax
+
+Refer [http://www.lucenetutorial.com/lucene-query-syntax.html](http://www.lucenetutorial.com/lucene-query-syntax.html)
