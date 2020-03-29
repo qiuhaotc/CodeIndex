@@ -2,7 +2,7 @@
 <PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011" xmlns:d="http://schemas.microsoft.com/developer/vsx-schema-design/2011">
     <Metadata>
         <Identity Id="CodeIndex.VisualStudioExtension.3fee47f7-831c-4577-8b21-f6505d9699f5" Version="0.1" Language="en-US" Publisher="qiuhaotc" />
-        <DisplayName>CodeI Index Search</DisplayName>
+        <DisplayName>Code Index Search</DisplayName>
         <Description xml:space="preserve">Code index search extension for visual studio
 CodeIndex: a fast code searching tools based on Lucene.Net
 More details see: https://github.com/qiuhaotc/CodeIndex</Description>
