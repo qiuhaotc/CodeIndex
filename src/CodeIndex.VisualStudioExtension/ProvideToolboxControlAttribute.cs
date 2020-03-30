@@ -1,7 +1,7 @@
-﻿using Microsoft.VisualStudio.Shell;
-using System;
+﻿using System;
 using System.Globalization;
 using System.Runtime.InteropServices;
+using Microsoft.VisualStudio.Shell;
 
 namespace CodeIndex.VisualStudioExtension
 {
@@ -67,7 +67,7 @@ namespace CodeIndex.VisualStudioExtension
         /// <summary>
         /// Called to unregister this attribute with the given context.
         /// </summary>
-        /// <param name="context">A registration context provided by an external registration tool. 
+        /// <param name="context">A registration context provided by an external registration tool.
         /// The context can be used to remove registry keys, log registration activity, and obtain information
         /// about the component being registered.</param>
         public override void Unregister(RegistrationContext context)

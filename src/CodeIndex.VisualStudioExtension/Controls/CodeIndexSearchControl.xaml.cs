@@ -18,7 +18,7 @@ namespace CodeIndex.VisualStudioExtension
         {
             if (e.Key == Key.Enter)
             {
-                if(e.KeyboardDevice.Modifiers != ModifierKeys.Control)
+                if (e.KeyboardDevice.Modifiers != ModifierKeys.Control)
                 {
                     SearchButton.Command?.Execute(null);
                 }

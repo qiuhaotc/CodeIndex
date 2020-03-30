@@ -36,6 +36,7 @@ namespace CodeIndex.VisualStudioExtension
                 serviceUrl = value;
             }
         }
+
         public string ResultInfo
         {
             get => resultInfo;
