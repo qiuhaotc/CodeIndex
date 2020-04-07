@@ -42,7 +42,7 @@ namespace CodeIndex.IndexBuilder
             }
             else
             {
-                UpdateWordsAndUpdateIndexCore(config, Words.ToArray(), log, batchSize);
+                UpdateHintWordsAndSaveIndex(config, Words.ToArray(), log, batchSize);
             }
 
             Words.Clear();
@@ -54,25 +54,26 @@ namespace CodeIndex.IndexBuilder
         {
             foreach (var word in words)
             {
-                if (word.Length > 3)
+                if (word.HasValidLength())
                 {
                     Words.Add(word);
                 }
             }
         }
 
-        public static void UpdateWordsAndUpdateIndex(CodeIndexConfiguration config, string[] words, ILog log)
+        public static void UpdateWordsHint(CodeIndexConfiguration config, string[] words, ILog log)
         {
-            words = words.Where(u => u.Length > 3).Distinct().ToArray();
+            words = words.Where(HasValidLength).Distinct().ToArray();
 
-            UpdateWordsAndUpdateIndexCore(config, words, log);
+            UpdateHintWordsAndSaveIndex(config, words, log, needSaveIndex: false);
         }
 
-        static void UpdateWordsAndUpdateIndexCore(CodeIndexConfiguration config, string[] words, ILog log, int batchSize = -1)
+        static void UpdateHintWordsAndSaveIndex(CodeIndexConfiguration config, string[] words, ILog log, int batchSize = -1, bool needSaveIndex = true)
         {
             var totalUpdate = 0;
 
             log?.Info($"Update hint index start, words count {words.Length}");
+
             foreach (var word in words)
             {
                 var document = new Document
@@ -85,14 +86,14 @@ namespace CodeIndex.IndexBuilder
 
                 totalUpdate++;
 
-                if (batchSize > 0 && totalUpdate > batchSize)
+                if (needSaveIndex && batchSize > 0 && totalUpdate > batchSize)
                 {
                     totalUpdate = 0;
                     LucenePool.SaveResultsAndClearLucenePool(config.LuceneIndexForHint);
                 }
             }
 
-            if (batchSize > 0 && totalUpdate > 0)
+            if (needSaveIndex && batchSize > 0 && totalUpdate > 0)
             {
                 LucenePool.SaveResultsAndClearLucenePool(config.LuceneIndexForHint);
             }
@@ -106,6 +107,11 @@ namespace CodeIndex.IndexBuilder
             LucenePool.BuildIndex(config.LuceneIndexForHint, triggerMerge, applyAllDeletes, documents, needFlush);
             LucenePool.SaveResultsAndClearLucenePool(config.LuceneIndexForHint);
             log?.Info($"Build index finished");
+        }
+
+        static bool HasValidLength(this string content)
+        {
+            return content.Length > 3 && content.Length < 200;
         }
     }
 }

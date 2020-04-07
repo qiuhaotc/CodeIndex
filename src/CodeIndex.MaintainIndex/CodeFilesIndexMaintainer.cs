@@ -179,7 +179,7 @@ namespace CodeIndex.MaintainIndex
                     {
                         var content = FilesContentHelper.ReadAllText(fullPath);
                         CodeIndexBuilder.BuildIndex(config, false, false, false, new[] { CodeSource.GetCodeSource(fileInfo, content) });
-                        WordsHintBuilder.UpdateWordsAndUpdateIndex(config, WordSegmenter.GetWords(content), log);
+                        WordsHintBuilder.UpdateWordsHint(config, WordSegmenter.GetWords(content), log);
                         pendingChanges++;
                     }
                 }
@@ -208,7 +208,7 @@ namespace CodeIndex.MaintainIndex
                         var content = FilesContentHelper.ReadAllText(fullPath);
                         var document = CodeIndexBuilder.GetDocumentFromSource(CodeSource.GetCodeSource(fileInfo, content));
                         CodeIndexBuilder.UpdateIndex(config.LuceneIndexForCode, GetNoneTokenizeFieldTerm(nameof(CodeSource.FilePath), fullPath), document);
-                        WordsHintBuilder.UpdateWordsAndUpdateIndex(config, WordSegmenter.GetWords(content), log);
+                        WordsHintBuilder.UpdateWordsHint(config, WordSegmenter.GetWords(content), log);
                         pendingChanges++;
                     }
                 }
@@ -381,7 +381,7 @@ namespace CodeIndex.MaintainIndex
             {
                 token.ThrowIfCancellationRequested();
 
-                if (InitializeFinished && (pendingChanges > 100 || (DateTime.UtcNow - lastSaveDate).Seconds >= saveIntervalSeconds))
+                if (InitializeFinished && (pendingChanges > 100 || pendingChanges > 0 && (DateTime.UtcNow - lastSaveDate).Seconds >= saveIntervalSeconds))
                 {
                     pendingChanges = 0;
                     LucenePool.SaveResultsAndClearLucenePool(config);

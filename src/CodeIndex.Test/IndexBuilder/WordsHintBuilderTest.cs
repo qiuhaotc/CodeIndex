@@ -11,8 +11,8 @@ namespace CodeIndex.Test
         [Test]
         public void TestAddWords()
         {
-            WordsHintBuilder.AddWords(new[] { "AAAA", "BBBB", "Ddddd", "AAAA", "EEE" });
-            Assert.AreEqual(3, WordsHintBuilder.Words.Count, "Length must larger than 3 and skip duplicate");
+            WordsHintBuilder.AddWords(new[] { "AAAA", "BBBB", "Ddddd", "AAAA", "EEE", "VeryLongWord".PadRight(200, 'L') });
+            Assert.AreEqual(3, WordsHintBuilder.Words.Count, "Length must larger than 3 and less than 200 and duplicates is skipped");
             CollectionAssert.AreEquivalent(new[] { "AAAA", "BBBB", "Ddddd" }, WordsHintBuilder.Words);
         }
 
@@ -70,9 +70,9 @@ namespace CodeIndex.Test
             var docs = LucenePool.Search(Config.LuceneIndexForHint, new MatchAllDocsQuery(), 1000);
             Assert.AreEqual(3, docs.Length);
 
-            WordsHintBuilder.UpdateWordsAndUpdateIndex(Config, new[] { "AAAA", "Bbbbb", "EEEEE", "ABC" }, null);
+            WordsHintBuilder.UpdateWordsHint(Config, new[] { "AAAA", "Bbbbb", "EEEEE", "ABC", "VeryLongWord".PadRight(200, 'L') }, null);
             docs = LucenePool.Search(Config.LuceneIndexForHint, new MatchAllDocsQuery(), 1000);
-            Assert.AreEqual(4, docs.Length, "Skip duplicate and length muse larger than 3");
+            Assert.AreEqual(4, docs.Length, "Skip duplicate and length must larger than 3 and less than 200");
             CollectionAssert.AreEquivalent(new[] { "AAAA", "Bbbbb", "DDDDD", "EEEEE" }, docs.Select(u => u.Get(nameof(CodeWord.Word))));
             CollectionAssert.AreEquivalent(new[] { "aaaa", "bbbbb", "ddddd", "eeeee" }, docs.Select(u => u.Get(nameof(CodeWord.WordLower))));
         }
