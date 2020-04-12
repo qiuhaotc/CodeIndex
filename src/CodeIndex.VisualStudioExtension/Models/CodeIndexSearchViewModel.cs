@@ -1,12 +1,11 @@
-﻿using CodeIndex.Common;
-using CodeIndex.VisualStudioExtension.Properties;
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Input;
+using CodeIndex.Common;
 
 namespace CodeIndex.VisualStudioExtension
 {
@@ -14,7 +13,7 @@ namespace CodeIndex.VisualStudioExtension
     {
         public CodeIndexSearchViewModel()
         {
-            ServiceUrl = CodeIndexSettings.Default.ServiceUrl;
+            serviceUrl = ConfigHelper.Configuration.AppSettings.Settings[nameof(ServiceUrl)].Value;
         }
 
         public string FileName { get; set; }
@@ -32,8 +31,11 @@ namespace CodeIndex.VisualStudioExtension
                     value = value.Substring(0, value.Length - 1);
                 }
 
-                CodeIndexSettings.Default.ServiceUrl = value;
-                serviceUrl = value;
+                if(value != serviceUrl)
+                {
+                    ConfigHelper.SetConfiguration(nameof(ServiceUrl), value);
+                    serviceUrl = value;
+                }
             }
         }
 

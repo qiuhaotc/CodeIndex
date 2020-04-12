@@ -73,21 +73,15 @@
     </Compile>
     <Compile Include="Models\BaseViewModel.cs" />
     <Compile Include="Models\CodeIndexSearchViewModel.cs" />
+    <Compile Include="Models\ConfigHelper.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="CodeIndex.VisualStudioExtensionPackage.cs" />
-    <Compile Include="Properties\CodeIndexSettings.Designer.cs">
-      <AutoGen>True</AutoGen>
-      <DesignTimeSharedInput>True</DesignTimeSharedInput>
-      <DependentUpon>CodeIndexSettings.settings</DependentUpon>
-    </Compile>
     <Compile Include="ProvideToolboxControlAttribute.cs" />
   </ItemGroup>
   <ItemGroup>
-    <None Include="app.config" />
-    <None Include="Properties\CodeIndexSettings.settings">
-      <Generator>SettingsSingleFileGenerator</Generator>
-      <LastGenOutput>CodeIndexSettings.Designer.cs</LastGenOutput>
-    </None>
+    <Content Include="CodeIndex.Settings.config">
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
     <None Include="source.extension.vsixmanifest">
       <SubType>Designer</SubType>
     </None>
@@ -98,6 +92,7 @@
     <Reference Include="PresentationFramework" />
     <Reference Include="PresentationFramework.Aero2" />
     <Reference Include="System" />
+    <Reference Include="System.Configuration" />
     <Reference Include="System.Data" />
     <Reference Include="System.Data.DataSetExtensions" />
     <Reference Include="System.Design" />
