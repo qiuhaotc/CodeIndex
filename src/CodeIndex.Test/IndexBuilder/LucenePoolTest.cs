@@ -48,12 +48,14 @@ namespace CodeIndex.Test
             LucenePool.SaveResultsAndClearLucenePool(Config);
 
             var taskList = new List<Task>();
+            var taskNumber = 3; // set to larger one for real test
+            var addDocumentCount = 10; // set to larger one for real test
 
-            for (int i = 0; i < 20; i++)
+            for (int i = 0; i < taskNumber; i++)
             {
                 taskList.Add(Task.Run(() =>
                 {
-                    for (int j = 0; j < 50; j++)
+                    for (int j = 0; j < addDocumentCount; j++)
                     {
                         if (j % 4 == 0)
                         {

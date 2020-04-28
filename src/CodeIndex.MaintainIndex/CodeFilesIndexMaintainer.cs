@@ -79,7 +79,7 @@ namespace CodeIndex.MaintainIndex
         }
 
         FileSystemWatcher FileSystemWatcher { get; set; }
-        const int WaitMilliseconds = 100;
+        const int Wait100Milliseconds = 100;
 
         CodeIndexConfiguration config;
         string[] excludedExtensions;
@@ -93,7 +93,7 @@ namespace CodeIndex.MaintainIndex
         {
             log?.Info($"File Change - ChangeType: {e.ChangeType} FullPath: {e.FullPath} Name: {e.Name}");
 
-            if (!IsExcludedFromIndex(e))
+            if (!IsExcludedFromIndex(e.FullPath))
             {
                 switch (e.ChangeType)
                 {
@@ -130,7 +130,7 @@ namespace CodeIndex.MaintainIndex
         {
             log?.Info($"File Renamed - ChangeType: {e.ChangeType} FullPath: {e.FullPath} Name: {e.Name} OldFullPath: {e.OldFullPath} OldName: {e.OldName}");
 
-            if (!IsExcludedFromIndex(e))
+            if (!IsExcludedFromIndex(e.FullPath))
             {
                 switch (e.ChangeType)
                 {
@@ -141,26 +141,26 @@ namespace CodeIndex.MaintainIndex
                         }
                         else
                         {
-                            AddFileChangesToRetrySouce(e.FullPath, WatcherChangeTypes.Created, null, e.OldFullPath);
+                            AddFileChangesToRetrySouce(e.FullPath, WatcherChangeTypes.Renamed, null, e.OldFullPath);
                         }
                         break;
                 }
             }
             else
             {
-                DeleteAllDocumentsIndexUnder(e.OldFullPath);
+                DeleteAllDocumentsIndexUnder(e.OldFullPath, e.FullPath);
             }
         }
 
-        bool IsExcludedFromIndex(FileSystemEventArgs e)
+        bool IsExcludedFromIndex(string fullPath)
         {
-            var excluded = excludedPaths.Any(u => e.FullPath.ToUpperInvariant().Contains(u))
-                    || excludedExtensions.Any(u => e.FullPath.EndsWith(u, StringComparison.InvariantCultureIgnoreCase))
-                    || includedExtensions.Length > 0 && !includedExtensions.Any(u => e.FullPath.EndsWith(u, StringComparison.InvariantCultureIgnoreCase));
+            var excluded = excludedPaths.Any(u => fullPath.ToUpperInvariant().Contains(u))
+                    || excludedExtensions.Any(u => fullPath.EndsWith(u, StringComparison.InvariantCultureIgnoreCase))
+                    || includedExtensions.Length > 0 && !includedExtensions.Any(u => fullPath.EndsWith(u, StringComparison.InvariantCultureIgnoreCase));
 
             if (excluded)
             {
-                log?.Info($"{e.FullPath} is excluded from index");
+                log?.Info($"{fullPath} is excluded from index");
             }
 
             return excluded;
@@ -173,7 +173,7 @@ namespace CodeIndex.MaintainIndex
                 var fileInfo = new FileInfo(fullPath);
                 try
                 {
-                    Thread.Sleep(WaitMilliseconds); // Wait to let file finished write to disk
+                    Thread.Sleep(Wait100Milliseconds); // Wait to let file finished write to disk
 
                     if (fileInfo.Exists)
                     {
@@ -201,7 +201,7 @@ namespace CodeIndex.MaintainIndex
                 var fileInfo = new FileInfo(fullPath);
                 try
                 {
-                    Thread.Sleep(WaitMilliseconds); // Wait to let file finished write to disk
+                    Thread.Sleep(Wait100Milliseconds); // Wait to let file finished write to disk
 
                     if (fileInfo.Exists)
                     {
@@ -236,13 +236,23 @@ namespace CodeIndex.MaintainIndex
             }
         }
 
-        void DeleteAllDocumentsIndexUnder(string forderOldFullPath)
+        readonly ConcurrentDictionary<string, string> pendingDeletedFiles = new ConcurrentDictionary<string, string>();
+
+        void DeleteAllDocumentsIndexUnder(string oldFullPath, string fullPath)
         {
             try
             {
-                var term = new PrefixQuery(GetNoneTokenizeFieldTerm(nameof(CodeSource.FilePath), forderOldFullPath));
-                CodeIndexBuilder.DeleteIndex(config.LuceneIndexForCode, term);
-                pendingChanges++;
+                if(pendingDeletedFiles.TryAdd(oldFullPath, fullPath))
+                {
+                    Thread.Sleep(Wait100Milliseconds * 20); // Wait 2 seconds to see dose this file truly deleted
+
+                    if(pendingDeletedFiles.TryRemove(oldFullPath, out _))
+                    {
+                        var term = new PrefixQuery(GetNoneTokenizeFieldTerm(nameof(CodeSource.FilePath), oldFullPath));
+                        CodeIndexBuilder.DeleteIndex(config.LuceneIndexForCode, term);
+                        pendingChanges++;
+                    }
+                }
             }
             catch (Exception ex)
             {
@@ -264,7 +274,19 @@ namespace CodeIndex.MaintainIndex
                         {
                             var content = FilesContentHelper.ReadAllText(fullPath);
                             var document = CodeIndexBuilder.GetDocumentFromSource(CodeSource.GetCodeSource(fileInfo, content));
-                            CodeIndexBuilder.UpdateIndex(config.LuceneIndexForCode, GetNoneTokenizeFieldTerm(nameof(CodeSource.FilePath), oldFullPath), document);
+
+                            Thread.Sleep(Wait100Milliseconds); // Wait to let PendingDeletedFiles added 
+
+                            if (pendingDeletedFiles.TryRemove(fullPath, out _)) // Just Renamed from A=>B(temp file) then B=>A, so it should do update the raw path document and hint words
+                            {
+                                CodeIndexBuilder.UpdateIndex(config.LuceneIndexForCode, GetNoneTokenizeFieldTerm(nameof(CodeSource.FilePath), fullPath), document);
+                                WordsHintBuilder.UpdateWordsHint(config, WordSegmenter.GetWords(content), log);
+                            }
+                            else // Renamed to other file
+                            {
+                                CodeIndexBuilder.UpdateIndex(config.LuceneIndexForCode, GetNoneTokenizeFieldTerm(nameof(CodeSource.FilePath), oldFullPath), document);
+                            }
+                           
                             pendingChanges++;
                         }
                     }
