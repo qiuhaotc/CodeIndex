@@ -17,10 +17,10 @@ namespace CodeIndex.IndexBuilder
     {
         internal static void BuildIndex(string luceneIndex, bool triggerMerge, bool applyAllDeletes, IEnumerable<Document> documents, bool needFlush)
         {
+            readWriteLock.TryEnterReadLock(Constants.ReadWriteLockTimeOutMilliseconds);
+
             try
             {
-                readWriteLock.TryEnterReadLock(Constants.ReadWriteLockTimeOutMilliseconds);
-
                 var writer = CreateOrGetIndexWriter(luceneIndex);
                 writer.AddDocuments(documents);
 
@@ -39,10 +39,10 @@ namespace CodeIndex.IndexBuilder
 
         internal static List<(string FilePath, DateTime LastWriteTimeUtc)> GetAllIndexedCodeSource(string luceneIndex)
         {
+            readWriteLock.TryEnterReadLock(Constants.ReadWriteLockTimeOutMilliseconds);
+
             try
             {
-                readWriteLock.TryEnterReadLock(Constants.ReadWriteLockTimeOutMilliseconds);
-
                 var query = new MatchAllDocsQuery();
                 var filter = new FieldValueFilter(nameof(CodeSource.FilePath));
 
@@ -56,10 +56,10 @@ namespace CodeIndex.IndexBuilder
 
         internal static void DeleteIndex(string luceneIndex, params Query[] searchQueries)
         {
+            readWriteLock.TryEnterReadLock(Constants.ReadWriteLockTimeOutMilliseconds);
+
             try
             {
-                readWriteLock.TryEnterReadLock(Constants.ReadWriteLockTimeOutMilliseconds);
-
                 var indexWriter = CreateOrGetIndexWriter(luceneIndex);
                 indexWriter.DeleteDocuments(searchQueries);
 
@@ -73,10 +73,10 @@ namespace CodeIndex.IndexBuilder
 
         internal static void DeleteIndex(string luceneIndex, params Term[] terms)
         {
+            readWriteLock.TryEnterReadLock(Constants.ReadWriteLockTimeOutMilliseconds);
+
             try
             {
-                readWriteLock.TryEnterReadLock(Constants.ReadWriteLockTimeOutMilliseconds);
-
                 var indexWriter = CreateOrGetIndexWriter(luceneIndex);
                 indexWriter.DeleteDocuments(terms);
 
@@ -90,10 +90,10 @@ namespace CodeIndex.IndexBuilder
 
         internal static void UpdateIndex(string luceneIndex, Term term, Document document)
         {
+            readWriteLock.TryEnterReadLock(Constants.ReadWriteLockTimeOutMilliseconds);
+
             try
             {
-                readWriteLock.TryEnterReadLock(Constants.ReadWriteLockTimeOutMilliseconds);
-
                 var indexWriter = CreateOrGetIndexWriter(luceneIndex);
                 indexWriter.UpdateDocument(term, document);
 
@@ -107,10 +107,10 @@ namespace CodeIndex.IndexBuilder
 
         internal static void DeleteAllIndex(string luceneIndex)
         {
+            readWriteLock.TryEnterReadLock(Constants.ReadWriteLockTimeOutMilliseconds);
+
             try
             {
-                readWriteLock.TryEnterReadLock(Constants.ReadWriteLockTimeOutMilliseconds);
-
                 var indexWriter = CreateOrGetIndexWriter(luceneIndex);
                 indexWriter.DeleteAll();
                 indexWriter.Commit();
@@ -131,10 +131,10 @@ namespace CodeIndex.IndexBuilder
 
         public static void SaveResultsAndClearLucenePool(string luceneIndex)
         {
+            readWriteLock.TryEnterWriteLock(Constants.ReadWriteLockTimeOutMilliseconds);
+
             try
             {
-                readWriteLock.TryEnterWriteLock(Constants.ReadWriteLockTimeOutMilliseconds);
-
                 if (IndexReaderPool.TryRemove(luceneIndex, out var indexReader))
                 {
                     indexReader.Dispose();
@@ -268,10 +268,10 @@ namespace CodeIndex.IndexBuilder
 
         public static Document[] Search(string luceneIndex, Query query, int maxResults)
         {
+            readWriteLock.TryEnterReadLock(Constants.ReadWriteLockTimeOutMilliseconds);
+
             try
             {
-                readWriteLock.TryEnterReadLock(Constants.ReadWriteLockTimeOutMilliseconds);
-
                 return SearchDocuments(luceneIndex, query, maxResults);
             }
             finally
@@ -283,11 +283,10 @@ namespace CodeIndex.IndexBuilder
         public static string[] GetHints(string luceneIndex, string word, int maxResults, bool caseSensitive)
         {
             PrefixQuery query;
+            readWriteLock.TryEnterReadLock(Constants.ReadWriteLockTimeOutMilliseconds);
 
             try
             {
-                readWriteLock.TryEnterReadLock(Constants.ReadWriteLockTimeOutMilliseconds);
-
                 if (caseSensitive)
                 {
                     query = new PrefixQuery(new Term(nameof(CodeWord.Word), word));
@@ -307,10 +306,10 @@ namespace CodeIndex.IndexBuilder
 
         public static CodeSource[] SearchCode(string luceneIndex, Query query, int maxResults)
         {
+            readWriteLock.TryEnterReadLock(Constants.ReadWriteLockTimeOutMilliseconds);
+
             try
             {
-                readWriteLock.TryEnterReadLock(Constants.ReadWriteLockTimeOutMilliseconds);
-
                 return SearchDocuments(luceneIndex, query, maxResults).Select(doc => GetCodeSourceFromDocument(doc)).ToArray();
             }
             finally
