@@ -1,11 +1,12 @@
-﻿@page "/"
+﻿
+@page "/SearchWithLine"
 @inject HttpClient Client
 @inject CodeIndex.Common.Storage Storage
 @inject CodeIndexConfiguration Config
 
 <div class="row">
     <div class="col-sm">
-        <h3>Search Page</h3>
+        <h3>Search Page - With Matched Line Number</h3>
     </div>
 </div>
 <div class="row">
@@ -122,6 +123,7 @@
         <thead>
             <tr>
                 <th scope="col">File Name</th>
+                <th scope="col">Match Line</th>
                 <th scope="col">Match Info</th>
                 <th scope="col">File Path</th>
                 <th scope="col">File Extension</th>
@@ -134,16 +136,17 @@
                 foreach (var item in FetchResult.Result)
                 {
                     <tr>
-                        <td title="@item.Info">@item.FileName</td>
+                        <td title="@item.CodeSource.Info">@item.CodeSource.FileName</td>
+                        <td>@item.MatchedLine</td>
                         <td>
-                            <pre>@((MarkupString)item.Content)</pre>
+                            <pre>@((MarkupString)item.MatchedContent)</pre>
                         </td>
                         <td>
-                            <a href="@Config.OpenIDEUriFormat.Replace("{FilePath}", GetPath(item.FilePath))">@item.FilePath?.SubStringSafeWithEllipsis(item.FilePath.Length - 50, 50)</a>
+                            <a href="@Config.OpenIDEUriFormat.Replace("{FilePath}", GetPath(item.CodeSource.FilePath))">@item.CodeSource.FilePath?.SubStringSafeWithEllipsis(item.CodeSource.FilePath.Length - 50, 50)</a>
                         </td>
-                        <td>@item.FileExtension</td>
+                        <td>@item.CodeSource.FileExtension</td>
                         <td>
-                            <a href="/Details/@item.CodePK/@System.Web.HttpUtility.UrlEncode(ContentQuery ?? string.Empty)">Details</a>
+                            <a href="/Details/@item.CodeSource.CodePK/@System.Web.HttpUtility.UrlEncode(ContentQuery ?? string.Empty)">Details</a>
                         </td>
                     </tr>
                 }
@@ -151,7 +154,7 @@
             else
             {
                 <tr>
-                    <td colspan="5" class="text-center">Empty</td>
+                    <td colspan="6" class="text-center">Empty</td>
                 </tr>
             }
         </tbody>
@@ -172,7 +175,7 @@
 
     public int ShowResults { get; set; } = 20;
 
-    public FetchResult<IEnumerable<CodeSource>> FetchResult { get; set; }
+    public FetchResult<IEnumerable<CodeSourceWithMatchedLine>> FetchResult { get; set; }
 
     public FetchResult<IEnumerable<string>> HintWords { get; set; }
 
@@ -218,11 +221,11 @@
         {
             if (!string.IsNullOrEmpty(SearchQuery))
             {
-                FetchResult = await Client.GetJsonAsync<FetchResult<IEnumerable<CodeSource>>>($"{Config.LocalUrl}api/lucene/GetCodeSources?searchQuery=" + System.Web.HttpUtility.UrlEncode(SearchQuery) + "&showResults=" + ShowResults + "&preview=true" + "&contentQuery=" + System.Web.HttpUtility.UrlEncode(ContentQuery ?? string.Empty));
+                FetchResult = await Client.GetJsonAsync<FetchResult<IEnumerable<CodeSourceWithMatchedLine>>>($"{Config.LocalUrl}api/lucene/GetCodeSourcesWithMatchedLine?searchQuery=" + System.Web.HttpUtility.UrlEncode(SearchQuery) + "&showResults=" + ShowResults + "&contentQuery=" + System.Web.HttpUtility.UrlEncode(ContentQuery ?? string.Empty));
             }
             else
             {
-                FetchResult = new FetchResult<IEnumerable<CodeSource>>()
+                FetchResult = new FetchResult<IEnumerable<CodeSourceWithMatchedLine>>()
                 {
                     Status = new Status()
                     {

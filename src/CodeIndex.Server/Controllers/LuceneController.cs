@@ -1,7 +1,9 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Reflection;
+using System.Runtime.CompilerServices;
 using System.Text;
 using System.Threading.Tasks;
 using CodeIndex.Common;
@@ -40,7 +42,7 @@ namespace CodeIndex.Server.Controllers
             {
                 searchQuery.RequireNotNullOrEmpty(nameof(searchQuery));
 
-                var showResultsValue = showResults.HasValue && showResults.Value <= 100 && showResults.Value > 0 ? showResults.Value : 1000;
+                var showResultsValue = showResults.HasValue && showResults.Value <= codeIndexConfiguration.MaximumResults && showResults.Value > 0 ? showResults.Value : 100;
 
                 result = new FetchResult<IEnumerable<CodeSource>>
                 {
@@ -74,11 +76,90 @@ namespace CodeIndex.Server.Controllers
                     }
                 }
 
-                log.Debug($"Request: '{searchQuery}' successful");
+                log.Debug($"Request: '{searchQuery}' successful, return matched code source");
             }
             catch (Exception ex)
             {
                 result = new FetchResult<IEnumerable<CodeSource>>
+                {
+                    Status = new Status
+                    {
+                        Success = false,
+                        StatusDesc = ex.ToString()
+                    }
+                };
+
+                log.Error(ex.ToString());
+            }
+
+            return result;
+        }
+
+        [HttpGet]
+        [Route(nameof(GetCodeSourcesWithMatchedLine))]
+        public FetchResult<IEnumerable<CodeSourceWithMatchedLine>> GetCodeSourcesWithMatchedLine(string searchQuery, string contentQuery = "", int? showResults = 0)
+        {
+            FetchResult<IEnumerable<CodeSourceWithMatchedLine>> result;
+
+            try
+            {
+                searchQuery.RequireNotNullOrEmpty(nameof(searchQuery));
+
+                var showResultsValue = showResults.HasValue && showResults.Value <= codeIndexConfiguration.MaximumResults && showResults.Value > 0 ? showResults.Value : 100;
+
+                var codeSources = SearchCodeSource(searchQuery, out var query, showResultsValue);
+
+                var queryForContent = string.IsNullOrWhiteSpace(contentQuery) ? null : generator.GetQueryFromStr(contentQuery);
+
+                var maxContentHighlightLength = codeIndexConfiguration.MaxContentHighlightLength;
+
+                if (maxContentHighlightLength <= 0)
+                {
+                    maxContentHighlightLength = Constants.DefaultMaxContentHighlightLength;
+                }
+
+                var codeSourceWithMatchedLineList = new List<CodeSourceWithMatchedLine>();
+
+                result = new FetchResult<IEnumerable<CodeSourceWithMatchedLine>>
+                {
+                    Result = codeSourceWithMatchedLineList,
+                    Status = new Status
+                    {
+                        Success = true
+                    }
+                };
+
+                if (queryForContent != null)
+                {
+                    var totalResult = 0;
+
+                    foreach (var codeSource in codeSources)
+                    {
+                        var matchedLines = CodeIndexSearcher.GeneratePreviewTextWithLineNumber(queryForContent, codeSource.Content, int.MaxValue, generator.Analyzer, showResultsValue - totalResult, maxContentHighlightLength);
+                        codeSource.Content = string.Empty; // Empty content to reduce response size
+
+                        foreach (var matchedLine in matchedLines)
+                        {
+                            totalResult++;
+
+                            codeSourceWithMatchedLineList.Add(new CodeSourceWithMatchedLine(codeSource, matchedLine.LineNumber, matchedLine.MatchedLineContent));
+                        }
+                    }
+                }
+                else
+                {
+                    codeSourceWithMatchedLineList.AddRange(codeSources.Select(u =>
+                    {
+                        u.Content = string.Empty; // Empty content to reduce response size
+                        return new CodeSourceWithMatchedLine(u, 1, string.Empty);
+                    }));
+                }
+
+                log.Debug($"Request: '{searchQuery}' successful, return matched code source with line number");
+            }
+            catch (Exception ex)
+            {
+                result = new FetchResult<IEnumerable<CodeSourceWithMatchedLine>>
                 {
                     Status = new Status
                     {

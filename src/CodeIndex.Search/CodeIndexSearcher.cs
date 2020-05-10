@@ -1,4 +1,5 @@
-﻿using System.IO;
+﻿using System.Collections.Generic;
+using System.IO;
 using System.Web;
 using CodeIndex.Common;
 using CodeIndex.IndexBuilder;
@@ -6,6 +7,7 @@ using Lucene.Net.Analysis;
 using Lucene.Net.Documents;
 using Lucene.Net.Search;
 using Lucene.Net.Search.Highlight;
+using static CodeIndex.IndexBuilder.CodeContentProcessing;
 
 namespace CodeIndex.Search
 {
@@ -29,7 +31,7 @@ namespace CodeIndex.Search
                 if (query != null)
                 {
                     var scorer = new QueryScorer(query);
-                    var formatter = new SimpleHTMLFormatter(CodeContentProcessing.HighLightPrefix, CodeContentProcessing.HighLightSuffix);
+                    var formatter = new SimpleHTMLFormatter(HighLightPrefix, HighLightSuffix);
 
                     var highlighter = new Highlighter(formatter, scorer);
                     highlighter.TextFragmenter = new SimpleFragmenter(length);
@@ -42,7 +44,7 @@ namespace CodeIndex.Search
 
                 result = string.IsNullOrEmpty(result) ?
                         (returnRawContentWhenResultIsEmpty ? HttpUtility.HtmlEncode(text) : string.Empty)
-                        : HttpUtility.HtmlEncode(result).Replace(CodeContentProcessing.HighLightPrefix, prefix).Replace(CodeContentProcessing.HighLightSuffix, suffix);
+                        : HttpUtility.HtmlEncode(result).Replace(HighLightPrefix, prefix).Replace(HighLightSuffix, suffix);
             }
             else
             {
@@ -64,6 +66,66 @@ namespace CodeIndex.Search
         public static string[] GetHints(string luceneIndex, string word, int maxResults = 20, bool caseSensitive = false)
         {
             return LucenePool.GetHints(luceneIndex, word, maxResults, caseSensitive);
+        }
+
+        public static (string MatchedLineContent, int LineNumber)[] GeneratePreviewTextWithLineNumber(Query query, string text, int length, Analyzer analyzer, int maxResults, int maxContentHighlightLength = Constants.DefaultMaxContentHighlightLength, bool forWeb = true, string prefix = "<label class='highlight'>", string suffix = "</label>")
+        {
+            string highLightResult = null;
+            (string, int)[] results = null;
+
+            if (text.Length <= maxContentHighlightLength) // For performance
+            {
+                if (query != null)
+                {
+                    var scorer = new QueryScorer(query);
+                    var formatter = new SimpleHTMLFormatter(HighLightPrefix, HighLightSuffix);
+
+                    var highlighter = new Highlighter(formatter, scorer);
+                    highlighter.TextFragmenter = new SimpleFragmenter(length);
+                    highlighter.MaxDocCharsToAnalyze = maxContentHighlightLength;
+
+                    var stream = analyzer.GetTokenStream(nameof(CodeSource.Content), new StringReader(text));
+
+                    highLightResult = highlighter.GetBestFragments(stream, text, 3, "...");
+                }
+
+                highLightResult = highLightResult ?? string.Empty;
+
+                var matchedLines = new List<(string, int)>();
+                using var stringReader = new StringReader(highLightResult);
+                string line;
+                var lineNumber = 0;
+                while ((line = stringReader.ReadLine()) != null)
+                {
+                    lineNumber++;
+                    if (line.Contains(HighLightPrefix) || line.Contains(HighLightSuffix))
+                    {
+                        if (matchedLines.Count < maxResults)
+                        {
+                            // TODO: If matched content has multi line, should able to complement the missing prefix or suffix
+
+                            var matchedLineFormatted = forWeb ? HttpUtility.HtmlEncode(line).Replace(HighLightPrefix, prefix).Replace(HighLightSuffix, suffix) : line.Replace(HighLightPrefix, prefix).Replace(HighLightSuffix, suffix);
+
+                            matchedLines.Add((matchedLineFormatted, lineNumber));
+                        }
+                        else
+                        {
+                            break;
+                        }
+                    }
+                };
+
+                results = matchedLines.ToArray();
+            }
+            else
+            {
+                results = new[]
+                {
+                    ("Content is too long to highlight", 1)
+                };
+            }
+
+            return results;
         }
     }
 }

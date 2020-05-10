@@ -16,6 +16,8 @@ namespace CodeIndex.Server
 {
     public class Startup
     {
+        // TODO: Add swagger support
+
         public Startup(IConfiguration configuration)
         {
             Configuration = configuration;

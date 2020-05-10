@@ -23,12 +23,24 @@ namespace CodeIndex.Common
         public string[] ExcludedExtensionsArray => excludedExtensionsArray ??= GetSplitStringArray(ExcludedExtensions);
         public string[] ExcludedPathsArray => excludedPathsArray ??= GetSplitStringArray(ExcludedPaths);
         public string[] IncludedExtensionsArray => includedExtensionsArray ??= GetSplitStringArray(IncludedExtensions);
+        
+        public int MaximumResults
+        {
+            get => maximumResults; 
+            set
+            {
+                value.RequireRange(nameof(maximumResults), 10000000, 100);
+
+                maximumResults = value;
+            }
+        }
 
         string luceneIndexForCode;
         string luceneIndexForHint;
         string[] excludedExtensionsArray;
         string[] excludedPathsArray;
         string[] includedExtensionsArray;
+        int maximumResults = 100000;
 
         string GetIndexPath(string path)
         {

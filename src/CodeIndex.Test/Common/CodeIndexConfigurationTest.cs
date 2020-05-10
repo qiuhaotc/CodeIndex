@@ -20,7 +20,8 @@ namespace CodeIndex.Test
                 MonitorFolder = "DDD/EEE",
                 MonitorFolderRealPath = "EEE",
                 OpenIDEUriFormat = "ABC{SSS}",
-                SaveIntervalSeconds = 123
+                SaveIntervalSeconds = 123,
+                MaximumResults = 234
             };
 
             Assert.Multiple(() =>
@@ -36,6 +37,7 @@ namespace CodeIndex.Test
                 Assert.AreEqual("EEE", config.MonitorFolderRealPath);
                 Assert.AreEqual("ABC{SSS}", config.OpenIDEUriFormat);
                 Assert.AreEqual(123, config.SaveIntervalSeconds);
+                Assert.AreEqual(234, config.MaximumResults);
                 CollectionAssert.AreEquivalent(new[] { ".cs", ".dll", ".EXE" }, config.ExcludedExtensionsArray);
                 CollectionAssert.AreEquivalent(new[] { "AAA", "ccc" }, config.ExcludedPathsArray);
                 CollectionAssert.AreEquivalent(new[] { ".txt", ".temp" }, config.IncludedExtensionsArray);

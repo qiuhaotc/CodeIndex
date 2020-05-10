@@ -78,7 +78,7 @@ namespace CodeIndex.Test
         public void TestGenerateHtmlPreviewText()
         {
             var generator = new QueryGenerator();
-            var content = "My ABC\r\nIs A ABC CONTENT\r\nIt's abc in lowercase\r\nIt's Abc in mix\r\nNot AB with C";
+            var content = $"My ABC{Environment.NewLine}Is A ABC CONTENT{Environment.NewLine}It's abc in lowercase{Environment.NewLine}It's Abc in mix{Environment.NewLine}Not AB with C";
             var result = CodeIndexSearcher.GenerateHtmlPreviewText(generator.GetQueryFromStr("ABC"), content, int.MaxValue, LucenePool.GetAnalyzer());
             Assert.AreEqual(@"My <label class='highlight'>ABC</label>
 Is A <label class='highlight'>ABC</label> CONTENT
@@ -96,7 +96,7 @@ It&#39;s <label class='highlight'>Abc</label>", result);
         public void TestGenerateHtmlPreviewText_ReturnRawContent()
         {
             var generator = new QueryGenerator();
-            var content = "My ABC\r\nIs A ABC CONTENT\r\nIt's abc in lowercase\r\nIt's Abc in mix\r\nNot AB with C";
+            var content = $"My ABC{Environment.NewLine}Is A ABC CONTENT{Environment.NewLine}It's abc in lowercase{Environment.NewLine}It's Abc in mix{Environment.NewLine}Not AB with C";
             var result = CodeIndexSearcher.GenerateHtmlPreviewText(generator.GetQueryFromStr("NotExistWord"), content, int.MaxValue, LucenePool.GetAnalyzer());
             Assert.IsEmpty(result);
 
@@ -111,7 +111,7 @@ It&#39;s <label class='highlight'>Abc</label>", result);
         public void TestGenerateHtmlPreviewText_ContentTooLong()
         {
             var generator = new QueryGenerator();
-            var content = "My ABC\r\nIs A ABC CONTENT\r\nIt's abc in lowercase\r\nIt's Abc in mix\r\nNot AB with C";
+            var content = $"My ABC{Environment.NewLine}Is A ABC CONTENT{Environment.NewLine}It's abc in lowercase{Environment.NewLine}It's Abc in mix{Environment.NewLine}Not AB with C";
             var result = CodeIndexSearcher.GenerateHtmlPreviewText(generator.GetQueryFromStr("ABC"), content, int.MaxValue, LucenePool.GetAnalyzer(), maxContentHighlightLength: 20);
             Assert.AreEqual(@"Content is too long to highlight", result);
         }
@@ -140,6 +140,31 @@ It&#39;s <label class='highlight'>Abc</label>", result);
             CollectionAssert.AreEquivalent(new[] { "Abcd" }, CodeIndexSearcher.GetHints(Config.LuceneIndexForHint, "abc", 20, false));
             CollectionAssert.IsEmpty(CodeIndexSearcher.GetHints(Config.LuceneIndexForHint, "abc", 20, true));
             CollectionAssert.AreEquivalent(new[] { "Abcd" }, CodeIndexSearcher.GetHints(Config.LuceneIndexForHint, "Abc", 20, true));
+        }
+
+        [Test]
+        public void TestGeneratePreviewTextWithLineNumber()
+        {
+            var generator = new QueryGenerator();
+            var content = $"My ABC{Environment.NewLine}Is A ABC CONTENT{Environment.NewLine}ABCD EFG";
+            var results = CodeIndexSearcher.GeneratePreviewTextWithLineNumber(generator.GetQueryFromStr("ABC"), content, int.MaxValue, LucenePool.GetAnalyzer(), 100);
+            Assert.That(results, Has.Length.EqualTo(2));
+            Assert.AreEqual(("My <label class='highlight'>ABC</label>", 1), results[0]);
+            Assert.AreEqual(("Is A <label class='highlight'>ABC</label> CONTENT", 2), results[1]);
+
+            results = CodeIndexSearcher.GeneratePreviewTextWithLineNumber(generator.GetQueryFromStr("ABC"), content, int.MaxValue, LucenePool.GetAnalyzer(), 1);
+            Assert.That(results, Has.Length.EqualTo(1));
+            Assert.AreEqual(("My <label class='highlight'>ABC</label>", 1), results[0]);
+        }
+
+        [Test]
+        public void TestGeneratePreviewTextWithLineNumber_ContentTooLong()
+        {
+            var generator = new QueryGenerator();
+            var content = $"My ABC{Environment.NewLine}Is A ABC CONTENT{Environment.NewLine}ABCD EFG";
+            var results = CodeIndexSearcher.GeneratePreviewTextWithLineNumber(generator.GetQueryFromStr("ABC"), content, int.MaxValue, LucenePool.GetAnalyzer(), 100, 10);
+            Assert.That(results, Has.Length.EqualTo(1));
+            Assert.AreEqual(("Content is too long to highlight", 1), results[0]);
         }
     }
 }

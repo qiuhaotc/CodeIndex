@@ -24,13 +24,17 @@ dotnet CodeIndex.Server.dll --urls "http://:5000;https://:5001"
 
 #### Doing Search
 
-Main Page
+##### Search By Files
 
-![Main Page](https://raw.githubusercontent.com/qiuhaotc/CodeIndex/master/doc/WebServer.png)
+It will return the matched infos with highlight in the whole file
 
-Details Page
+![Search By Files](https://raw.githubusercontent.com/qiuhaotc/CodeIndex/master/doc/SearchByFiles.gif)
 
-![Details Page](https://raw.githubusercontent.com/qiuhaotc/CodeIndex/master/doc/WebServer-Details.png)
+##### Search By Lines
+
+It will return the matched infos with highlight and matched line number
+
+![Search By Lines](https://raw.githubusercontent.com/qiuhaotc/CodeIndex/master/doc/SearchByLines.gif)
 
 ### Run With Docker
 
@@ -47,6 +51,14 @@ docker run -d --name codeindex -p 8080:80 -v "You index folder":/luceneindex -v 
 
 Download Url [Code Index Extension](https://marketplace.visualstudio.com/items?itemName=qiuhaotc.CodeIndexExtension)
 
+It's a pre-release for now.
+
+|Status|Value|
+|:----|:---:|
+|VS Marketplace|[![VS Marketplace](http://vsmarketplacebadge.apphb.com/version-short/qiuhaotc.CodeIndexExtension.svg)](https://marketplace.visualstudio.com/items?itemName=qiuhaotc.CodeIndexExtension)
+|VS Marketplace Downloads|[![VS Marketplace Downloads](http://vsmarketplacebadge.apphb.com/downloads/qiuhaotc.CodeIndexExtension.svg)](https://marketplace.visualstudio.com/items?itemName=qiuhaotc.CodeIndexExtension)
+|VS Marketplace Installs|[![VS Marketplace Installs](http://vsmarketplacebadge.apphb.com/installs-short/qiuhaotc.CodeIndexExtension.svg)](https://marketplace.visualstudio.com/items?itemName=qiuhaotc.CodeIndexExtension)
+
 Open Search Window
 
 ![Open Search Window](https://raw.githubusercontent.com/qiuhaotc/CodeIndex/master/doc/VSExtension-1.png)
@@ -60,3 +72,13 @@ Config the service url to your own service and doing the searching
 ## Search Syntax
 
 Refer [http://www.lucenetutorial.com/lucene-query-syntax.html](http://www.lucenetutorial.com/lucene-query-syntax.html)
+
+## Misc
+
+|Status|Value|
+|:----|:---:|
+|Stars|[![Stars](https://img.shields.io/github/stars/qiuhaotc/CodeIndex)](https://github.com/qiuhaotc/CodeIndex)
+|Forks|[![Forks](https://img.shields.io/github/forks/qiuhaotc/CodeIndex)](https://github.com/qiuhaotc/CodeIndex)
+|License|[![License](https://img.shields.io/github/license/qiuhaotc/CodeIndex)](https://github.com/qiuhaotc/CodeIndex)
+|Issues|[![Issues](https://img.shields.io/github/issues/qiuhaotc/CodeIndex)](https://github.com/qiuhaotc/CodeIndex)
+|Release Downloads|[![Downloads](https://img.shields.io/github/downloads/qiuhaotc/CodeIndex/total.svg)](https://github.com/qiuhaotc/CodeIndex/releases)
