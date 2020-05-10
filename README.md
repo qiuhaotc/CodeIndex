@@ -38,7 +38,7 @@ It will return the matched infos with highlight and matched line number
 
 ### Run With Docker
 
-Support docker container
+Support docker container, [Docker hub](https://hub.docker.com/r/qiuhaotc/codeindex)
 
 #### Example
 
@@ -81,4 +81,5 @@ Refer [http://www.lucenetutorial.com/lucene-query-syntax.html](http://www.lucene
 |Forks|[![Forks](https://img.shields.io/github/forks/qiuhaotc/CodeIndex)](https://github.com/qiuhaotc/CodeIndex)
 |License|[![License](https://img.shields.io/github/license/qiuhaotc/CodeIndex)](https://github.com/qiuhaotc/CodeIndex)
 |Issues|[![Issues](https://img.shields.io/github/issues/qiuhaotc/CodeIndex)](https://github.com/qiuhaotc/CodeIndex)
+|Docker Pulls|[![Downloads](https://img.shields.io/docker/pulls/qiuhaotc/codeindex.svg)](https://hub.docker.com/r/qiuhaotc/codeindex)
 |Release Downloads|[![Downloads](https://img.shields.io/github/downloads/qiuhaotc/CodeIndex/total.svg)](https://github.com/qiuhaotc/CodeIndex/releases)
