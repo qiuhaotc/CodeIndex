@@ -71,8 +71,11 @@
     <Compile Include="CodeIndexSearchWindowControl.xaml.cs">
       <DependentUpon>CodeIndexSearchWindowControl.xaml</DependentUpon>
     </Compile>
+    <Compile Include="Converts\StringToXamlConverter.cs" />
     <Compile Include="Models\BaseViewModel.cs" />
+    <Compile Include="Models\CodeContentProcessing.cs" />
     <Compile Include="Models\CodeIndexSearchViewModel.cs" />
+    <Compile Include="Models\CodeSourceWithMatchedLine.cs" />
     <Compile Include="Models\ConfigHelper.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="CodeIndex.VisualStudioExtensionPackage.cs" />
@@ -82,6 +85,10 @@
     <Content Include="CodeIndex.Settings.config">
       <IncludeInVSIX>true</IncludeInVSIX>
     </Content>
+    <Page Include="Resources\ExtensionResourceDictionary.xaml">
+      <SubType>Designer</SubType>
+      <Generator>MSBuild:Compile</Generator>
+    </Page>
     <None Include="source.extension.vsixmanifest">
       <SubType>Designer</SubType>
     </None>

@@ -1,5 +1,10 @@
-﻿using System.Windows.Controls;
+﻿using System.IO;
+using System.Windows;
+using System.Windows.Controls;
 using System.Windows.Input;
+using CodeIndex.Common;
+using EnvDTE;
+using Microsoft.VisualStudio.Shell;
 
 namespace CodeIndex.VisualStudioExtension
 {
@@ -21,6 +26,26 @@ namespace CodeIndex.VisualStudioExtension
                 if (e.KeyboardDevice.Modifiers != ModifierKeys.Control)
                 {
                     SearchButton.Command?.Execute(null);
+                }
+            }
+        }
+
+        void Row_DoubleClick(object sender, MouseButtonEventArgs e)
+        {
+            ThreadHelper.ThrowIfNotOnUIThread();
+
+            // Some operations with this row
+            if (sender is DataGridRow row && row.Item is CodeSourceWithMatchedLine codeSourceWithMatchedLine)
+            {
+                if (File.Exists(codeSourceWithMatchedLine.CodeSource.FilePath))
+                {
+                    var dte = (DTE)Package.GetGlobalService(typeof(DTE));
+                    var window = dte.ItemOperations.OpenFile(codeSourceWithMatchedLine.CodeSource.FilePath);
+                    (window.Document.Selection as TextSelection)?.GotoLine(codeSourceWithMatchedLine.MatchedLine, true);
+                }
+                else
+                {
+                    System.Windows.Forms.MessageBox.Show("This file is not on your local");
                 }
             }
         }

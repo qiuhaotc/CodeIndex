@@ -20,7 +20,7 @@ namespace CodeIndex.VisualStudioExtension
         public string Content { get; set; }
         public string FileExtension { get; set; }
         public string FileLocation { get; set; }
-        public int ShowResultsNumber { get; set; } = 50;
+        public int ShowResultsNumber { get; set; } = 1000;
         public string ServiceUrl
         {
             get => serviceUrl;
@@ -48,21 +48,23 @@ namespace CodeIndex.VisualStudioExtension
                 NotifyPropertyChange();
             }
         }
+
         public Item<int>[] Options { get; } = new[]
         {
-            new Item<int>("Top 10", 10),
-            new Item<int>("Top 20", 20),
-            new Item<int>("Top 50", 50),
             new Item<int>("Top 100", 100),
-            new Item<int>("Top 1000", 1000)
+            new Item<int>("Top 200", 200),
+            new Item<int>("Top 500", 500),
+            new Item<int>("Top 1000", 1000),
+            new Item<int>("Top 10000", 10000),
+            new Item<int>("Top 100000", 100000)
         };
 
-        public List<CodeSource> SearchResult
+        public List<CodeSourceWithMatchedLine> SearchResults
         {
-            get => searchResult;
+            get => searchResults;
             set
             {
-                searchResult = value;
+                searchResults = value;
                 NotifyPropertyChange();
             }
         }
@@ -83,7 +85,7 @@ namespace CodeIndex.VisualStudioExtension
         ICommand searchIndexCommand;
         ICommand stopSearchCommand;
         string serviceUrl;
-        List<CodeSource> searchResult = new List<CodeSource>();
+        List<CodeSourceWithMatchedLine> searchResults = new List<CodeSourceWithMatchedLine>();
         string resultInfo;
         CancellationTokenSource tokenSource;
 
@@ -154,22 +156,22 @@ namespace CodeIndex.VisualStudioExtension
         {
             if (IsValidate())
             {
-                var url = $"{ServiceUrl}/api/lucene/GetCodeSources?searchQuery=" + System.Web.HttpUtility.UrlEncode(GetSearchStr()) + "&showResults=" + ShowResultsNumber + "&preview=true" + "&contentQuery=" + System.Web.HttpUtility.UrlEncode(Content ?? string.Empty);
+                var url = $"{ServiceUrl}/api/lucene/GetCodeSourcesWithMatchedLine?searchQuery=" + System.Web.HttpUtility.UrlEncode(GetSearchStr()) + "&showResults=" + ShowResultsNumber + "&contentQuery=" + System.Web.HttpUtility.UrlEncode(Content ?? string.Empty) + "&needReplaceSuffixAndPrefix=false&forWeb=false";
 
                 var client = new HttpClient();
                 var response = await client.GetAsync(url, tokenSource.Token);
-                var result = await response.Content.ReadAsAsync<FetchResult<List<CodeSource>>>();
+                var result = await response.Content.ReadAsAsync<FetchResult<List<CodeSourceWithMatchedLine>>>();
 
                 if (result.Status.Success)
                 {
-                    SearchResult = result.Result;
+                    SearchResults = result.Result;
                 }
                 else
                 {
-                    SearchResult.Clear();
+                    SearchResults.Clear();
                 }
 
-                ResultInfo = $"Successful: {result.Status.Success}, Desc: {result.Status.StatusDesc}, Fetch Count: {SearchResult.Count}.";
+                ResultInfo = $"Successful: {result.Status.Success}, Desc: {result.Status.StatusDesc}, Fetch Count: {SearchResults.Count}.";
             }
             else
             {

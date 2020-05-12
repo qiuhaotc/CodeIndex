@@ -97,7 +97,7 @@ namespace CodeIndex.Server.Controllers
 
         [HttpGet]
         [Route(nameof(GetCodeSourcesWithMatchedLine))]
-        public FetchResult<IEnumerable<CodeSourceWithMatchedLine>> GetCodeSourcesWithMatchedLine(string searchQuery, string contentQuery = "", int? showResults = 0)
+        public FetchResult<IEnumerable<CodeSourceWithMatchedLine>> GetCodeSourcesWithMatchedLine(string searchQuery, string contentQuery = "", int? showResults = 0, bool needReplaceSuffixAndPrefix = true, bool forWeb = true)
         {
             FetchResult<IEnumerable<CodeSourceWithMatchedLine>> result;
 
@@ -135,7 +135,7 @@ namespace CodeIndex.Server.Controllers
 
                     foreach (var codeSource in codeSources)
                     {
-                        var matchedLines = CodeIndexSearcher.GeneratePreviewTextWithLineNumber(queryForContent, codeSource.Content, int.MaxValue, generator.Analyzer, showResultsValue - totalResult, maxContentHighlightLength);
+                        var matchedLines = CodeIndexSearcher.GeneratePreviewTextWithLineNumber(queryForContent, codeSource.Content, int.MaxValue, generator.Analyzer, showResultsValue - totalResult, maxContentHighlightLength, forWeb: forWeb, needReplaceSuffixAndPrefix: needReplaceSuffixAndPrefix);
                         codeSource.Content = string.Empty; // Empty content to reduce response size
 
                         foreach (var matchedLine in matchedLines)

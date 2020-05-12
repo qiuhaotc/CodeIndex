@@ -68,7 +68,7 @@ namespace CodeIndex.Search
             return LucenePool.GetHints(luceneIndex, word, maxResults, caseSensitive);
         }
 
-        public static (string MatchedLineContent, int LineNumber)[] GeneratePreviewTextWithLineNumber(Query query, string text, int length, Analyzer analyzer, int maxResults, int maxContentHighlightLength = Constants.DefaultMaxContentHighlightLength, bool forWeb = true, string prefix = "<label class='highlight'>", string suffix = "</label>")
+        public static (string MatchedLineContent, int LineNumber)[] GeneratePreviewTextWithLineNumber(Query query, string text, int length, Analyzer analyzer, int maxResults, int maxContentHighlightLength = Constants.DefaultMaxContentHighlightLength, bool forWeb = true, bool needReplaceSuffixAndPrefix = true, string prefix = "<label class='highlight'>", string suffix = "</label>")
         {
             string highLightResult = null;
             (string, int)[] results = null;
@@ -104,7 +104,16 @@ namespace CodeIndex.Search
                         {
                             // TODO: If matched content has multi line, should able to complement the missing prefix or suffix
 
-                            var matchedLineFormatted = forWeb ? HttpUtility.HtmlEncode(line).Replace(HighLightPrefix, prefix).Replace(HighLightSuffix, suffix) : line.Replace(HighLightPrefix, prefix).Replace(HighLightSuffix, suffix);
+                            string matchedLineFormatted;
+
+                            if (needReplaceSuffixAndPrefix)
+                            {
+                                matchedLineFormatted = forWeb ? HttpUtility.HtmlEncode(line).Replace(HighLightPrefix, prefix).Replace(HighLightSuffix, suffix) : line.Replace(HighLightPrefix, prefix).Replace(HighLightSuffix, suffix);
+                            }
+                            else
+                            {
+                                matchedLineFormatted = forWeb ? HttpUtility.HtmlEncode(line) : line;
+                            }
 
                             matchedLines.Add((matchedLineFormatted, lineNumber));
                         }
