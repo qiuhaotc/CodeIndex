@@ -57,11 +57,17 @@
     <Compile Include="..\CodeIndex.Common\CodeSource.cs">
       <Link>Models\CodeSource.cs</Link>
     </Compile>
+    <Compile Include="..\CodeIndex.Common\CodeSourceWithMatchedLine.cs">
+      <Link>Models\CodeSourceWithMatchedLine.cs</Link>
+    </Compile>
     <Compile Include="..\CodeIndex.Common\FetchResult.cs">
       <Link>Models\FetchResult.cs</Link>
     </Compile>
     <Compile Include="..\CodeIndex.Common\Status.cs">
       <Link>Models\Status.cs</Link>
+    </Compile>
+    <Compile Include="..\CodeIndex.IndexBuilder\CodeTokenUtils\CodeContentProcessing.cs">
+      <Link>Models\CodeContentProcessing.cs</Link>
     </Compile>
     <Compile Include="Controls\CodeIndexSearchControl.xaml.cs">
       <DependentUpon>CodeIndexSearchControl.xaml</DependentUpon>
@@ -73,9 +79,7 @@
     </Compile>
     <Compile Include="Converts\StringToXamlConverter.cs" />
     <Compile Include="Models\BaseViewModel.cs" />
-    <Compile Include="Models\CodeContentProcessing.cs" />
     <Compile Include="Models\CodeIndexSearchViewModel.cs" />
-    <Compile Include="Models\CodeSourceWithMatchedLine.cs" />
     <Compile Include="Models\ConfigHelper.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="CodeIndex.VisualStudioExtensionPackage.cs" />
