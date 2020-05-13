@@ -214,7 +214,7 @@ namespace CodeIndex.Server.Controllers
         CodeSource[] SearchCodeSource(string searchStr, out Query query, int showResults = 100)
         {
             query = generator.GetQueryFromStr(searchStr);
-            return CodeIndexSearcher.SearchCode(codeIndexConfiguration.LuceneIndexForCode, query, showResults > 100 ? 100 : showResults);
+            return CodeIndexSearcher.SearchCode(codeIndexConfiguration.LuceneIndexForCode, query, showResults);
         }
 
         static readonly QueryGenerator generator = new QueryGenerator();

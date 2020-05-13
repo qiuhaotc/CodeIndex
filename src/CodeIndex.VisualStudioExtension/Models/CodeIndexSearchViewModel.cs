@@ -55,8 +55,7 @@ namespace CodeIndex.VisualStudioExtension
             new Item<int>("Top 200", 200),
             new Item<int>("Top 500", 500),
             new Item<int>("Top 1000", 1000),
-            new Item<int>("Top 10000", 10000),
-            new Item<int>("Top 100000", 100000)
+            new Item<int>("Top 10000", 10000)
         };
 
         public List<CodeSourceWithMatchedLine> SearchResults

@@ -45,6 +45,7 @@ namespace CodeIndex.VisualStudioExtension
                 }
                 else
                 {
+                    // TODO: Download to local to open
                     System.Windows.Forms.MessageBox.Show("This file is not on your local");
                 }
             }

@@ -40,7 +40,7 @@ namespace CodeIndex.Common
         string[] excludedExtensionsArray;
         string[] excludedPathsArray;
         string[] includedExtensionsArray;
-        int maximumResults = 100000;
+        int maximumResults = 10000;
 
         string GetIndexPath(string path)
         {

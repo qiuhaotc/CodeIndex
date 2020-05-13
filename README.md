@@ -49,25 +49,23 @@ docker run -d --name codeindex -p 8080:80 -v "You index folder":/luceneindex -v 
 
 ### Search Extension For Visual Studio
 
-Download Url [Code Index Extension](https://marketplace.visualstudio.com/items?itemName=qiuhaotc.CodeIndexExtension)
-
-It's a pre-release for now.
-
 |Status|Value|
 |:----|:---:|
 |VS Marketplace|[![VS Marketplace](http://vsmarketplacebadge.apphb.com/version-short/qiuhaotc.CodeIndexExtension.svg)](https://marketplace.visualstudio.com/items?itemName=qiuhaotc.CodeIndexExtension)
 |VS Marketplace Downloads|[![VS Marketplace Downloads](http://vsmarketplacebadge.apphb.com/downloads/qiuhaotc.CodeIndexExtension.svg)](https://marketplace.visualstudio.com/items?itemName=qiuhaotc.CodeIndexExtension)
 |VS Marketplace Installs|[![VS Marketplace Installs](http://vsmarketplacebadge.apphb.com/installs-short/qiuhaotc.CodeIndexExtension.svg)](https://marketplace.visualstudio.com/items?itemName=qiuhaotc.CodeIndexExtension)
 
-Open Search Window
+#### Download Url
 
-![Open Search Window](https://raw.githubusercontent.com/qiuhaotc/CodeIndex/master/doc/VSExtension-1.png)
+[Code Index Extension](https://marketplace.visualstudio.com/items?itemName=qiuhaotc.CodeIndexExtension)
 
-Code Index Search Window
+#### Search Code
 
-![Code Index Search Window](https://raw.githubusercontent.com/qiuhaotc/CodeIndex/master/doc/VSExtension-2.png)
+1. Open the code index search window under: view => other window => code index search
+2. Config the service url to your own service
+3. Doing the search
 
-Config the service url to your own service and doing the searching
+![Code Index Search Extension](https://raw.githubusercontent.com/qiuhaotc/CodeIndex/master/doc/UseExtension.gif)
 
 ## Search Syntax
 
