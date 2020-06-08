@@ -166,5 +166,27 @@ It&#39;s <label class='highlight'>Abc</label>", result);
             Assert.That(results, Has.Length.EqualTo(1));
             Assert.AreEqual(("Content is too long to highlight", 1), results[0]);
         }
+
+        [Test]
+        public void TestGeneratePreviewTextWithLineNumber_CompletionPrefixAndSuffix()
+        {
+            var generator = new QueryGenerator();
+            var content = $"OH ABC{Environment.NewLine}DEF QWE ABC DEF ABC{Environment.NewLine}DEF OOOODD DEF ABC";
+            var results = CodeIndexSearcher.GeneratePreviewTextWithLineNumber(generator.GetQueryFromStr("\"ABC DEF\""), content, int.MaxValue, LucenePool.GetAnalyzer(), 100);
+            Assert.That(results, Has.Length.EqualTo(3));
+            Assert.AreEqual(("OH <label class='highlight'>ABC</label>", 1), results[0]);
+            Assert.AreEqual(("<label class='highlight'>DEF</label> QWE <label class='highlight'>ABC</label> <label class='highlight'>DEF</label> <label class='highlight'>ABC</label>", 2), results[1]);
+            Assert.AreEqual(("<label class='highlight'>DEF</label> OOOODD DEF ABC", 3), results[2]);
+        }
+
+        [Test]
+        public void TestGeneratePreviewTextWithLineNumber_TrimLine()
+        {
+            var generator = new QueryGenerator();
+            var content = $"{Environment.NewLine}   \t\tABC\t   \t";
+            var results = CodeIndexSearcher.GeneratePreviewTextWithLineNumber(generator.GetQueryFromStr("ABC"), content, int.MaxValue, LucenePool.GetAnalyzer(), 100);
+            Assert.That(results, Has.Length.EqualTo(1));
+            Assert.AreEqual(("<label class='highlight'>ABC</label>", 2), results[0]);
+        }
     }
 }

@@ -89,21 +89,20 @@ namespace CodeIndex.Search
                     highLightResult = highlighter.GetBestFragments(stream, text, 3, "...");
                 }
 
-                highLightResult = highLightResult ?? string.Empty;
+                highLightResult ??= string.Empty;
 
                 var matchedLines = new List<(string, int)>();
                 using var stringReader = new StringReader(highLightResult);
                 string line;
                 var lineNumber = 0;
-                while ((line = stringReader.ReadLine()) != null)
+                while ((line = stringReader.ReadLine()?.Trim()) != null)
                 {
                     lineNumber++;
-                    if (line.Contains(HighLightPrefix) || line.Contains(HighLightSuffix))
-                    {
-                        if (matchedLines.Count < maxResults)
-                        {
-                            // TODO: If matched content has multi line, should able to complement the missing prefix or suffix
 
+                    if (matchedLines.Count < maxResults)
+                    {
+                        if (line.Contains(HighLightPrefix) || line.Contains(HighLightSuffix))
+                        {
                             string matchedLineFormatted;
 
                             if (needReplaceSuffixAndPrefix)
@@ -117,10 +116,10 @@ namespace CodeIndex.Search
 
                             matchedLines.Add((matchedLineFormatted, lineNumber));
                         }
-                        else
-                        {
-                            break;
-                        }
+                    }
+                    else
+                    {
+                        break;
                     }
                 };
 
