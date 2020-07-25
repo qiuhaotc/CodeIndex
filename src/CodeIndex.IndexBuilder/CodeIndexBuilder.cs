@@ -146,7 +146,10 @@ namespace CodeIndex.IndexBuilder
         {
             luceneIndex.RequireNotNullOrEmpty(nameof(luceneIndex));
 
-            return DirectoryReader.IndexExists(FSDirectory.Open(luceneIndex));
+            using var dir = FSDirectory.Open(luceneIndex);
+            var indexExist = DirectoryReader.IndexExists(dir);
+
+            return indexExist;
         }
 
         public static void DeleteAllIndex(CodeIndexConfiguration config)
