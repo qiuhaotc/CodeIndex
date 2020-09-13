@@ -12,7 +12,7 @@
         <DockPanel LastChildFill="True" Margin="6">
             <WrapPanel HorizontalAlignment="Left" DockPanel.Dock="Top">
                 <Label Content="Content:"/>
-                <TextBox Height="23" TextWrapping="Wrap" Text="{Binding Content, UpdateSourceTrigger=PropertyChanged}" Width="240" KeyDown="TextBox_KeyDown"/>
+                <TextBox Height="23" TextWrapping="Wrap" Text="{Binding Content, UpdateSourceTrigger=PropertyChanged}" Width="240" KeyUp="TextBox_KeyDown"/>
                 <Label Content="File Name:"/>
                 <TextBox Height="23" TextWrapping="Wrap" Text="{Binding FileName, UpdateSourceTrigger=PropertyChanged}" Width="120" KeyDown="TextBox_KeyDown"/>
                 <Label Content="File Extension:"/>
@@ -32,6 +32,18 @@
                     <Label Content="{Binding ResultInfo}" Foreground="Yellow"/>
                 </ScrollViewer>
             </WrapPanel>
+            <DockPanel DockPanel.Dock="Top">
+                <Label Content="Hind Words:" DockPanel.Dock="Left"/>
+                <ScrollViewer DockPanel.Dock="Right" VerticalScrollBarVisibility="Auto" MaxHeight="52">
+                    <ItemsControl ItemsSource="{Binding HintWords}" ItemsPanel="{StaticResource ItemsPanelTemplateHorizontal}" HorizontalAlignment="Left">
+                        <ItemsControl.ItemTemplate>
+                            <DataTemplate>
+                                <Label Margin="10 0 0 0" Content="{Binding Word}"/>
+                            </DataTemplate>
+                        </ItemsControl.ItemTemplate>
+                    </ItemsControl>
+                </ScrollViewer>
+            </DockPanel>
             <DataGrid Name="MatchedCodeSourceGrid" Background="#FF2D2D30" Margin="0 6 0 0" ItemsSource="{Binding SearchResults}" IsReadOnly="True" HeadersVisibility="Column" AutoGenerateColumns="False">
                 <DataGrid.Columns>
                     <DataGridTextColumn Header="Name" Width="3*" Binding="{Binding CodeSource.FileName}"/>

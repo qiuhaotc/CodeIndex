@@ -28,6 +28,10 @@ namespace CodeIndex.VisualStudioExtension
                     SearchButton.Command?.Execute(null);
                 }
             }
+            else
+            {
+                (DataContext as CodeIndexSearchViewModel)?.GetHintWords();
+            }
         }
 
         void Row_DoubleClick(object sender, MouseButtonEventArgs e)

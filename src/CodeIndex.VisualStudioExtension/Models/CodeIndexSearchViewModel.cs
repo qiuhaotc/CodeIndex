@@ -1,11 +1,13 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Diagnostics;
+using System.Linq;
 using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using CodeIndex.Common;
+using CodeIndex.VisualStudioExtension.Models;
 
 namespace CodeIndex.VisualStudioExtension
 {
@@ -31,11 +33,54 @@ namespace CodeIndex.VisualStudioExtension
                     value = value.Substring(0, value.Length - 1);
                 }
 
-                if(value != serviceUrl)
+                if (value != serviceUrl)
                 {
                     ConfigHelper.SetConfiguration(nameof(ServiceUrl), value);
                     serviceUrl = value;
                 }
+            }
+        }
+
+        CancellationTokenSource tokenSourceToGetHintWord;
+
+        public async void GetHintWords()
+        {
+            if (string.IsNullOrEmpty(Content))
+            {
+                return;
+            }
+
+            tokenSourceToGetHintWord?.Dispose();
+            tokenSourceToGetHintWord = null;
+
+            var inputWord = Content.Split(new[] { " " }, StringSplitOptions.RemoveEmptyEntries).LastOrDefault();
+            if (inputWord?.Length >= 3)
+            {
+                tokenSourceToGetHintWord = new CancellationTokenSource();
+                var hintWords = await Task.Run(async () =>
+                {
+                    try
+                    {
+                        var client = new HttpClient();
+                        var url = $"{ServiceUrl}/api/lucene/GetHints?word=" + System.Web.HttpUtility.UrlEncode(inputWord);
+                        var response = await client.GetAsync(url, tokenSourceToGetHintWord.Token);
+                        var result = await response.Content.ReadAsAsync<FetchResult<List<string>>>();
+
+                        if (result.Status.Success)
+                        {
+                            return result.Result.Select(u => new HintWord { Word = u }).ToList();
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        // ignored
+                    }
+
+                    return new List<HintWord>();
+                }, tokenSourceToGetHintWord.Token);
+
+                HintWords = hintWords;
+                NotifyPropertyChange(nameof(HintWords));
             }
         }
 
@@ -48,6 +93,8 @@ namespace CodeIndex.VisualStudioExtension
                 NotifyPropertyChange();
             }
         }
+
+        public List<HintWord> HintWords { get; set; }
 
         public Item<int>[] Options { get; } = new[]
         {

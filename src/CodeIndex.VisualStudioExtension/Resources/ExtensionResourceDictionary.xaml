@@ -18,6 +18,10 @@
         <Setter Property="Foreground" Value="White"/>
         <Setter Property="Background" Value="#FF434343"/>
     </Style>
+    <Style TargetType="{x:Type ListView}">
+        <Setter Property="Background" Value="#FF2D2D30"/>
+        <Setter Property="Foreground" Value="White"/>
+    </Style>
     <Style TargetType="{x:Type DataGridCell}">
         <Setter Property="Background" Value="Transparent"/>
         <Setter Property="BorderBrush" Value="Transparent"/>
@@ -103,4 +107,7 @@
         </Setter>
     </Style>
     <local:StringToXamlConverter x:Key="StringToXamlConverter" />
+    <ItemsPanelTemplate x:Key="ItemsPanelTemplateHorizontal">
+        <WrapPanel Orientation="Horizontal" Margin="0,0,0,0"/>
+    </ItemsPanelTemplate>
 </ResourceDictionary>
