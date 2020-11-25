@@ -3,6 +3,7 @@ using System.Collections.Concurrent;
 using System.Diagnostics.CodeAnalysis;
 using System.IO;
 using System.Linq;
+using System.Runtime.InteropServices;
 using System.Threading;
 using CodeIndex.Common;
 using CodeIndex.IndexBuilder;
@@ -80,6 +81,12 @@ namespace CodeIndex.Test
         [Test]
         public void TestMaintainerIndex_RetryFailed()
         {
+            if (!RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
+            {
+                Assert.Pass();
+                return;
+            }
+
             var waitMS = 1500;
             Directory.CreateDirectory(MonitorFolder);
 

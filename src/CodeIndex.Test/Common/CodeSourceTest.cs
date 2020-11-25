@@ -19,12 +19,12 @@ namespace CodeIndex.Test
         public void TestGetCodeSource()
         {
             var dateTime = DateTime.UtcNow;
-            var fileInfo = new FileInfo("C:\\AAA.txt");
+            var fileInfo = new FileInfo("AAA.txt");
             var source = CodeSource.GetCodeSource(fileInfo, "ABCD");
             Assert.AreEqual("AAA.txt", source.FileName);
             Assert.AreEqual("ABCD", source.Content);
             Assert.AreEqual("txt", source.FileExtension);
-            Assert.AreEqual("C:\\AAA.txt", source.FilePath);
+            Assert.AreEqual(fileInfo.FullName, source.FilePath);
             Assert.AreEqual(fileInfo.LastWriteTimeUtc, source.LastWriteTimeUtc);
             Assert.LessOrEqual(dateTime, source.IndexDate);
             Assert.AreNotEqual(string.Empty, source.CodePK);
