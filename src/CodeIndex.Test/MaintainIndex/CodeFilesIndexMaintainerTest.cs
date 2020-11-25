@@ -100,7 +100,7 @@ namespace CodeIndex.Test
                 LastRetryUTCDate = DateTime.Now.AddDays(-1)
             });
 
-            var retryTime = 3;
+            var retryTime = 10;
             var codeSources = Array.Empty<CodeSource>();
 
             while (retryTime > 0)
