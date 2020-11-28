@@ -5,7 +5,7 @@ namespace CodeIndex.Common
 {
     public class CodeIndexConfiguration
     {
-        const char SplitChar = '|';
+        public const char SplitChar = '|';
 
         public string LuceneIndex { get; set; } = string.Empty;
         public string MonitorFolder { get; set; } = string.Empty;
@@ -23,10 +23,10 @@ namespace CodeIndex.Common
         public string[] ExcludedExtensionsArray => excludedExtensionsArray ??= GetSplitStringArray(ExcludedExtensions);
         public string[] ExcludedPathsArray => excludedPathsArray ??= GetSplitStringArray(ExcludedPaths);
         public string[] IncludedExtensionsArray => includedExtensionsArray ??= GetSplitStringArray(IncludedExtensions);
-        
+
         public int MaximumResults
         {
-            get => maximumResults; 
+            get => maximumResults;
             set
             {
                 value.RequireRange(nameof(maximumResults), 10000000, 100);
