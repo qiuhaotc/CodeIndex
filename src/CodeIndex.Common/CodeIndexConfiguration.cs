@@ -6,6 +6,8 @@ namespace CodeIndex.Common
     public class CodeIndexConfiguration
     {
         public const char SplitChar = '|';
+        public const string CodeIndexesFolder = "CodeIndexes";
+        public const string ConfigurationIndexFolder = "Configuration";
 
         public string LuceneIndex { get; set; } = string.Empty;
         public string MonitorFolder { get; set; } = string.Empty;
@@ -56,5 +58,8 @@ namespace CodeIndex.Common
 
             return excludedExtensions.Split(SplitChar, StringSplitOptions.RemoveEmptyEntries);
         }
+
+        string luceneConfigurationIndex;
+        public string LuceneConfigurationIndex => luceneConfigurationIndex ??= GetIndexPath(ConfigurationIndexFolder);
     }
 }

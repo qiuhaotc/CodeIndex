@@ -2,9 +2,10 @@
 {
     public enum IndexStatus
     {
-        Created,
+        Idle,
         Initializing,
         Monitoring,
+        Error,
         Deleting
     }
 }
