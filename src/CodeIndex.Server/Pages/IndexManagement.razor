@@ -77,7 +77,7 @@
 
     public List<IndexStatusInfo> IndexStatusInfos { get; set; }
 
-    public IndexStatusInfo IndexStatusInfoForEditOrAdd { get; set; } = new IndexStatusInfo(IndexStatus.Created, new IndexConfig());
+    public IndexStatusInfo IndexStatusInfoForEditOrAdd { get; set; } = new IndexStatusInfo(IndexStatus.Idle, new IndexConfig());
 
     public string IncludedExtensions { get; set; } = string.Empty;
     public string ExcludedExtensions { get; set; } = string.Empty;
@@ -88,7 +88,7 @@
         base.OnInitialized();
 
         IndexStatusInfos = new List<IndexStatusInfo>{
-            new IndexStatusInfo(IndexStatus.Created, new IndexConfig
+            new IndexStatusInfo(IndexStatus.Idle, new IndexConfig
             {
                 IndexName = "Dummy1",
                 MonitorFolder = "c:/dummy1"
@@ -132,7 +132,7 @@
             IndexStatusInfos.Add(IndexStatusInfoForEditOrAdd);
         }
 
-        IndexStatusInfoForEditOrAdd = new IndexStatusInfo(IndexStatus.Created, new IndexConfig());
+        IndexStatusInfoForEditOrAdd = new IndexStatusInfo(IndexStatus.Initializing, new IndexConfig());
 
         IncludedExtensions = string.Empty;
         ExcludedExtensions = string.Empty;
