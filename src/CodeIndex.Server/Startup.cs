@@ -93,7 +93,7 @@ namespace CodeIndex.Server
                     maintainer.StartWatch();
                     initializer.InitializeIndex(config, out var failedIndexFiles);
 
-                    maintainer.SetInitalizeFinishedToTrue(failedIndexFiles);
+                    maintainer.SetInitializeFinishedToTrue(failedIndexFiles);
                 }
                 catch (Exception ex)
                 {

@@ -1,6 +1,7 @@
 ﻿using CodeIndex.Common;
 using NUnit.Framework;
 using System;
+using System.Linq;
 
 namespace CodeIndex.Test
 {
@@ -12,9 +13,9 @@ namespace CodeIndex.Test
             var pk = Guid.NewGuid();
             var config = new IndexConfig
             {
-                ExcludedExtensions = new[] { "A" },
-                ExcludedPaths = new[] { "B" },
-                IncludedExtensions = new[] { "C" },
+                ExcludedExtensions = "A|B|C",
+                ExcludedPaths =  "B|C|D",
+                IncludedExtensions = "E|F",
                 IndexCreatedDate = new DateTime(2020, 1, 1),
                 IndexLastUpdatedDate = new DateTime(2020, 1, 2),
                 IndexName = "ABC",
@@ -26,9 +27,13 @@ namespace CodeIndex.Test
                 SaveIntervalSeconds = 10
             };
 
-            CollectionAssert.AreEquivalent(config.ExcludedExtensions, new[] { "A" });
-            CollectionAssert.AreEquivalent(config.ExcludedPaths, new[] { "B" });
-            CollectionAssert.AreEquivalent(config.IncludedExtensions, new[] { "C" });
+            Assert.AreEqual("A|B|C", config.ExcludedExtensions);
+            Assert.AreEqual("B|C|D", config.ExcludedPaths);
+            Assert.AreEqual("E|F", config.IncludedExtensions);
+            Assert.AreEqual(new DateTime(2020, 1, 1), config.IndexCreatedDate);
+            CollectionAssert.AreEquivalent(config.ExcludedExtensionsArray, new[] { "A", "B", "C" });
+            CollectionAssert.AreEquivalent(config.ExcludedPathsArray, new[] { "B", "C", "D" });
+            CollectionAssert.AreEquivalent(config.IncludedExtensionsArray, new[] { "E", "F" });
             Assert.AreEqual(new DateTime(2020, 1, 1), config.IndexCreatedDate);
             Assert.AreEqual(new DateTime(2020, 1, 2), config.IndexLastUpdatedDate);
             Assert.AreEqual("ABC", config.IndexName);
@@ -38,6 +43,9 @@ namespace CodeIndex.Test
             Assert.AreEqual("BBB", config.OpenIDEUriFormat);
             Assert.AreEqual(pk, config.Pk);
             Assert.AreEqual(10, config.SaveIntervalSeconds);
+
+            config.IncludedExtensions = null;
+            Assert.AreEqual(0, config.IncludedExtensionsArray.Count());
         }
     }
 }

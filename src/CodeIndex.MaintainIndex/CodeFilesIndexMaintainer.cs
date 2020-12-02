@@ -31,13 +31,13 @@ namespace CodeIndex.MaintainIndex
             tokenSource = new CancellationTokenSource();
         }
 
-        public void SetInitalizeFinishedToTrue(List<FileInfo> initalizeFailedFiles = null)
+        public void SetInitializeFinishedToTrue(List<FileInfo> initializeFailedFiles = null)
         {
-            if (initalizeFailedFiles?.Count > 0)
+            if (initializeFailedFiles?.Count > 0)
             {
                 var retryDate = DateTime.UtcNow.AddDays(-1);
 
-                foreach (var failedFiles in initalizeFailedFiles)
+                foreach (var failedFiles in initializeFailedFiles)
                 {
                     pendingRetryCodeSources.Enqueue(new PendingRetrySource
                     {

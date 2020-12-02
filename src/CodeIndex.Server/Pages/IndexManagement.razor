@@ -53,15 +53,15 @@
     </div>
     <div class="form-group col-md-4">
         <label for="IncludedExtensions">Included Extensions</label>
-        <input type="text" class="form-control" id="IncludedExtensions" autocomplete="off" @bind-value="@IncludedExtensions">
+        <input type="text" class="form-control" id="IncludedExtensions" autocomplete="off" @bind-value="@IndexStatusInfoForEditOrAdd.IndexConfig.IncludedExtensions">
     </div>
     <div class="form-group col-md-4">
         <label for="ExcludedExtensions">Excluded Extensions</label>
-        <input type="text" class="form-control" id="ExcludedExtensions" autocomplete="off" @bind-value="@ExcludedExtensions">
+        <input type="text" class="form-control" id="ExcludedExtensions" autocomplete="off" @bind-value="@IndexStatusInfoForEditOrAdd.IndexConfig.ExcludedExtensions">
     </div>
     <div class="form-group col-md-4">
         <label for="ExcludedPaths">Excluded Paths</label>
-        <input type="text" class="form-control" id="ExcludedPaths" autocomplete="off" @bind-value="@ExcludedPaths">
+        <input type="text" class="form-control" id="ExcludedPaths" autocomplete="off" @bind-value="@IndexStatusInfoForEditOrAdd.IndexConfig.ExcludedPaths">
     </div>
     <div class="form-group col-md-4">
         <label for="MaxContentHighlightLength">Max Content Highlight Length</label>
@@ -78,10 +78,6 @@
     public List<IndexStatusInfo> IndexStatusInfos { get; set; }
 
     public IndexStatusInfo IndexStatusInfoForEditOrAdd { get; set; } = new IndexStatusInfo(IndexStatus.Idle, new IndexConfig());
-
-    public string IncludedExtensions { get; set; } = string.Empty;
-    public string ExcludedExtensions { get; set; } = string.Empty;
-    public string ExcludedPaths { get; set; } = string.Empty;
 
     protected override void OnInitialized()
     {
@@ -123,19 +119,11 @@
 
     void SaveIndexInfo()
     {
-        IndexStatusInfoForEditOrAdd.IndexConfig.IncludedExtensions = IncludedExtensions.Split(CodeIndexConfiguration.SplitChar);
-        IndexStatusInfoForEditOrAdd.IndexConfig.ExcludedExtensions = ExcludedExtensions.Split(CodeIndexConfiguration.SplitChar);
-        IndexStatusInfoForEditOrAdd.IndexConfig.ExcludedPaths = ExcludedPaths.Split(CodeIndexConfiguration.SplitChar);
-
         if (!IndexStatusInfos.Contains(IndexStatusInfoForEditOrAdd))
         {
             IndexStatusInfos.Add(IndexStatusInfoForEditOrAdd);
         }
 
         IndexStatusInfoForEditOrAdd = new IndexStatusInfo(IndexStatus.Initializing, new IndexConfig());
-
-        IncludedExtensions = string.Empty;
-        ExcludedExtensions = string.Empty;
-        ExcludedPaths = string.Empty;
     }
 }
