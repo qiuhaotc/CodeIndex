@@ -78,7 +78,6 @@ namespace CodeIndex.IndexBuilder
 
             try
             {
-
                 if (filter != null)
                 {
                     documents = searcher.Search(query, filter, maxResults).ScoreDocs.Select(hit => searcher.Doc(hit.Doc)).ToArray();

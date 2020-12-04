@@ -159,9 +159,7 @@ namespace CodeIndex.IndexBuilder
 
         static IndexWriter CreateOrGetIndexWriter(string luceneIndex)
         {
-            IndexWriter indexWriter;
-
-            if (!IndexWritesPool.TryGetValue(luceneIndex, out indexWriter))
+            if (!IndexWritesPool.TryGetValue(luceneIndex, out var indexWriter))
             {
                 lock (syncLockForWriter)
                 {
@@ -185,9 +183,7 @@ namespace CodeIndex.IndexBuilder
 
         static IndexSearcher CreateOrGetIndexSearcher(string luceneIndex)
         {
-            IndexSearcher indexSearcher;
-
-            if (!IndexSearcherPool.TryGetValue(luceneIndex, out indexSearcher) || IndexGotChanged.TryGetValue(luceneIndex, out var indexChangedTimes) && indexChangedTimes > 0)
+            if (!IndexSearcherPool.TryGetValue(luceneIndex, out IndexSearcher indexSearcher) || IndexGotChanged.TryGetValue(luceneIndex, out var indexChangedTimes) && indexChangedTimes > 0)
             {
                 lock (syncLockForSearcher)
                 {
@@ -243,9 +239,7 @@ namespace CodeIndex.IndexBuilder
 
         static IndexReader CreateOrGetIndexReader(string luceneIndex, bool forceRefresh)
         {
-            IndexReader indexReader;
-
-            if (!IndexReaderPool.TryGetValue(luceneIndex, out indexReader) || forceRefresh)
+            if (!IndexReaderPool.TryGetValue(luceneIndex, out var indexReader) || forceRefresh)
             {
                 lock (syncLockForReader)
                 {

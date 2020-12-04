@@ -81,13 +81,13 @@ namespace CodeIndex.MaintainIndex
         FileSystemWatcher FileSystemWatcher { get; set; }
         const int Wait100Milliseconds = 100;
 
-        CodeIndexConfiguration config;
-        string[] excludedExtensions;
-        string[] excludedPaths;
-        int saveIntervalSeconds;
-        string[] includedExtensions;
-        ILog log;
-        CancellationTokenSource tokenSource;
+        readonly CodeIndexConfiguration config;
+        readonly string[] excludedExtensions;
+        readonly string[] excludedPaths;
+        readonly int saveIntervalSeconds;
+        readonly string[] includedExtensions;
+        readonly ILog log;
+        readonly CancellationTokenSource tokenSource;
 
         void OnFileChange(object sender, FileSystemEventArgs e)
         {
@@ -355,7 +355,7 @@ namespace CodeIndex.MaintainIndex
                 {
                     if (pendingRetrySource.RetryTimes <= 10) // Always Failed, Stop Retry
                     {
-                        log?.Info($"Retry failed - ChangesType: {pendingRetrySource.ChangesType} FilePath:{pendingRetrySource.FilePath} LastRetryUTCDate: {pendingRetrySource.LastRetryUTCDate.ToString("yyyyMMddHHmmssfff")} OldPath: {pendingRetrySource.OldPath} RetryTimes: {pendingRetrySource.RetryTimes}");
+                        log?.Info($"Retry failed - ChangesType: {pendingRetrySource.ChangesType} FilePath:{pendingRetrySource.FilePath} LastRetryUTCDate: {pendingRetrySource.LastRetryUTCDate:yyyyMMddHHmmssfff} OldPath: {pendingRetrySource.OldPath} RetryTimes: {pendingRetrySource.RetryTimes}");
 
                         Task.Run(() =>
                         {
@@ -382,7 +382,7 @@ namespace CodeIndex.MaintainIndex
                     }
                     else
                     {
-                        log?.Warn($"Stop retry failed - ChangesType: {pendingRetrySource.ChangesType} FilePath:{pendingRetrySource.FilePath} LastRetryUTCDate: {pendingRetrySource.LastRetryUTCDate.ToString("yyyyMMddHHmmssfff")} OldPath: {pendingRetrySource.OldPath} RetryTimes: {pendingRetrySource.RetryTimes}");
+                        log?.Warn($"Stop retry failed - ChangesType: {pendingRetrySource.ChangesType} FilePath:{pendingRetrySource.FilePath} LastRetryUTCDate: {pendingRetrySource.LastRetryUTCDate:yyyyMMddHHmmssfff} OldPath: {pendingRetrySource.OldPath} RetryTimes: {pendingRetrySource.RetryTimes}");
                     }
                 }
                 else
