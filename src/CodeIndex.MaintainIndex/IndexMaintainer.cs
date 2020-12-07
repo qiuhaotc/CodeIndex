@@ -1,6 +1,7 @@
 ﻿using System;
 using System.IO;
 using CodeIndex.Common;
+using CodeIndex.Files;
 using CodeIndex.IndexBuilder;
 
 namespace CodeIndex.MaintainIndex
@@ -19,7 +20,7 @@ namespace CodeIndex.MaintainIndex
             Status = IndexStatus.Idle;
         }
 
-        public void StartInitialize(bool forceRebuild)
+        public void Start(bool forceRebuild)
         {
             if (Status != IndexStatus.Idle)
             {
@@ -28,6 +29,7 @@ namespace CodeIndex.MaintainIndex
 
             try
             {
+                Log.Info($"Start Initializing for {IndexConfig.IndexName}");
                 Status = IndexStatus.Initializing;
 
                 if (Directory.Exists(IndexConfig.MonitorFolder))
@@ -46,19 +48,33 @@ namespace CodeIndex.MaintainIndex
 
                     // TODO: Monitoring It
 
+                    FilesWatcher = FilesWatcherHelper.StartWatch(IndexConfig.MonitorFolder, OnChange, OnRename);
+
                     // TODO: Do update, Do delete
                 }
                 else
                 {
                     Status = IndexStatus.Error;
                     Description = "Monitor Folder Not Exist";
+                    Log.Warn($"Initializing failed for {IndexConfig.IndexName}: {Description}");
                 }
             }
             catch (Exception ex)
             {
                 Status = IndexStatus.Error;
                 Description = ex.Message;
+                Log.Error($"Initializing failed for {IndexConfig.IndexName}: {ex}");
             }
+        }
+
+        void OnChange(object sender, FileSystemEventArgs e)
+        {
+            throw new NotImplementedException();
+        }
+
+        void OnRename(object sender, RenamedEventArgs e)
+        {
+            throw new NotImplementedException();
         }
 
         public IndexConfig IndexConfig { get; }
@@ -69,11 +85,18 @@ namespace CodeIndex.MaintainIndex
         public LucenePoolLight HintIndexPool { get; private set; }
         public CodeIndexBuilderLight CodeIndexBuilder { get; private set; }
         public string Description { get; set; }
+        public bool IsDisposing { get; private set; }
+        FileSystemWatcher FilesWatcher { get; set; }
 
         public void Dispose()
         {
-            CodeIndexPool?.Dispose();
-            HintIndexPool?.Dispose();
+            if (!IsDisposing)
+            {
+                IsDisposing = true;
+                FilesWatcher?.Dispose();
+                CodeIndexPool?.Dispose();
+                HintIndexPool?.Dispose();
+            }
         }
     }
 }
