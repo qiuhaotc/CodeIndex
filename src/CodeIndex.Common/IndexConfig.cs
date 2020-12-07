@@ -1,5 +1,5 @@
 ﻿using System;
-using System.Collections.Generic;
+using System.IO;
 
 namespace CodeIndex.Common
 {
@@ -52,6 +52,11 @@ namespace CodeIndex.Common
         public string[] IncludedExtensionsArray => includedExtensionsArray ??= GetSplitStringArray(IncludedExtensions);
 
         public string[] ExcludedExtensionsArray => excludedExtensionsArray ??= GetSplitStringArray(ExcludedExtensions);
+
+        public (string CodeIndexFolder,string HintIndexFolder) GetFolders(string parentFolder)
+        {
+            return (Path.Combine(parentFolder, IndexName, CodeIndexConfiguration.CodeIndexFolder), Path.Combine(parentFolder, IndexName, CodeIndexConfiguration.HintIndexFolder));
+        }
 
         string[] GetSplitStringArray(string value)
         {

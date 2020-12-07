@@ -156,6 +156,16 @@ namespace CodeIndex.IndexBuilder
             return indexSearcher;
         }
 
+        public void DeleteAllIndex()
+        {
+            using var readLock = new EnterReaderWriterLock(readerWriteLock);
+
+            IndexWriter.DeleteAll();
+            indexWriter.Commit();
+
+            indexChangeCount++;
+        }
+
         #endregion
 
         #region IndexReader
@@ -178,8 +188,9 @@ namespace CodeIndex.IndexBuilder
                         {
                             indexReader.DecRef(); // Dispose safely
                             indexReader = IndexWriter.GetReader(true);
-                            indexChangeCount = 0;
                         }
+
+                        indexChangeCount = 0;
                     }
                 }
 

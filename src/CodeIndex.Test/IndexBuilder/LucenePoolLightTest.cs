@@ -81,6 +81,35 @@ namespace CodeIndex.Test
         }
 
         [Test]
+        public void TestDeleteAllIndex()
+        {
+            using var light = new LucenePoolLight(TempIndexDir);
+
+            light.BuildIndex(new[] {
+                GetDocument(new CodeSource
+                {
+                    FileName = "Dummy File 1",
+                    FileExtension = "cs",
+                    FilePath = @"C:\Dummy File 1.cs",
+                    Content = "Test Content" + Environment.NewLine + "A New Line For Test"
+                }),
+                GetDocument(new CodeSource
+                {
+                    FileName = "Dummy File 2",
+                    FileExtension = "cs",
+                    FilePath = @"C:\Dummy File 2.cs",
+                    Content = "Test Content" + Environment.NewLine + "A New Line For Test"
+                })}, true, true, true);
+
+            var documents = light.Search(new MatchAllDocsQuery(), int.MaxValue);
+            Assert.AreEqual(2, documents.Length);
+
+            light.DeleteAllIndex();
+            documents = light.Search(new MatchAllDocsQuery(), int.MaxValue);
+            Assert.AreEqual(0, documents.Length);
+        }
+
+        [Test]
         [Timeout(60000)]
         public void TestThreadSafeForIndexReader()
         {
