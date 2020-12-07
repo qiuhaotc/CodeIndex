@@ -1,13 +1,16 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Threading;
 using CodeIndex.Common;
 using CodeIndex.Files;
 using Lucene.Net.Documents;
+using Lucene.Net.Search;
 
 namespace CodeIndex.IndexBuilder
 {
-    public class CodeIndexBuilderLight
+    public class CodeIndexBuilderLight : IDisposable
     {
         public CodeIndexBuilderLight(string name, LucenePoolLight codeIndexPool, LucenePoolLight hintIndexPool, ILog log)
         {
@@ -42,7 +45,7 @@ namespace CodeIndex.IndexBuilder
             }
         }
 
-        public void BuildIndexByBatch(IEnumerable<FileInfo> fileInfos, out List<FileInfo> failedIndexFiles, bool needCommit, bool triggerMerge, bool applyAllDeletes, int batchSize = 10000)
+        public void BuildIndexByBatch(IEnumerable<FileInfo> fileInfos, out List<FileInfo> failedIndexFiles, bool needCommit, bool triggerMerge, bool applyAllDeletes, CancellationToken cancellationToken, int batchSize = 10000)
         {
             fileInfos.RequireNotNull(nameof(fileInfos));
             batchSize.RequireRange(nameof(batchSize), int.MaxValue, 50);
@@ -52,6 +55,8 @@ namespace CodeIndex.IndexBuilder
 
             foreach (var fileInfo in fileInfos)
             {
+                cancellationToken.ThrowIfCancellationRequested();
+
                 try
                 {
                     if (fileInfo.Exists)
@@ -63,13 +68,13 @@ namespace CodeIndex.IndexBuilder
                         var doc = CodeIndexBuilder.GetDocumentFromSource(source);
                         documents.Add(doc);
 
-                        Log.Info($"Add index For {source.FilePath}");
+                        Log.Info($"{Name}: Add index For {source.FilePath}");
                     }
                 }
                 catch (Exception ex)
                 {
                     failedIndexFiles.Add(fileInfo);
-                    Log.Error($"Add {Name} index for {fileInfo.FullName} failed, exception: " + ex);
+                    Log.Error($"{Name}: Add index for {fileInfo.FullName} failed, exception: " + ex);
                 }
 
                 if (documents.Count >= batchSize)
@@ -87,17 +92,50 @@ namespace CodeIndex.IndexBuilder
 
         public void DeleteAllIndex()
         {
-            Log.Info($"Delete All Index {Name} start");
+            Log.Info($"{Name}: Delete All Index start");
             CodeIndexPool.DeleteAllIndex();
             HintIndexPool.DeleteAllIndex();
-            Log.Info($"Delete All Index {Name} finished");
+            Log.Info($"{Name}: Delete All Index finished");
+        }
+
+        public IEnumerable<(string FilePath, DateTime LastWriteTimeUtc)> GetAllIndexedCodeSource()
+        {
+            return CodeIndexPool.Search(new MatchAllDocsQuery(), int.MaxValue).Select(u => (u.Get(nameof(CodeSource.FilePath)), new DateTime(long.Parse(u.Get(nameof(CodeSource.LastWriteTimeUtc)))))).ToList();
         }
 
         void BuildIndex(bool needCommit, bool triggerMerge, bool applyAllDeletes, List<Document> documents)
         {
-            Log.Info($"Build {Name} index start, documents count {documents.Count}");
+            Log.Info($"{Name}: Build index start, documents count {documents.Count}");
             CodeIndexPool.BuildIndex(documents, needCommit, triggerMerge, applyAllDeletes);
-            Log.Info($"Build {Name} index finished");
+            Log.Info($"{Name}: Build index finished");
+        }
+
+        public bool IsDisposing { get; private set; }
+
+        public void Dispose()
+        {
+            if (!IsDisposing)
+            {
+                IsDisposing = true;
+                CodeIndexPool.Dispose();
+                HintIndexPool.Dispose();
+            }
+        }
+
+        public void UpdateIndex(FileInfo fileInfo)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void DeleteIndex((string FilePath, DateTime LastWriteTimeUtc) codeSource)
+        {
+            throw new NotImplementedException();
+        }
+
+        public void Commit()
+        {
+            CodeIndexPool.Commit();
+            HintIndexPool.Commit();
         }
     }
 }

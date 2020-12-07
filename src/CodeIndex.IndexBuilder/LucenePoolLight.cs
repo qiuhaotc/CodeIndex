@@ -166,6 +166,12 @@ namespace CodeIndex.IndexBuilder
             indexChangeCount++;
         }
 
+        public void Commit()
+        {
+            using var readLock = new EnterReaderWriterLock(readerWriteLock);
+            indexWriter.Commit();
+        }
+
         #endregion
 
         #region IndexReader
