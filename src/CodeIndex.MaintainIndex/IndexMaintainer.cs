@@ -16,14 +16,19 @@ namespace CodeIndex.MaintainIndex
             IndexConfig = indexConfig;
             CodeIndexConfiguration = codeIndexConfiguration;
             Log = log;
-            IndexStatus = IndexStatus.Idle;
+            Status = IndexStatus.Idle;
         }
 
         public void StartInitialize(bool forceRebuild)
         {
+            if (Status != IndexStatus.Idle)
+            {
+                return;
+            }
+
             try
             {
-                IndexStatus = IndexStatus.Initializing;
+                Status = IndexStatus.Initializing;
 
                 if (Directory.Exists(IndexConfig.MonitorFolder))
                 {
@@ -38,16 +43,20 @@ namespace CodeIndex.MaintainIndex
                     {
                         CodeIndexBuilder.DeleteAllIndex();
                     }
+
+                    // TODO: Monitoring It
+
+                    // TODO: Do update, Do delete
                 }
                 else
                 {
-                    IndexStatus = IndexStatus.Error;
+                    Status = IndexStatus.Error;
                     Description = "Monitor Folder Not Exist";
                 }
             }
             catch (Exception ex)
             {
-                IndexStatus = IndexStatus.Error;
+                Status = IndexStatus.Error;
                 Description = ex.Message;
             }
         }
@@ -55,7 +64,7 @@ namespace CodeIndex.MaintainIndex
         public IndexConfig IndexConfig { get; }
         public CodeIndexConfiguration CodeIndexConfiguration { get; }
         public ILog Log { get; }
-        public IndexStatus IndexStatus { get; private set; }
+        public IndexStatus Status { get; private set; }
         public LucenePoolLight CodeIndexPool { get; private set; }
         public LucenePoolLight HintIndexPool { get; private set; }
         public CodeIndexBuilderLight CodeIndexBuilder { get; private set; }
@@ -63,7 +72,8 @@ namespace CodeIndex.MaintainIndex
 
         public void Dispose()
         {
-            throw new NotImplementedException();
+            CodeIndexPool?.Dispose();
+            HintIndexPool?.Dispose();
         }
     }
 }
