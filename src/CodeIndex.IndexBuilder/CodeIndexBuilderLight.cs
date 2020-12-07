@@ -107,6 +107,7 @@ namespace CodeIndex.IndexBuilder
         {
             Log.Info($"{Name}: Build index start, documents count {documents.Count}");
             CodeIndexPool.BuildIndex(documents, needCommit, triggerMerge, applyAllDeletes);
+            // TODO: Build Hint Index
             Log.Info($"{Name}: Build index finished");
         }
 
