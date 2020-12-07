@@ -103,6 +103,7 @@ namespace CodeIndex.MaintainIndex
             Log.Info($"{IndexConfig.IndexName}: Fetching {allFiles.Count} files need to indexing");
 
             List<FileInfo> needToBuildIndex = null;
+            List<string> failedUpdateOrDeleteFiles = new List<string>();
 
             if (CodeIndexBuilder.IndexExists(IndexConfig.MonitorFolder))
             {
@@ -128,7 +129,10 @@ namespace CodeIndex.MaintainIndex
                             if (fileInfo.LastWriteTimeUtc != codeSource.LastWriteTimeUtc)
                             {
                                 Log.Info($"{IndexConfig.IndexName}: File {fileInfo.FullName} modified");
-                                IndexBuilderLight.UpdateIndex(fileInfo);
+                                if (!IndexBuilderLight.UpdateIndex(fileInfo, cancellationToken))
+                                {
+                                    failedUpdateOrDeleteFiles.Add(codeSource.FilePath);
+                                }
                             }
 
                             allFilesDictionary.Remove(codeSource.FilePath);
@@ -136,7 +140,10 @@ namespace CodeIndex.MaintainIndex
                         else
                         {
                             Log.Info($"{IndexConfig.IndexName}: File {codeSource.FilePath} deleted");
-                            IndexBuilderLight.DeleteIndex(codeSource);
+                            if (!IndexBuilderLight.DeleteIndex(codeSource.FilePath))
+                            {
+                                failedUpdateOrDeleteFiles.Add(codeSource.FilePath);
+                            }
                         }
                     }
 
@@ -154,7 +161,7 @@ namespace CodeIndex.MaintainIndex
 
             if (failedIndexFiles.Count > 0)
             {
-                Log.Warn($"{IndexConfig.IndexName}: Initialize finished for {IndexConfig.MonitorFolder}, failed with these file(s): {string.Join(", ", failedIndexFiles.Select(u => u.FullName))}");
+                Log.Warn($"{IndexConfig.IndexName}: Initialize finished for {IndexConfig.MonitorFolder}, failed with these file(s): {string.Join(", ", failedIndexFiles.Select(u => u.FullName).Concat(failedUpdateOrDeleteFiles))}");
             }
             else
             {

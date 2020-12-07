@@ -6,6 +6,7 @@ using System.Threading;
 using CodeIndex.Common;
 using CodeIndex.Files;
 using Lucene.Net.Documents;
+using Lucene.Net.Index;
 using Lucene.Net.Search;
 
 namespace CodeIndex.IndexBuilder
@@ -50,7 +51,8 @@ namespace CodeIndex.IndexBuilder
             fileInfos.RequireNotNull(nameof(fileInfos));
             batchSize.RequireRange(nameof(batchSize), int.MaxValue, 50);
 
-            var documents = new List<Document>();
+            var codeDocuments = new List<Document>();
+            var hintWords = new List<string>();
             failedIndexFiles = new List<FileInfo>();
 
             foreach (var fileInfo in fileInfos)
@@ -63,10 +65,11 @@ namespace CodeIndex.IndexBuilder
                     {
                         var source = CodeSource.GetCodeSource(fileInfo, FilesContentHelper.ReadAllText(fileInfo.FullName));
 
-                        // TODO: Build Hint
+                        var words = WordSegmenter.GetWords(source.Content).Where(word => word.Length > 3 && word.Length < 200);
+                        hintWords.AddRange(words);
 
                         var doc = CodeIndexBuilder.GetDocumentFromSource(source);
-                        documents.Add(doc);
+                        codeDocuments.Add(doc);
 
                         Log.Info($"{Name}: Add index For {source.FilePath}");
                     }
@@ -77,16 +80,17 @@ namespace CodeIndex.IndexBuilder
                     Log.Error($"{Name}: Add index for {fileInfo.FullName} failed, exception: " + ex);
                 }
 
-                if (documents.Count >= batchSize)
+                if (codeDocuments.Count >= batchSize)
                 {
-                    BuildIndex(needCommit, triggerMerge, applyAllDeletes, documents);
-                    documents.Clear();
+                    BuildIndex(needCommit, triggerMerge, applyAllDeletes, codeDocuments, hintWords, cancellationToken);
+                    codeDocuments.Clear();
+                    hintWords.Clear();
                 }
             }
 
-            if (documents.Count > 0)
+            if (codeDocuments.Count > 0)
             {
-                BuildIndex(needCommit, triggerMerge, applyAllDeletes, documents);
+                BuildIndex(needCommit, triggerMerge, applyAllDeletes, codeDocuments, hintWords, cancellationToken);
             }
         }
 
@@ -103,12 +107,32 @@ namespace CodeIndex.IndexBuilder
             return CodeIndexPool.Search(new MatchAllDocsQuery(), int.MaxValue).Select(u => (u.Get(nameof(CodeSource.FilePath)), new DateTime(long.Parse(u.Get(nameof(CodeSource.LastWriteTimeUtc)))))).ToList();
         }
 
-        void BuildIndex(bool needCommit, bool triggerMerge, bool applyAllDeletes, List<Document> documents)
+        void BuildIndex(bool needCommit, bool triggerMerge, bool applyAllDeletes, List<Document> codeDocuments, List<string> words, CancellationToken cancellationToken)
         {
-            Log.Info($"{Name}: Build index start, documents count {documents.Count}");
-            CodeIndexPool.BuildIndex(documents, needCommit, triggerMerge, applyAllDeletes);
-            // TODO: Build Hint Index
-            Log.Info($"{Name}: Build index finished");
+            cancellationToken.ThrowIfCancellationRequested();
+
+            Log.Info($"{Name}: Build code index start, documents count {codeDocuments.Count}");
+            CodeIndexPool.BuildIndex(codeDocuments, needCommit, triggerMerge, applyAllDeletes);
+            Log.Info($"{Name}: Build code index finished");
+
+            Log.Info($"{Name}: Build hint index start, documents count {words.Count}");
+            words.ForEach(word =>
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                HintIndexPool.UpdateIndex(new Term(nameof(CodeWord.Word), word), new Document
+                {
+                    new StringField(nameof(CodeWord.Word), word, Field.Store.YES),
+                    new StringField(nameof(CodeWord.WordLower), word.ToLowerInvariant(), Field.Store.YES)
+                });
+            });
+
+            if (needCommit || triggerMerge || applyAllDeletes)
+            {
+                HintIndexPool.Commit();
+            }
+
+            Log.Info($"{Name}: Build hint index finished");
         }
 
         public bool IsDisposing { get; private set; }
@@ -123,20 +147,70 @@ namespace CodeIndex.IndexBuilder
             }
         }
 
-        public void UpdateIndex(FileInfo fileInfo)
+        public bool UpdateIndex(FileInfo fileInfo, CancellationToken cancellationToken)
         {
-            throw new NotImplementedException();
+            try
+            {
+                if (fileInfo.Exists)
+                {
+                    var source = CodeSource.GetCodeSource(fileInfo, FilesContentHelper.ReadAllText(fileInfo.FullName));
+                    var words = WordSegmenter.GetWords(source.Content).Where(word => word.Length > 3 && word.Length < 200).ToList();
+                    var doc = CodeIndexBuilder.GetDocumentFromSource(source);
+                    CodeIndexPool.UpdateIndex(GetNoneTokenizeFieldTerm(nameof(CodeSource.FilePath), source.FilePath), doc);
+                    words.ForEach(word =>
+                    {
+                        cancellationToken.ThrowIfCancellationRequested();
+
+                        HintIndexPool.UpdateIndex(new Term(nameof(CodeWord.Word), word), new Document
+                        {
+                            new StringField(nameof(CodeWord.Word), word, Field.Store.YES),
+                            new StringField(nameof(CodeWord.WordLower), word.ToLowerInvariant(), Field.Store.YES)
+                        });
+                    });
+
+                    Log.Info($"{Name}: Update index For {source.FilePath} finished");
+                }
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"{Name}: Update index for {fileInfo.FullName} failed, exception: " + ex);
+
+                if (ex is OperationCanceledException)
+                {
+                    throw;
+                }
+
+                return false;
+            }
         }
 
-        public void DeleteIndex((string FilePath, DateTime LastWriteTimeUtc) codeSource)
+        public bool DeleteIndex(string filePath)
         {
-            throw new NotImplementedException();
+            try
+            {
+                CodeIndexPool.DeleteIndex(GetNoneTokenizeFieldTerm(nameof(CodeSource.FilePath), filePath));
+                Log.Info($"{Name}: Delete index For {filePath} finished");
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"{Name}: Delete index for {filePath} failed, exception: " + ex);
+                return false;
+            }
         }
 
         public void Commit()
         {
             CodeIndexPool.Commit();
             HintIndexPool.Commit();
+        }
+
+        public Term GetNoneTokenizeFieldTerm(string fieldName, string termValue)
+        {
+            return new Term($"{fieldName}{Constants.NoneTokenizeFieldSuffix}", termValue);
         }
     }
 }

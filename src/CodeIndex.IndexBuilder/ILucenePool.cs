@@ -17,6 +17,8 @@ namespace CodeIndex.IndexBuilder
 
         void DeleteIndex(params Term[] terms);
 
+        void UpdateIndex(Term term, Document document);
+
         void DeleteAllIndex();
 
         string LuceneIndex { get; }

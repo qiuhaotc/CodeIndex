@@ -172,6 +172,14 @@ namespace CodeIndex.IndexBuilder
             indexWriter.Commit();
         }
 
+        public void UpdateIndex(Term term, Document document)
+        {
+            using var readLock = new EnterReaderWriterLock(readerWriteLock);
+
+            IndexWriter.UpdateDocument(term, document);
+            indexChangeCount++;
+        }
+
         #endregion
 
         #region IndexReader
