@@ -72,13 +72,87 @@ namespace CodeIndex.MaintainIndex
                 return;
             }
 
-            await Task.Run(() =>
-            {
-                MaintainIndexesCore(cancellationToken);
-            }, cancellationToken);
+            await MaintainIndexesCore(cancellationToken);
         }
 
-        void MaintainIndexesCore(CancellationToken cancellationToken)
+        async Task MaintainIndexesCore(CancellationToken cancellationToken)
+        {
+            while (true)
+            {
+                cancellationToken.ThrowIfCancellationRequested();
+
+                var fetchEndDate = DateTime.Now.AddSeconds(-6);
+                var notChangedDuring = fetchEndDate.AddSeconds(3);
+                if (ChangedSources.Count(u => u.ChangedUTCDate > fetchEndDate && u.ChangedUTCDate <= notChangedDuring) == 0)
+                {
+                    var orderedNeedProcessingChanges = ChangedSources.Where(u => u.ChangedUTCDate <= fetchEndDate).ToList();
+                    if (orderedNeedProcessingChanges.Count > 0)
+                    {
+                        foreach (var _ in orderedNeedProcessingChanges)
+                        {
+                            ChangedSources.TryDequeue(out var _);
+                        }
+
+                        ProcessingChanges(orderedNeedProcessingChanges);
+
+                        // TODO: Commit Changes If Needed
+                    }
+                }
+
+                if (cancellationToken.IsCancellationRequested)
+                {
+                    throw new OperationCanceledException();
+                }
+
+                await Task.Delay(3000, cancellationToken);
+            }
+        }
+
+        void ProcessingChanges(List<ChangedSource> orderedNeedProcessingChanges)
+        {
+            Log.Info($"{IndexConfig.IndexName}: Processing Changes start, changes count: {orderedNeedProcessingChanges.Count}");
+
+            foreach (var changes in orderedNeedProcessingChanges)
+            {
+                switch (changes.ChangesType)
+                {
+                    case WatcherChangeTypes.Changed:
+                        UpdateIndex(changes);
+                        break;
+                    case WatcherChangeTypes.Created:
+                        CreateIndex(changes);
+                        break;
+                    case WatcherChangeTypes.Deleted:
+                        DeleteIndex(changes);
+                        break;
+                    case WatcherChangeTypes.Renamed:
+                        RenameIndex(changes);
+                        break;
+                    default:
+                        Log.Warn($"{IndexConfig.IndexName}: Unknown changes type {changes}");
+                        break;
+                }
+            }
+
+            Log.Info($"{IndexConfig.IndexName}: Processing Changes finished");
+        }
+
+        void CreateIndex(ChangedSource changes)
+        {
+            throw new NotImplementedException();
+        }
+
+        void RenameIndex(ChangedSource changes)
+        {
+            throw new NotImplementedException();
+        }
+
+        void DeleteIndex(ChangedSource changes)
+        {
+            throw new NotImplementedException();
+        }
+
+        void UpdateIndex(ChangedSource changes)
         {
             throw new NotImplementedException();
         }
@@ -95,7 +169,7 @@ namespace CodeIndex.MaintainIndex
 
             IndexBuilderLight.InitIndexFolderIfNeeded();
 
-            ChangedSources = new ConcurrentBag<ChangedSource>();
+            ChangedSources = new ConcurrentQueue<ChangedSource>();
             PendingRetryCodeSources = new ConcurrentQueue<PendingRetrySource>();
             FilesWatcher = FilesWatcherHelper.StartWatch(IndexConfig.MonitorFolder, OnChange, OnRename);
 
@@ -103,7 +177,7 @@ namespace CodeIndex.MaintainIndex
             Log.Info($"{IndexConfig.IndexName}: Fetching {allFiles.Count} files need to indexing");
 
             List<FileInfo> needToBuildIndex = null;
-            List<string> failedUpdateOrDeleteFiles = new List<string>();
+            var failedUpdateOrDeleteFiles = new List<string>();
 
             if (CodeIndexBuilder.IndexExists(IndexConfig.MonitorFolder))
             {
@@ -159,7 +233,7 @@ namespace CodeIndex.MaintainIndex
 
             IndexBuilderLight.Commit();
 
-            if (failedIndexFiles.Count > 0)
+            if (failedIndexFiles.Count > 0 || failedUpdateOrDeleteFiles.Count > 0)
             {
                 Log.Warn($"{IndexConfig.IndexName}: Initialize finished for {IndexConfig.MonitorFolder}, failed with these file(s): {string.Join(", ", failedIndexFiles.Select(u => u.FullName).Concat(failedUpdateOrDeleteFiles))}");
             }
@@ -169,20 +243,20 @@ namespace CodeIndex.MaintainIndex
             }
         }
 
-        void AddNewIndexFiles(List<FileInfo> needToBuildIndex, out List<FileInfo> failedIndexFiles, CancellationToken cancellationToken)
+        void AddNewIndexFiles(IEnumerable<FileInfo> needToBuildIndex, out ConcurrentBag<FileInfo> failedIndexFiles, CancellationToken cancellationToken)
         {
-            IndexBuilderLight.BuildIndexByBatch(needToBuildIndex, out failedIndexFiles, true, false, false, cancellationToken);
+            failedIndexFiles = IndexBuilderLight.BuildIndexByBatch(needToBuildIndex, true, false, false, cancellationToken);
 
             if (failedIndexFiles.Count > 0)
             {
                 Log.Info($"{IndexConfig.IndexName}: Retry failed build indexes files, files count {failedIndexFiles.Count}");
-                IndexBuilderLight.BuildIndexByBatch(failedIndexFiles, out failedIndexFiles, true, false, false, cancellationToken);
+                failedIndexFiles = IndexBuilderLight.BuildIndexByBatch(failedIndexFiles, true, false, false, cancellationToken);
             }
         }
 
         void OnChange(object sender, FileSystemEventArgs e)
         {
-            ChangedSources.Add(new ChangedSource
+            ChangedSources.Enqueue(new ChangedSource
             {
                 ChangesType = e.ChangeType,
                 FilePath = e.FullPath
@@ -191,7 +265,7 @@ namespace CodeIndex.MaintainIndex
 
         void OnRename(object sender, RenamedEventArgs e)
         {
-            ChangedSources.Add(new ChangedSource
+            ChangedSources.Enqueue(new ChangedSource
             {
                 ChangesType = e.ChangeType,
                 FilePath = e.FullPath,
@@ -207,7 +281,7 @@ namespace CodeIndex.MaintainIndex
         public string Description { get; set; }
         public bool IsDisposing { get; private set; }
         FileSystemWatcher FilesWatcher { get; set; }
-        ConcurrentBag<ChangedSource> ChangedSources { get; set; }
+        ConcurrentQueue<ChangedSource> ChangedSources { get; set; }
         ConcurrentQueue<PendingRetrySource> PendingRetryCodeSources { get; set; }
         string[] ExcludedExtensions { get; }
         string[] ExcludedPaths { get; }
