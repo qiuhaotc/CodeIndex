@@ -144,12 +144,36 @@ namespace CodeIndex.MaintainIndex
 
         void RenameIndex(ChangedSource changes)
         {
-            throw new NotImplementedException();
+            if (IsExcludedFromIndex(changes.FilePath))
+            {
+                IndexBuilderLight.DeleteIndex(changes.OldPath);
+            }
+            else
+            {
+                if(IsFile(changes.FilePath))
+                {
+                    IndexBuilderLight.RenameFileIndex(changes.OldPath, changes.FilePath);
+                }
+                else if (IsDirectory(changes.FilePath))
+                {
+                    IndexBuilderLight.RenameFolderIndexes(changes.OldPath, changes.FilePath);
+                }
+            }
+        }
+
+        bool IsFile(string path)
+        {
+            return File.Exists(path);
+        }
+
+        bool IsDirectory(string path)
+        {
+            return Directory.Exists(path);
         }
 
         void DeleteIndex(ChangedSource changes)
         {
-            throw new NotImplementedException();
+            IndexBuilderLight.DeleteIndex(changes.FilePath);
         }
 
         void UpdateIndex(ChangedSource changes)

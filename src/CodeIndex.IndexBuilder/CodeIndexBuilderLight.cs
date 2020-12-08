@@ -174,6 +174,63 @@ namespace CodeIndex.IndexBuilder
             Log.Info($"{Name}: Build hint index finished");
         }
 
+        public bool RenameFolderIndexes(string oldFolderPath, string nowFolderPath)
+        {
+            try
+            {
+                var documents = CodeIndexPool.Search(new TermQuery(GetNoneTokenizeFieldTerm(nameof(CodeSource.FilePath), oldFolderPath)), 1);
+
+                foreach (var document in documents)
+                {
+                    RenameIndex(document, oldFolderPath, nowFolderPath);
+                }
+
+                Log.Info($"{Name}: Rename folder index from {oldFolderPath} to {nowFolderPath} successful");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"{Name}: Rename folder index from {oldFolderPath} to {nowFolderPath} failed, exception: " + ex);
+                return false;
+            }
+        }
+
+        public bool RenameFileIndex(string oldFilePath, string nowFilePath)
+        {
+            try
+            {
+                var documents = CodeIndexPool.Search(new TermQuery(GetNoneTokenizeFieldTerm(nameof(CodeSource.FilePath), oldFilePath)), 1);
+
+                if (documents.Length == 1)
+                {
+                    RenameIndex(documents[0], oldFilePath, nowFilePath);
+
+                    Log.Info($"{Name}: Rename file index from {oldFilePath} to {nowFilePath} successful");
+
+                    return true;
+                }
+
+                Log.Warn($"{Name}: Rename file index from {oldFilePath} to {nowFilePath} failed, unable to find one document, there are {documents.Length} document(s) founded");
+                return false;
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"{Name}: Rename file index from {oldFilePath} to {nowFilePath} failed, exception: " + ex);
+                return false;
+            }
+        }
+
+        void RenameIndex(Document document, string oldFilePath, string nowFilePath)
+        {
+            var pathField = document.Get(nameof(CodeSource.FilePath));
+            var nowPath = pathField.Replace(oldFilePath, nowFilePath);
+            document.RemoveField(nameof(CodeSource.FilePath));
+            document.RemoveField(nameof(CodeSource.FilePath) + Constants.NoneTokenizeFieldSuffix);
+            document.Add(new TextField(nameof(CodeSource.FilePath), nowPath, Field.Store.YES));
+            document.Add(new StringField(nameof(CodeSource.FilePath) + Constants.NoneTokenizeFieldSuffix, nowPath, Field.Store.YES));
+            CodeIndexPool.UpdateIndex(new Term(nameof(CodeSource.CodePK), document.Get(nameof(CodeSource.CodePK))), document);
+        }
+
         public bool IsDisposing { get; private set; }
 
         public void Dispose()
@@ -203,6 +260,8 @@ namespace CodeIndex.IndexBuilder
                     foreach (var word in words)
                     {
                         cancellationToken.ThrowIfCancellationRequested();
+
+                        // TODO: Delete And Add Hint Words
 
                         HintIndexPool.UpdateIndex(new Term(nameof(CodeWord.Word), word), new Document
                         {
@@ -235,6 +294,8 @@ namespace CodeIndex.IndexBuilder
             {
                 CodeIndexPool.DeleteIndex(GetNoneTokenizeFieldTerm(nameof(CodeSource.FilePath), filePath));
                 Log.Info($"{Name}: Delete index For {filePath} finished");
+
+                // TODO: Delete Hint Words
 
                 return true;
             }
