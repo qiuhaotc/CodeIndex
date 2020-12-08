@@ -23,7 +23,7 @@ namespace CodeIndex.ConsoleApp
             var maintainer = new CodeFilesIndexMaintainer(config, logger);
             maintainer.StartWatch();
             initializer.InitializeIndex(config, out var failedIndexFiles);
-            maintainer.SetInitalizeFinishedToTrue(failedIndexFiles);
+            maintainer.SetInitializeFinishedToTrue(failedIndexFiles);
 
             Console.WriteLine("Initialize complete");
 

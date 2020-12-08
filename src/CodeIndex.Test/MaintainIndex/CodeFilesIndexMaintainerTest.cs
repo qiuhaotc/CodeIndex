@@ -57,7 +57,7 @@ namespace CodeIndex.Test
 
             using var maintainer = new CodeFilesIndexMaintainer(Config, new DummyLog());
             maintainer.StartWatch();
-            maintainer.SetInitalizeFinishedToTrue();
+            maintainer.SetInitializeFinishedToTrue();
 
             File.AppendAllText(fileAPath, "56789"); // Changed
             File.Delete(fileBPath); // Deleted
@@ -98,7 +98,7 @@ namespace CodeIndex.Test
             Config.ExcludedExtensions = ".dll";
             using var maintainer = new CodeFilesIndexMaintainerForTest(Config, new DummyLog());
             maintainer.StartWatch();
-            maintainer.SetInitalizeFinishedToTrue();
+            maintainer.SetInitializeFinishedToTrue();
 
             maintainer.PendingRetryCodeSources.Enqueue(new PendingRetrySource()
             {

@@ -159,9 +159,7 @@ namespace CodeIndex.IndexBuilder
 
         static IndexWriter CreateOrGetIndexWriter(string luceneIndex)
         {
-            IndexWriter indexWriter;
-
-            if (!IndexWritesPool.TryGetValue(luceneIndex, out indexWriter))
+            if (!IndexWritesPool.TryGetValue(luceneIndex, out var indexWriter))
             {
                 lock (syncLockForWriter)
                 {
@@ -185,9 +183,7 @@ namespace CodeIndex.IndexBuilder
 
         static IndexSearcher CreateOrGetIndexSearcher(string luceneIndex)
         {
-            IndexSearcher indexSearcher;
-
-            if (!IndexSearcherPool.TryGetValue(luceneIndex, out indexSearcher) || IndexGotChanged.TryGetValue(luceneIndex, out var indexChangedTimes) && indexChangedTimes > 0)
+            if (!IndexSearcherPool.TryGetValue(luceneIndex, out IndexSearcher indexSearcher) || IndexGotChanged.TryGetValue(luceneIndex, out var indexChangedTimes) && indexChangedTimes > 0)
             {
                 lock (syncLockForSearcher)
                 {
@@ -213,7 +209,7 @@ namespace CodeIndex.IndexBuilder
             return indexSearcher;
         }
 
-        static Document[] SearchDocuments(string luceneIndex, Query query, int maxResult, FieldValueFilter fieldValueFilter = null)
+        static Document[] SearchDocuments(string luceneIndex, Query query, int maxResult, Filter filter = null)
         {
             Document[] documents = null;
             IndexSearcher indexSearcher = null;
@@ -222,9 +218,9 @@ namespace CodeIndex.IndexBuilder
             {
                 indexSearcher = CreateOrGetIndexSearcher(luceneIndex);
 
-                if (fieldValueFilter != null)
+                if (filter != null)
                 {
-                    documents = indexSearcher.Search(query, fieldValueFilter, maxResult).ScoreDocs.Select(hit => indexSearcher.Doc(hit.Doc)).ToArray();
+                    documents = indexSearcher.Search(query, filter, maxResult).ScoreDocs.Select(hit => indexSearcher.Doc(hit.Doc)).ToArray();
                 }
                 else
                 {
@@ -243,9 +239,7 @@ namespace CodeIndex.IndexBuilder
 
         static IndexReader CreateOrGetIndexReader(string luceneIndex, bool forceRefresh)
         {
-            IndexReader indexReader;
-
-            if (!IndexReaderPool.TryGetValue(luceneIndex, out indexReader) || forceRefresh)
+            if (!IndexReaderPool.TryGetValue(luceneIndex, out var indexReader) || forceRefresh)
             {
                 lock (syncLockForReader)
                 {
@@ -266,13 +260,13 @@ namespace CodeIndex.IndexBuilder
             return indexReader;
         }
 
-        public static Document[] Search(string luceneIndex, Query query, int maxResults)
+        public static Document[] Search(string luceneIndex, Query query, int maxResults, Filter filter = null)
         {
             readWriteLock.TryEnterReadLock(Constants.ReadWriteLockTimeOutMilliseconds);
 
             try
             {
-                return SearchDocuments(luceneIndex, query, maxResults);
+                return SearchDocuments(luceneIndex, query, maxResults, filter);
             }
             finally
             {

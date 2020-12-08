@@ -6,6 +6,10 @@ namespace CodeIndex.Common
     public class CodeIndexConfiguration
     {
         public const char SplitChar = '|';
+        public const string CodeIndexesFolder = "CodeIndexes";
+        public const string ConfigurationIndexFolder = "Configuration";
+        public const string CodeIndexFolder = "CodeIndex";
+        public const string HintIndexFolder = "HintIndex";
 
         public string LuceneIndex { get; set; } = string.Empty;
         public string MonitorFolder { get; set; } = string.Empty;
@@ -15,8 +19,8 @@ namespace CodeIndex.Common
         public int SaveIntervalSeconds { get; set; } = 300;
         public string LocalUrl { get; set; } = string.Empty;
         public string MonitorFolderRealPath { get; set; } = string.Empty;
-        public string LuceneIndexForCode => luceneIndexForCode ??= GetIndexPath("CodeIndex");
-        public string LuceneIndexForHint => luceneIndexForHint ??= GetIndexPath("HintIndex");
+        public string LuceneIndexForCode => luceneIndexForCode ??= GetIndexPath(CodeIndexFolder);
+        public string LuceneIndexForHint => luceneIndexForHint ??= GetIndexPath(HintIndexFolder);
         public string ExcludedExtensions { get; set; } = string.Empty;
         public string ExcludedPaths { get; set; } = string.Empty;
         public string IncludedExtensions { get; set; } = string.Empty;
@@ -56,5 +60,8 @@ namespace CodeIndex.Common
 
             return excludedExtensions.Split(SplitChar, StringSplitOptions.RemoveEmptyEntries);
         }
+
+        string luceneConfigurationIndex;
+        public string LuceneConfigurationIndex => luceneConfigurationIndex ??= GetIndexPath(ConfigurationIndexFolder);
     }
 }

@@ -33,9 +33,11 @@ namespace CodeIndex.Search
                     var scorer = new QueryScorer(query);
                     var formatter = new SimpleHTMLFormatter(HighLightPrefix, HighLightSuffix);
 
-                    var highlighter = new Highlighter(formatter, scorer);
-                    highlighter.TextFragmenter = new SimpleFragmenter(length);
-                    highlighter.MaxDocCharsToAnalyze = maxContentHighlightLength;
+                    var highlighter = new Highlighter(formatter, scorer)
+                    {
+                        TextFragmenter = new SimpleFragmenter(length),
+                        MaxDocCharsToAnalyze = maxContentHighlightLength
+                    };
 
                     var stream = analyzer.GetTokenStream(nameof(CodeSource.Content), new StringReader(text));
 
@@ -80,9 +82,11 @@ namespace CodeIndex.Search
                     var scorer = new QueryScorer(query);
                     var formatter = new SimpleHTMLFormatter(HighLightPrefix, HighLightSuffix);
 
-                    var highlighter = new Highlighter(formatter, scorer);
-                    highlighter.TextFragmenter = new SimpleFragmenter(length);
-                    highlighter.MaxDocCharsToAnalyze = maxContentHighlightLength;
+                    var highlighter = new Highlighter(formatter, scorer)
+                    {
+                        TextFragmenter = new SimpleFragmenter(length),
+                        MaxDocCharsToAnalyze = maxContentHighlightLength
+                    };
 
                     var stream = analyzer.GetTokenStream(nameof(CodeSource.Content), new StringReader(text));
 
