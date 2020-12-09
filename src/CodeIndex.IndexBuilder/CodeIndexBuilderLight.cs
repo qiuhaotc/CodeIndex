@@ -50,13 +50,14 @@ namespace CodeIndex.IndexBuilder
 
         public ConcurrentBag<FileInfo> BuildIndexByBatch(IEnumerable<FileInfo> fileInfos, bool needCommit, bool triggerMerge, bool applyAllDeletes, CancellationToken cancellationToken, int batchSize = 10000)
         {
+            cancellationToken.ThrowIfCancellationRequested();
             fileInfos.RequireNotNull(nameof(fileInfos));
             batchSize.RequireRange(nameof(batchSize), int.MaxValue, 50);
 
             var codeDocuments = new ConcurrentBag<Document>();
             var hintWords = new ConcurrentDictionary<string, int>();
             var failedIndexFiles = new ConcurrentBag<FileInfo>();
-            var readWriteSlimLock = new ReaderWriterLockSlim();
+            using var readWriteSlimLock = new ReaderWriterLockSlim();
 
             Parallel.ForEach(fileInfos, fileInfo =>
             {
@@ -145,6 +146,47 @@ namespace CodeIndex.IndexBuilder
             return CodeIndexPool.Search(new MatchAllDocsQuery(), int.MaxValue).Select(u => (u.Get(nameof(CodeSource.FilePath)), new DateTime(long.Parse(u.Get(nameof(CodeSource.LastWriteTimeUtc)))))).ToList();
         }
 
+        public bool CreateIndex(FileInfo fileInfo)
+        {
+            try
+            {
+                if (fileInfo.Exists)
+                {
+                    var source = CodeSource.GetCodeSource(fileInfo, FilesContentHelper.ReadAllText(fileInfo.FullName));
+
+                    var words = new HashSet<string>();
+                    AddHintWords(words, source.Content);
+
+                    var doc = CodeIndexBuilder.GetDocumentFromSource(source);
+                    CodeIndexPool.BuildIndex(new[] { doc }, false);
+
+                    foreach (var word in words)
+                    {
+                        HintIndexPool.UpdateIndex(new Term(nameof(CodeWord.Word), word), new Document
+                        {
+                            new StringField(nameof(CodeWord.Word), word, Field.Store.YES),
+                            new StringField(nameof(CodeWord.WordLower), word.ToLowerInvariant(), Field.Store.YES)
+                        });
+                    }
+
+                    Log.Info($"{Name}: Update index For {source.FilePath} finished");
+                }
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"{Name}: Update index for {fileInfo.FullName} failed, exception: " + ex);
+
+                if (ex is OperationCanceledException)
+                {
+                    throw;
+                }
+
+                return false;
+            }
+        }
+
         void BuildIndex(bool needCommit, bool triggerMerge, bool applyAllDeletes, ConcurrentBag<Document> codeDocuments, ConcurrentDictionary<string, int> words, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
@@ -157,8 +199,6 @@ namespace CodeIndex.IndexBuilder
 
             foreach (var word in words)
             {
-                cancellationToken.ThrowIfCancellationRequested();
-
                 HintIndexPool.UpdateIndex(new Term(nameof(CodeWord.Word), word.Key), new Document
                 {
                     new StringField(nameof(CodeWord.Word), word.Key, Field.Store.YES),
@@ -174,7 +214,7 @@ namespace CodeIndex.IndexBuilder
             Log.Info($"{Name}: Build hint index finished");
         }
 
-        public bool RenameFolderIndexes(string oldFolderPath, string nowFolderPath)
+        public bool RenameFolderIndexes(string oldFolderPath, string nowFolderPath, CancellationToken cancellationToken)
         {
             try
             {
@@ -182,6 +222,7 @@ namespace CodeIndex.IndexBuilder
 
                 foreach (var document in documents)
                 {
+                    cancellationToken.ThrowIfCancellationRequested();
                     RenameIndex(document, oldFolderPath, nowFolderPath);
                 }
 
@@ -249,6 +290,8 @@ namespace CodeIndex.IndexBuilder
             {
                 if (fileInfo.Exists)
                 {
+                    cancellationToken.ThrowIfCancellationRequested();
+
                     var source = CodeSource.GetCodeSource(fileInfo, FilesContentHelper.ReadAllText(fileInfo.FullName));
 
                     var words = new HashSet<string>();
@@ -259,8 +302,6 @@ namespace CodeIndex.IndexBuilder
 
                     foreach (var word in words)
                     {
-                        cancellationToken.ThrowIfCancellationRequested();
-
                         // TODO: Delete And Add Hint Words
 
                         HintIndexPool.UpdateIndex(new Term(nameof(CodeWord.Word), word), new Document
