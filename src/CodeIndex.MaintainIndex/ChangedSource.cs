@@ -9,5 +9,10 @@ namespace CodeIndex.MaintainIndex
         public string OldPath { get; set; }
         public WatcherChangeTypes ChangesType { get; set; }
         public DateTime ChangedUTCDate { get; } = DateTime.UtcNow;
+
+        public override string ToString()
+        {
+            return $"Changed Source: {FilePath} {OldPath} {ChangesType} {ChangedUTCDate}";
+        }
     }
 }
