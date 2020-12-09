@@ -5,13 +5,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Lucene.Net" Version="4.8.0-beta00007" />
-    <PackageReference Include="Lucene.Net.Highlighter" Version="4.8.0-beta00007" />
-    <PackageReference Include="Lucene.Net.Queries" Version="4.8.0-beta00007" />
-    <PackageReference Include="Lucene.Net.QueryParser" Version="4.8.0-beta00007" />
-  </ItemGroup>
-
-  <ItemGroup>
     <ProjectReference Include="..\CodeIndex.Common\CodeIndex.Common.csproj" />
     <ProjectReference Include="..\CodeIndex.IndexBuilder\CodeIndex.IndexBuilder.csproj" />
   </ItemGroup>

@@ -87,13 +87,9 @@ It&#39;s <label class='highlight'>abc</label> in lowercase
 It&#39;s <label class='highlight'>Abc</label> in mix
 Not AB with C", result);
 
-            if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
-            {
-                result = CodeIndexSearcher.GenerateHtmlPreviewText(generator.GetQueryFromStr("ABC"), content, 10, LucenePool.GetAnalyzer());
-                Assert.AreEqual(@"My <label class='highlight'>ABC</label>
-Is A <label class='highlight'>ABC</label>...
-It&#39;s <label class='highlight'>Abc</label>", result);
-            }
+            result = CodeIndexSearcher.GenerateHtmlPreviewText(generator.GetQueryFromStr("ABC"), content, 10, LucenePool.GetAnalyzer());
+            Assert.AreEqual(@"My <label class='highlight'>ABC</label>
+Is A <label class='highlight'>ABC</label>...s <label class='highlight'>abc</label> in", result);
         }
 
         [Test]
