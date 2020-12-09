@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using System.Linq;
 using System.Threading.Tasks;
 using CodeIndex.Common;
 using CodeIndex.IndexBuilder;
@@ -107,6 +108,42 @@ namespace CodeIndex.Test
             light.DeleteAllIndex();
             documents = light.Search(new MatchAllDocsQuery(), int.MaxValue);
             Assert.AreEqual(0, documents.Length);
+        }
+
+        [Test]
+        public void TestUpdateIndexCaseSensitive()
+        {
+            using var light = new LucenePoolLight(TempIndexDir);
+
+            var wordA = "ABC";
+            light.UpdateIndex(new Term(nameof(CodeWord.Word), wordA), new Document
+            {
+                new StringField(nameof(CodeWord.Word), wordA, Field.Store.YES),
+                new StringField(nameof(CodeWord.WordLower), wordA.ToLowerInvariant(), Field.Store.YES)
+            });
+
+            var documents = light.Search(new MatchAllDocsQuery(), int.MaxValue);
+            Assert.AreEqual(1, documents.Length);
+
+            var wordB = "Abc";
+            light.UpdateIndex(new Term(nameof(CodeWord.Word), wordB), new Document
+            {
+                new StringField(nameof(CodeWord.Word), wordB, Field.Store.YES),
+                new StringField(nameof(CodeWord.WordLower), wordB.ToLowerInvariant(), Field.Store.YES)
+            });
+
+            documents = light.Search(new MatchAllDocsQuery(), int.MaxValue);
+            Assert.AreEqual(2, documents.Length);
+
+            light.UpdateIndex(new Term(nameof(CodeWord.Word), wordB), new Document
+            {
+                new StringField(nameof(CodeWord.Word), wordB, Field.Store.YES),
+                new StringField(nameof(CodeWord.WordLower), wordB.ToLowerInvariant(), Field.Store.YES)
+            });
+
+            documents = light.Search(new MatchAllDocsQuery(), int.MaxValue);
+            Assert.AreEqual(2, documents.Length);
+            CollectionAssert.AreEquivalent(new[] { "ABC", "Abc" }, documents.Select(u => u.Get(nameof(CodeWord.Word))));
         }
 
         [Test]
