@@ -120,11 +120,14 @@ namespace CodeIndex.IndexBuilder
                 {
                     lock (syncLockForWriter)
                     {
-                        var dir = FSDirectory.Open(LuceneIndex);
-                        //create an analyzer to process the text
-                        //create an index writer
-                        var indexConfig = new IndexWriterConfig(Constants.AppLuceneVersion, Analyzer);
-                        indexWriter = new IndexWriter(dir, indexConfig);
+                        if (indexWriter == null)
+                        {
+                            var dir = FSDirectory.Open(LuceneIndex);
+                            //create an analyzer to process the text
+                            //create an index writer
+                            var indexConfig = new IndexWriterConfig(Constants.AppLuceneVersion, Analyzer);
+                            indexWriter = new IndexWriter(dir, indexConfig);
+                        }
                     }
                 }
 
