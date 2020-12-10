@@ -8,7 +8,6 @@ using System.Threading.Tasks;
 using CodeIndex.Common;
 using CodeIndex.Files;
 using CodeIndex.IndexBuilder;
-using CodeIndex.Search;
 using Lucene.Net.Index;
 using Lucene.Net.Search;
 
@@ -299,7 +298,7 @@ namespace CodeIndex.MaintainIndex
                 {
                     // Rebuild All Sub Directory Index File, rename the index path
                     var term = new PrefixQuery(GetNoneTokenizeFieldTerm(nameof(CodeSource.FilePath), oldFullPath));
-                    var docs = CodeIndexSearcher.Search(config.LuceneIndexForCode, term, int.MaxValue);
+                    var docs = LucenePool.Search(config.LuceneIndexForCode, term, int.MaxValue);
                     foreach (var doc in docs)
                     {
                         CodeIndexBuilder.UpdateCodeFilePath(doc, oldFullPath, fullPath);

@@ -65,14 +65,14 @@ namespace CodeIndex.Server.Controllers
                 {
                     foreach (var item in result.Result)
                     {
-                        item.Content = CodeIndexSearcher.GenerateHtmlPreviewText(queryForContent, item.Content, 30, generator.Analyzer, maxContentHighlightLength: maxContentHighlightLength);
+                        item.Content = Startup.CodeIndexSearcherLight.GenerateHtmlPreviewText(queryForContent, item.Content, 30, maxContentHighlightLength: maxContentHighlightLength);
                     }
                 }
                 else if (!preview)
                 {
                     foreach (var item in result.Result)
                     {
-                        item.Content = CodeIndexSearcher.GenerateHtmlPreviewText(queryForContent, item.Content, int.MaxValue, generator.Analyzer, returnRawContentWhenResultIsEmpty: true, maxContentHighlightLength: maxContentHighlightLength);
+                        item.Content = Startup.CodeIndexSearcherLight.GenerateHtmlPreviewText(queryForContent, item.Content, int.MaxValue, returnRawContentWhenResultIsEmpty: true, maxContentHighlightLength: maxContentHighlightLength);
                     }
                 }
 
@@ -135,7 +135,7 @@ namespace CodeIndex.Server.Controllers
 
                     foreach (var codeSource in codeSources)
                     {
-                        var matchedLines = CodeIndexSearcher.GeneratePreviewTextWithLineNumber(queryForContent, codeSource.Content, int.MaxValue, generator.Analyzer, showResultsValue - totalResult, maxContentHighlightLength, forWeb: forWeb, needReplaceSuffixAndPrefix: needReplaceSuffixAndPrefix);
+                        var matchedLines = Startup.CodeIndexSearcherLight.GeneratePreviewTextWithLineNumber(queryForContent, codeSource.Content, int.MaxValue, generator.Analyzer, showResultsValue - totalResult, forWeb: forWeb, needReplaceSuffixAndPrefix: needReplaceSuffixAndPrefix);
                         codeSource.Content = string.Empty; // Empty content to reduce response size
 
                         foreach (var matchedLine in matchedLines)
@@ -185,7 +185,7 @@ namespace CodeIndex.Server.Controllers
 
                 result = new FetchResult<IEnumerable<string>>
                 {
-                    Result = CodeIndexSearcher.GetHints(codeIndexConfiguration.LuceneIndexForHint, word),
+                    Result = Startup.CodeIndexSearcherLight.GetHints(word),
                     Status = new Status
                     {
                         Success = true
@@ -214,7 +214,7 @@ namespace CodeIndex.Server.Controllers
         CodeSource[] SearchCodeSource(string searchStr, out Query query, int showResults = 100)
         {
             query = generator.GetQueryFromStr(searchStr);
-            return CodeIndexSearcher.SearchCode(codeIndexConfiguration.LuceneIndexForCode, query, showResults);
+            return Startup.CodeIndexSearcherLight.SearchCode(query, showResults);
         }
 
         static readonly QueryGenerator generator = new QueryGenerator();
@@ -271,7 +271,7 @@ namespace CodeIndex.Server.Controllers
 
                 if (System.IO.File.Exists(logPath))
                 {
-                    using var fs = new FileStream(logPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
+                    await using var fs = new FileStream(logPath, FileMode.Open, FileAccess.Read, FileShare.ReadWrite);
                     using var sr = new StreamReader(fs, Encoding.Default);
                     result.Result = await sr.ReadToEndAsync();
                     result.Result = result.Result.SubStringSafe(result.Result.Length - 100000, 100000);

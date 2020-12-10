@@ -169,14 +169,14 @@ namespace CodeIndex.IndexBuilder
                         });
                     }
 
-                    Log.Info($"{Name}: Update index For {source.FilePath} finished");
+                    Log.Info($"{Name}: Create index For {source.FilePath} finished");
                 }
 
                 return true;
             }
             catch (Exception ex)
             {
-                Log.Error($"{Name}: Update index for {fileInfo.FullName} failed, exception: " + ex);
+                Log.Error($"{Name}: Create index for {fileInfo.FullName} failed, exception: " + ex);
 
                 if (ex is OperationCanceledException)
                 {
@@ -218,7 +218,7 @@ namespace CodeIndex.IndexBuilder
         {
             try
             {
-                var documents = CodeIndexPool.Search(new TermQuery(GetNoneTokenizeFieldTerm(nameof(CodeSource.FilePath), oldFolderPath)), 1);
+                var documents = CodeIndexPool.Search(new PrefixQuery(GetNoneTokenizeFieldTerm(nameof(CodeSource.FilePath), oldFolderPath)), 1);
 
                 foreach (var document in documents)
                 {
@@ -249,6 +249,12 @@ namespace CodeIndex.IndexBuilder
                     Log.Info($"{Name}: Rename file index from {oldFilePath} to {nowFilePath} successful");
 
                     return true;
+                }
+
+                if (documents.Length == 0)
+                {
+                    Log.Info($"{Name}: Rename file index failed, unable to find any document from {oldFilePath}, possible template file renamed, fallback to create index.");
+                    return CreateIndex(new FileInfo(nowFilePath));
                 }
 
                 Log.Warn($"{Name}: Rename file index from {oldFilePath} to {nowFilePath} failed, unable to find one document, there are {documents.Length} document(s) founded");

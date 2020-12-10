@@ -161,7 +161,7 @@ namespace CodeIndex.IndexBuilder
             using var readLock = new EnterReaderWriterLock(readerWriteLock);
 
             IndexWriter.DeleteAll();
-            indexWriter.Commit();
+            IndexWriter.Commit();
 
             indexChangeCount++;
         }
@@ -169,7 +169,7 @@ namespace CodeIndex.IndexBuilder
         public void Commit()
         {
             using var readLock = new EnterReaderWriterLock(readerWriteLock);
-            indexWriter.Commit();
+            IndexWriter.Commit();
         }
 
         public void UpdateIndex(Term term, Document document)

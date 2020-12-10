@@ -2,8 +2,8 @@ using System;
 using System.Linq;
 using System.Net.Http;
 using CodeIndex.Common;
-using CodeIndex.IndexBuilder;
 using CodeIndex.MaintainIndex;
+using CodeIndex.Search;
 using CodeIndex.Server.Data;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Components;
@@ -84,32 +84,31 @@ namespace CodeIndex.Server
 
             lifeTime.ApplicationStopping.Register(OnShutdown);
 
-            System.Threading.Tasks.Task.Run(() =>
+            maintainer = new IndexMaintainer(new IndexConfig
             {
-                try
-                {
-                    initializer = new IndexInitializer(log);
-                    maintainer = new CodeFilesIndexMaintainer(config, log);
-                    maintainer.StartWatch();
-                    initializer.InitializeIndex(config, out var failedIndexFiles);
+                ExcludedExtensions = config.ExcludedExtensions,
+                ExcludedPaths = config.ExcludedPaths,
+                IncludedExtensions = config.IncludedExtensions,
+                IndexName = "TestIndex",
+                MaxContentHighlightLength = config.MaxContentHighlightLength,
+                MonitorFolder = config.MonitorFolder,
+                OpenIDEUriFormat = config.OpenIDEUriFormat,
+                MonitorFolderRealPath = config.MonitorFolderRealPath,
+                SaveIntervalSeconds = config.SaveIntervalSeconds
+            }, config, log);
 
-                    maintainer.SetInitializeFinishedToTrue(failedIndexFiles);
-                }
-                catch (Exception ex)
-                {
-                    log.Error(ex.ToString());
-                }
-            });
+            maintainer.InitializeIndex(false).ContinueWith(u => maintainer.MaintainIndexes());
+
+            CodeIndexSearcherLight = new CodeIndexSearcherLight(maintainer);
         }
 
-        IndexInitializer initializer;
-        CodeFilesIndexMaintainer maintainer;
+        IndexMaintainer maintainer;
         CodeIndexConfiguration config;
+        public static CodeIndexSearcherLight CodeIndexSearcherLight { get; private set; }
 
         void OnShutdown()
         {
             maintainer?.Dispose();
-            LucenePool.SaveResultsAndClearLucenePool(config);
         }
     }
 }

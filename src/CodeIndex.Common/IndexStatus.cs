@@ -7,6 +7,7 @@
         Monitoring,
         Error,
         Deleting,
-        Initialized
+        Initialized,
+        Disposing
     }
 }

@@ -73,6 +73,8 @@ namespace CodeIndex.MaintainIndex
                 return;
             }
 
+            Log.Info($"{IndexConfig.IndexName}: Start Maintain Indexes");
+
             await MaintainIndexesCore();
         }
 
@@ -82,7 +84,7 @@ namespace CodeIndex.MaintainIndex
             {
                 TokenSource.Token.ThrowIfCancellationRequested();
 
-                var fetchEndDate = DateTime.Now.AddSeconds(-6);
+                var fetchEndDate = DateTime.UtcNow.AddSeconds(-6);
                 var notChangedDuring = fetchEndDate.AddSeconds(3);
                 if (ChangedSources.Count(u => u.ChangedUTCDate > fetchEndDate && u.ChangedUTCDate <= notChangedDuring) == 0)
                 {
@@ -111,6 +113,8 @@ namespace CodeIndex.MaintainIndex
 
         void ProcessingChanges(List<ChangedSource> orderedNeedProcessingChanges)
         {
+            PreProcessingChanges(orderedNeedProcessingChanges);
+
             Log.Info($"{IndexConfig.IndexName}: Processing Changes start, changes count: {orderedNeedProcessingChanges.Count}");
 
             foreach (var changes in orderedNeedProcessingChanges)
@@ -138,6 +142,36 @@ namespace CodeIndex.MaintainIndex
             }
 
             Log.Info($"{IndexConfig.IndexName}: Processing Changes finished");
+        }
+
+        void PreProcessingChanges(IList<ChangedSource> orderedNeedProcessingChanges)
+        {
+            Log.Debug($"{IndexConfig.IndexName}: Pre Processing Changes Start, changes count: {orderedNeedProcessingChanges.Count}");
+
+            var needDeleted = new List<ChangedSource>();
+
+            for (var i = 0; i < orderedNeedProcessingChanges.Count; i++)
+            {
+                var change = orderedNeedProcessingChanges[i];
+
+                if (change.ChangesType == WatcherChangeTypes.Renamed)
+                {
+                    var templateRenameChange = orderedNeedProcessingChanges.Skip(i + 1).FirstOrDefault(u => u.ChangesType == WatcherChangeTypes.Renamed && u.FilePath == change.OldPath);
+
+                    if (templateRenameChange != null)
+                    {
+                        change.ChangesType = WatcherChangeTypes.Changed;
+                        change.FilePath = change.OldPath;
+                        change.OldPath = null;
+                        needDeleted.Add(templateRenameChange);
+
+                        Log.Debug($"{IndexConfig.IndexName}: Template Change Found {templateRenameChange}, remove this and update {change} from Renamed to Changed");
+                    }
+                }
+            }
+
+            needDeleted.ForEach(u => orderedNeedProcessingChanges.Remove(u));
+            Log.Debug($"{IndexConfig.IndexName}: Pre Processing Changes Finished");
         }
 
         void CreateIndex(ChangedSource changes)
@@ -215,7 +249,7 @@ namespace CodeIndex.MaintainIndex
             List<FileInfo> needToBuildIndex = null;
             var failedUpdateOrDeleteFiles = new List<string>();
 
-            if (CodeIndexBuilder.IndexExists(IndexConfig.MonitorFolder))
+            if (CodeIndexBuilder.IndexExists(IndexBuilderLight.CodeIndexPool.LuceneIndex))
             {
                 if (forceRebuild)
                 {
@@ -336,6 +370,7 @@ namespace CodeIndex.MaintainIndex
             if (!IsDisposing)
             {
                 IsDisposing = true;
+                Status = IndexStatus.Disposing;
                 TokenSource.Cancel();
                 TokenSource.Dispose();
                 FilesWatcher?.Dispose();
