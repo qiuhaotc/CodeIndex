@@ -55,6 +55,7 @@ namespace CodeIndex.IndexBuilder
             batchSize.RequireRange(nameof(batchSize), int.MaxValue, 50);
 
             var codeDocuments = new ConcurrentBag<Document>();
+            var wholeWords = new ConcurrentDictionary<string, int>();
             var hintWords = new ConcurrentDictionary<string, int>();
             var failedIndexFiles = new ConcurrentBag<FileInfo>();
             using var readWriteSlimLock = new ReaderWriterLockSlim();
@@ -70,7 +71,7 @@ namespace CodeIndex.IndexBuilder
                     {
                         var source = CodeSource.GetCodeSource(fileInfo, FilesContentHelper.ReadAllText(fileInfo.FullName));
 
-                        AddHintWords(hintWords, source.Content);
+                        AddHintWords(hintWords, wholeWords, source.Content);
 
                         var doc = CodeIndexBuilder.GetDocumentFromSource(source);
                         codeDocuments.Add(doc);
@@ -112,6 +113,8 @@ namespace CodeIndex.IndexBuilder
                 BuildIndex(needCommit, triggerMerge, applyAllDeletes, codeDocuments, hintWords, cancellationToken);
             }
 
+            wholeWords.Clear();
+
             return failedIndexFiles;
         }
 
@@ -124,12 +127,15 @@ namespace CodeIndex.IndexBuilder
             }
         }
 
-        void AddHintWords(ConcurrentDictionary<string, int> hintWords, string content)
+        void AddHintWords(ConcurrentDictionary<string, int> hintWords, ConcurrentDictionary<string, int> wholeWords, string content)
         {
             var words = WordSegmenter.GetWords(content).Where(word => word.Length > 3 && word.Length < 200);
             foreach (var word in words)
             {
-                hintWords.TryAdd(word, 0);
+                if (wholeWords.TryAdd(word, 0)) // Avoid Distinct Value
+                {
+                    hintWords.TryAdd(word, 0);
+                }
             }
         }
 
@@ -197,14 +203,14 @@ namespace CodeIndex.IndexBuilder
 
             Log.Info($"{Name}: Build hint index start, documents count {words.Count}");
 
-            foreach (var word in words)
+            Parallel.ForEach(words, word =>
             {
                 HintIndexPool.UpdateIndex(new Term(nameof(CodeWord.Word), word.Key), new Document
                 {
                     new StringField(nameof(CodeWord.Word), word.Key, Field.Store.YES),
                     new StringField(nameof(CodeWord.WordLower), word.Key.ToLowerInvariant(), Field.Store.YES)
                 });
-            }
+            });
 
             if (needCommit || triggerMerge || applyAllDeletes)
             {

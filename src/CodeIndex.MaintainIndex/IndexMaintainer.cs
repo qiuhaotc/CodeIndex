@@ -261,6 +261,9 @@ namespace CodeIndex.MaintainIndex
                     Log.Info($"{IndexConfig.IndexName}: Compare index difference");
 
                     var allCodeSource = IndexBuilderLight.GetAllIndexedCodeSource();
+
+                    GC.Collect(); // Run GC after fetching massive documents from index
+
                     needToBuildIndex = new List<FileInfo>();
                     var allFilesDictionary = allFiles.ToDictionary(u => u.FullName);
 
