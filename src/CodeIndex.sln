@@ -30,6 +30,7 @@ EndProject
 Project("{2150E333-8FDC-42A3-9474-1A3956D46DE8}") = "Solution Items", "Solution Items", "{D0B5A7C3-31A4-463A-B27E-2D246D5BF8DD}"
 	ProjectSection(SolutionItems) = preProject
 		.editorconfig = .editorconfig
+		..\.github\workflows\dotnetcore.yml = ..\.github\workflows\dotnetcore.yml
 	EndProjectSection
 EndProject
 Global

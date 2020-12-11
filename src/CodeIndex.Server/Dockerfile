@@ -1,6 +1,6 @@
 #See https://aka.ms/containerfastmode to understand how Visual Studio uses this Dockerfile to build your images for faster debugging.
 
-FROM mcr.microsoft.com/dotnet/core/aspnet:3.1-buster-slim AS base
+FROM mcr.microsoft.com/dotnet/aspnet:5.0-buster-slim AS base
 WORKDIR /app
 ENV ASPNETCORE_ENVIRONMENT Development
 ENV CodeIndex__LuceneIndex /luceneindex
@@ -16,9 +16,14 @@ ENV CodeIndex__IncludedExtensions=".CS|.XML|.XAML|.JS|.TXT"
 EXPOSE 80
 EXPOSE 443
 
-FROM mcr.microsoft.com/dotnet/core/sdk:3.1-buster AS build
+FROM mcr.microsoft.com/dotnet/sdk:5.0-buster-slim AS build
 WORKDIR /src
 COPY ["CodeIndex.Server/CodeIndex.Server.csproj", "CodeIndex.Server/"]
+COPY ["CodeIndex.Common/CodeIndex.Common.csproj", "CodeIndex.Common/"]
+COPY ["CodeIndex.Search/CodeIndex.Search.csproj", "CodeIndex.Search/"]
+COPY ["CodeIndex.IndexBuilder/CodeIndex.IndexBuilder.csproj", "CodeIndex.IndexBuilder/"]
+COPY ["CodeIndex.Files/CodeIndex.Files.csproj", "CodeIndex.Files/"]
+COPY ["CodeIndex.MaintainIndex/CodeIndex.MaintainIndex.csproj", "CodeIndex.MaintainIndex/"]
 RUN dotnet restore "CodeIndex.Server/CodeIndex.Server.csproj"
 COPY . .
 WORKDIR "/src/CodeIndex.Server"

@@ -10,7 +10,7 @@ namespace CodeIndex.IndexBuilder
     /// <summary>
     /// Reference the SmartCn Tokenizer
     /// </summary>
-    internal class CodeTokenizer : SegmentingTokenizerBase
+    internal sealed class CodeTokenizer : SegmentingTokenizerBase
     {
         static readonly BreakIterator sentenceProto = BreakIterator.GetSentenceInstance(CultureInfo.InvariantCulture);
         readonly WordSegmenter wordSegmenter = new WordSegmenter();
