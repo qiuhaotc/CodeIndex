@@ -126,15 +126,19 @@ namespace CodeIndex.MaintainIndex
                     case WatcherChangeTypes.Changed:
                         UpdateIndex(changes);
                         break;
+
                     case WatcherChangeTypes.Created:
                         CreateIndex(changes);
                         break;
+
                     case WatcherChangeTypes.Deleted:
                         DeleteIndex(changes);
                         break;
+
                     case WatcherChangeTypes.Renamed:
                         RenameIndex(changes);
                         break;
+
                     default:
                         Log.Warn($"{IndexConfig.IndexName}: Unknown changes type {changes}");
                         break;
@@ -378,6 +382,7 @@ namespace CodeIndex.MaintainIndex
                 TokenSource.Dispose();
                 FilesWatcher?.Dispose();
                 IndexBuilderLight?.Dispose();
+                Status = IndexStatus.Disposed;
             }
         }
 

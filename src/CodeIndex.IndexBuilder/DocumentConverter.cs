@@ -6,7 +6,7 @@ using System.Reflection;
 using CodeIndex.Common;
 using Lucene.Net.Documents;
 
-namespace CodeIndex.MaintainIndex
+namespace CodeIndex.IndexBuilder
 {
     public static class DocumentConverter
     {

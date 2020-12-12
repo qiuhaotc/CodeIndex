@@ -8,6 +8,7 @@
         Error,
         Deleting,
         Initialized,
-        Disposing
+        Disposing,
+        Disposed
     }
 }

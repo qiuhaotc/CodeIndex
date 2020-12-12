@@ -7,7 +7,6 @@ namespace CodeIndex.Common
     {
         public const char SplitChar = '|';
 
-        public Guid Pk { get; set; }
         public string IndexName { get; set; }
         public string MonitorFolder { get; set; }
         public int MaxContentHighlightLength { get; set; }
@@ -53,9 +52,9 @@ namespace CodeIndex.Common
 
         public string[] ExcludedExtensionsArray => excludedExtensionsArray ??= GetSplitStringArray(ExcludedExtensions);
 
-        public (string CodeIndexFolder,string HintIndexFolder) GetFolders(string parentFolder)
+        public (string CodeIndexFolder, string HintIndexFolder) GetFolders(string parentFolder)
         {
-            return (Path.Combine(parentFolder, IndexName, CodeIndexConfiguration.CodeIndexFolder), Path.Combine(parentFolder, IndexName, CodeIndexConfiguration.HintIndexFolder));
+            return (Path.Combine(parentFolder, CodeIndexConfiguration.CodeIndexesFolder, IndexName, CodeIndexConfiguration.CodeIndexFolder), Path.Combine(parentFolder, CodeIndexConfiguration.CodeIndexesFolder, IndexName, CodeIndexConfiguration.HintIndexFolder));
         }
 
         string[] GetSplitStringArray(string value)

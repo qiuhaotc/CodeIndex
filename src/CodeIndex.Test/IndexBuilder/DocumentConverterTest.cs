@@ -1,6 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
-using CodeIndex.MaintainIndex;
+using CodeIndex.IndexBuilder;
 using Lucene.Net.Documents;
 using NUnit.Framework;
 

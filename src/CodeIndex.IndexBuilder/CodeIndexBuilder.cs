@@ -167,7 +167,7 @@ namespace CodeIndex.IndexBuilder
             }
         }
 
-        static string ToStringSafe(this string value)
+        public static string ToStringSafe(this string value)
         {
             return value ?? string.Empty;
         }

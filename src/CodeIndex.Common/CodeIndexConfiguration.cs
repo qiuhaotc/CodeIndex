@@ -27,6 +27,7 @@ namespace CodeIndex.Common
         public string[] ExcludedExtensionsArray => excludedExtensionsArray ??= GetSplitStringArray(ExcludedExtensions);
         public string[] ExcludedPathsArray => excludedPathsArray ??= GetSplitStringArray(ExcludedPaths);
         public string[] IncludedExtensionsArray => includedExtensionsArray ??= GetSplitStringArray(IncludedExtensions);
+        public UserInfo[] ManagerUsers { get; set; }
 
         public int MaximumResults
         {
