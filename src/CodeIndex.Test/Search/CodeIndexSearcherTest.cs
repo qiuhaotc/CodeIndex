@@ -78,7 +78,7 @@ namespace CodeIndex.Test
         [Test]
         public void TestGenerateHtmlPreviewText()
         {
-            var generator = new QueryGenerator();
+            var generator = Generator;
             var content = $"My ABC{Environment.NewLine}Is A ABC CONTENT{Environment.NewLine}It's abc in lowercase{Environment.NewLine}It's Abc in mix{Environment.NewLine}Not AB with C";
             var result = CodeIndexSearcher.GenerateHtmlPreviewText(generator.GetQueryFromStr("ABC"), content, int.MaxValue, LucenePool.GetAnalyzer());
             Assert.AreEqual(@"My <label class='highlight'>ABC</label>
@@ -98,7 +98,7 @@ Is A <label class='highlight'>ABC</label>...s <label class='highlight'>abc</labe
         [Test]
         public void TestGenerateHtmlPreviewText_ReturnRawContent()
         {
-            var generator = new QueryGenerator();
+            var generator = Generator;
             var content = $"My ABC{Environment.NewLine}Is A ABC CONTENT{Environment.NewLine}It's abc in lowercase{Environment.NewLine}It's Abc in mix{Environment.NewLine}Not AB with C";
             var result = CodeIndexSearcher.GenerateHtmlPreviewText(generator.GetQueryFromStr("NotExistWord"), content, int.MaxValue, LucenePool.GetAnalyzer());
             Assert.IsEmpty(result);
@@ -113,7 +113,7 @@ Is A <label class='highlight'>ABC</label>...s <label class='highlight'>abc</labe
         [Test]
         public void TestGenerateHtmlPreviewText_ContentTooLong()
         {
-            var generator = new QueryGenerator();
+            var generator = Generator;
             var content = $"My ABC{Environment.NewLine}Is A ABC CONTENT{Environment.NewLine}It's abc in lowercase{Environment.NewLine}It's Abc in mix{Environment.NewLine}Not AB with C";
             var result = CodeIndexSearcher.GenerateHtmlPreviewText(generator.GetQueryFromStr("ABC"), content, int.MaxValue, LucenePool.GetAnalyzer(), maxContentHighlightLength: 20);
             Assert.AreEqual(@"Content is too long to highlight", result);
@@ -148,7 +148,7 @@ Is A <label class='highlight'>ABC</label>...s <label class='highlight'>abc</labe
         [Test]
         public void TestGeneratePreviewTextWithLineNumber()
         {
-            var generator = new QueryGenerator();
+            var generator = Generator;
             var content = $"My ABC{Environment.NewLine}Is A ABC CONTENT{Environment.NewLine}ABCD EFG";
             var results = CodeIndexSearcher.GeneratePreviewTextWithLineNumber(generator.GetQueryFromStr("ABC"), content, int.MaxValue, LucenePool.GetAnalyzer(), 100);
             Assert.That(results, Has.Length.EqualTo(2));
@@ -163,7 +163,7 @@ Is A <label class='highlight'>ABC</label>...s <label class='highlight'>abc</labe
         [Test]
         public void TestGeneratePreviewTextWithLineNumber_ContentTooLong()
         {
-            var generator = new QueryGenerator();
+            var generator = Generator;
             var content = $"My ABC{Environment.NewLine}Is A ABC CONTENT{Environment.NewLine}ABCD EFG";
             var results = CodeIndexSearcher.GeneratePreviewTextWithLineNumber(generator.GetQueryFromStr("ABC"), content, int.MaxValue, LucenePool.GetAnalyzer(), 100, 10);
             Assert.That(results, Has.Length.EqualTo(1));
@@ -173,7 +173,7 @@ Is A <label class='highlight'>ABC</label>...s <label class='highlight'>abc</labe
         [Test]
         public void TestGeneratePreviewTextWithLineNumber_CompletionPrefixAndSuffix()
         {
-            var generator = new QueryGenerator();
+            var generator = Generator;
             var content = $"OH ABC{Environment.NewLine}DEF QWE ABC DEF ABC{Environment.NewLine}DEF OOOODD DEF ABC";
             var results = CodeIndexSearcher.GeneratePreviewTextWithLineNumber(generator.GetQueryFromStr("\"ABC DEF\""), content, int.MaxValue, LucenePool.GetAnalyzer(), 100);
             Assert.That(results, Has.Length.EqualTo(3));
@@ -185,7 +185,7 @@ Is A <label class='highlight'>ABC</label>...s <label class='highlight'>abc</labe
         [Test]
         public void TestGeneratePreviewTextWithLineNumber_TrimLine()
         {
-            var generator = new QueryGenerator();
+            var generator = Generator;
             var content = $"{Environment.NewLine}   \t\tABC\t   \t";
             var results = CodeIndexSearcher.GeneratePreviewTextWithLineNumber(generator.GetQueryFromStr("ABC"), content, int.MaxValue, LucenePool.GetAnalyzer(), 100);
             Assert.That(results, Has.Length.EqualTo(1));

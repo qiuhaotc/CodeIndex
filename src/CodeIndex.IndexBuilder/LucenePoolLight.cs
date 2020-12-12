@@ -6,6 +6,7 @@ using CodeIndex.Common;
 using Lucene.Net.Analysis;
 using Lucene.Net.Documents;
 using Lucene.Net.Index;
+using Lucene.Net.QueryParsers.Classic;
 using Lucene.Net.Search;
 using Lucene.Net.Store;
 
@@ -97,6 +98,11 @@ namespace CodeIndex.IndexBuilder
 
         public Analyzer Analyzer => analyzer ??= new CodeAnalyzer(Constants.AppLuceneVersion, true);
 
+        public QueryParser GetQueryParser()
+        {
+            return new QueryParser(Constants.AppLuceneVersion, nameof(CodeSource.Content), Analyzer);
+        }
+
         #endregion
 
         #region Fields
@@ -112,6 +118,7 @@ namespace CodeIndex.IndexBuilder
 
         readonly object syncLockForWriter = new object();
         IndexWriter indexWriter;
+
         IndexWriter IndexWriter
         {
             get
@@ -141,6 +148,7 @@ namespace CodeIndex.IndexBuilder
 
         readonly object syncLockForSearcher = new object();
         IndexSearcher indexSearcher;
+
         IndexSearcher GetIndexSearcher()
         {
             if (indexSearcher == null || indexChangeCount > 0)
@@ -189,6 +197,7 @@ namespace CodeIndex.IndexBuilder
 
         readonly object syncLockForReader = new object();
         IndexReader indexReader;
+
         IndexReader IndexReader
         {
             get

@@ -1,6 +1,7 @@
 ﻿using CodeIndex.Common;
 using CodeIndex.IndexBuilder;
-using CodeIndex.Search;
+using CodeIndex.MaintainIndex;
+using Lucene.Net.QueryParsers.Classic;
 using NUnit.Framework;
 
 namespace CodeIndex.Test
@@ -14,7 +15,7 @@ namespace CodeIndex.Test
         };
 
         QueryGenerator generator;
-        protected QueryGenerator Generator => generator ??= new QueryGenerator();
+        protected QueryGenerator Generator => generator ??= new QueryGenerator(new QueryParser(Constants.AppLuceneVersion, nameof(CodeSource.Content), new CodeAnalyzer(Constants.AppLuceneVersion, true)));
 
         [SetUp]
         protected override void SetUp()

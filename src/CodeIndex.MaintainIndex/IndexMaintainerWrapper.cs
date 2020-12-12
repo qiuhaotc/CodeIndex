@@ -1,12 +1,11 @@
 ﻿using System;
 using CodeIndex.Common;
+using Lucene.Net.QueryParsers.Classic;
 
 namespace CodeIndex.MaintainIndex
 {
     public class IndexMaintainerWrapper : IDisposable
     {
-        IndexStatus? statusOverride;
-
         public IndexMaintainerWrapper(IndexConfig indexConfig, CodeIndexConfiguration codeIndexConfiguration, ILog log)
         {
             indexConfig.RequireNotNull(nameof(indexConfig));
@@ -21,17 +20,7 @@ namespace CodeIndex.MaintainIndex
 
         public bool IsDisposing { get; private set; }
 
-        public IndexStatus Status
-        {
-            get
-            {
-                return statusOverride ?? Maintainer.Status;
-            }
-            set
-            {
-                statusOverride = value;
-            }
-        }
+        public IndexStatus Status => Maintainer.Status;
 
         public IndexConfig IndexConfig { get; }
 
@@ -43,5 +32,11 @@ namespace CodeIndex.MaintainIndex
                 Maintainer.Dispose();
             }
         }
+
+        QueryParser queryParser;
+        public QueryParser CodeIndexQueryParser => queryParser ??= Maintainer.IndexBuilderLight.CodeIndexPool.GetQueryParser();
+
+        QueryGenerator queryGenerator;
+        public QueryGenerator QueryGenerator => queryGenerator ??= new QueryGenerator(CodeIndexQueryParser);
     }
 }

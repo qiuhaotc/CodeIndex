@@ -64,6 +64,7 @@ namespace CodeIndex.Server
             services.AddSingleton<ILog>(new NLogger());
             services.AddSingleton<IndexManagement>();
             services.AddScoped<Storage>();
+            services.AddSingleton<CodeIndexSearcherLight>();
 
             config = new CodeIndexConfiguration();
             Configuration.GetSection("CodeIndex").Bind(config);
@@ -130,7 +131,7 @@ namespace CodeIndex.Server
 
             maintainer.InitializeIndex(false).ContinueWith(u => maintainer.MaintainIndexes());
 
-            CodeIndexSearcherLight = new CodeIndexSearcherLight(maintainer);
+            CodeIndexSearcherLight = new CodeIndexSearcherLight(indexManagement, log);
 
             IndexManagement = indexManagement;
         }
@@ -138,7 +139,7 @@ namespace CodeIndex.Server
         IndexMaintainer maintainer;
         CodeIndexConfiguration config;
         public static CodeIndexSearcherLight CodeIndexSearcherLight { get; private set; }
-        public static IndexManagement IndexManagement { get; private set; }
+        public IndexManagement IndexManagement { get; private set; }
 
         void OnShutdown()
         {

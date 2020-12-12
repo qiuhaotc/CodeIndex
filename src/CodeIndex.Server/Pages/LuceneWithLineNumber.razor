@@ -1,5 +1,4 @@
-﻿
-@page "/SearchWithLine"
+﻿@page "/SearchWithLine"
 @inject HttpClient Client
 @inject CodeIndex.Common.Storage Storage
 @inject CodeIndexConfiguration Config
@@ -163,7 +162,7 @@
 
 @code {
 
-    public string SearchQuery => Search.QueryGenerator.GetSearchStr(FileNameQuery, ContentQuery, FileExtensionQuery, FilePathQuery);
+    public string SearchQuery => MaintainIndex.QueryGenerator.GetSearchStr(FileNameQuery, ContentQuery, FileExtensionQuery, FilePathQuery);
 
     public string ContentQuery { get; set; }
 

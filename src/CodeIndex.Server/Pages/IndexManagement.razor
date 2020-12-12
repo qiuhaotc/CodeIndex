@@ -13,17 +13,17 @@
 <div class="row">
     @foreach (var indexStatus in IndexStatusInfos)
     {
-        <div class="col-md-3 p-1">
-            <div class="card">
-                <div class="card-body">
-                    <p>Name: @indexStatus.IndexConfig.IndexName</p>
-                    <p>Status: @indexStatus.IndexStatus</p>
-                    <p>Monitor Folder: @indexStatus.IndexConfig.MonitorFolder</p>
-                    <button class="btn btn-primary btn-sm" @onclick="() => Edit(indexStatus)">Edit</button>
-                    <button class="btn btn-danger btn-sm" @onclick="() => Delete(indexStatus)">Delete</button>
-                </div>
+    <div class="col-md-3 p-1">
+        <div class="card">
+            <div class="card-body">
+                <p>Name: @indexStatus.IndexConfig.IndexName</p>
+                <p>Status: @indexStatus.IndexStatus</p>
+                <p>Monitor Folder: @indexStatus.IndexConfig.MonitorFolder</p>
+                <button class="btn btn-primary btn-sm" @onclick="() => Edit(indexStatus)">Edit</button>
+                <button class="btn btn-danger btn-sm" @onclick="() => Delete(indexStatus)">Delete</button>
             </div>
         </div>
+    </div>
     }
 </div>
 
@@ -94,7 +94,7 @@
                 IndexName = "Dummy2",
                 MonitorFolder = "c:/dummy2"
             }),
-            new IndexStatusInfo(IndexStatus.Deleting, new IndexConfig
+            new IndexStatusInfo(IndexStatus.Disposing, new IndexConfig
             {
                 IndexName = "Dummy3",
                 MonitorFolder = "c:/dummy3"

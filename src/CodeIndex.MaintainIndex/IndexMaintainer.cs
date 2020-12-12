@@ -357,7 +357,7 @@ namespace CodeIndex.MaintainIndex
             ChangedSources.Enqueue(changeSource);
         }
 
-        public IndexConfig IndexConfig { get; }
+        IndexConfig IndexConfig { get; }
         public CodeIndexConfiguration CodeIndexConfiguration { get; }
         public ILog Log { get; }
         public IndexStatus Status { get; private set; }

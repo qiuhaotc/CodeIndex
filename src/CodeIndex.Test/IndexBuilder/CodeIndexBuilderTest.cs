@@ -3,6 +3,7 @@ using System.IO;
 using System.Linq;
 using CodeIndex.Common;
 using CodeIndex.IndexBuilder;
+using CodeIndex.MaintainIndex;
 using CodeIndex.Search;
 using Lucene.Net.Index;
 using Lucene.Net.Search;
@@ -27,7 +28,7 @@ namespace CodeIndex.Test
             Assert.AreEqual("Test Content" + Environment.NewLine + "A New Line For Test", result1[0].Get(nameof(CodeSource.Content)));
             Assert.AreEqual(new DateTime(2020, 1, 1).Ticks, result1[0].GetField(nameof(CodeSource.IndexDate)).GetInt64Value());
 
-            var generator = new QueryGenerator();
+            var generator = Generator;
             var result2 = CodeIndexSearcher.Search(Config.LuceneIndexForCode, generator.GetQueryFromStr("FFFF test"), 10);
             Assert.That(result2.Length, Is.EqualTo(2));
             Assert.IsTrue(result2.Any(u => u.Get(nameof(CodeSource.FileName)) == "Dummy File"));
@@ -67,7 +68,7 @@ namespace CodeIndex.Test
             BuildIndex();
             LucenePool.SaveResultsAndClearLucenePool(Config.LuceneIndexForCode);
 
-            var generator = new QueryGenerator();
+            var generator = Generator;
             var result = CodeIndexSearcher.Search(Config.LuceneIndexForCode, generator.GetQueryFromStr("FFFF test"), 10);
             Assert.That(result.Length, Is.EqualTo(2));
 

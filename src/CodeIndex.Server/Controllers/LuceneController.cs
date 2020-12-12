@@ -21,56 +21,51 @@ namespace CodeIndex.Server.Controllers
     [ApiController]
     public class LuceneController : ControllerBase
     {
-        public LuceneController(CodeIndexConfiguration codeIndexConfiguration, ILog log)
+        public LuceneController(CodeIndexConfiguration codeIndexConfiguration, ILog log, CodeIndexSearcherLight codeIndexSearcher)
         {
             this.codeIndexConfiguration = codeIndexConfiguration;
             this.log = log;
+            this.codeIndexSearcher = codeIndexSearcher;
         }
 
         readonly CodeIndexConfiguration codeIndexConfiguration;
         readonly ILog log;
+        private readonly CodeIndexSearcherLight codeIndexSearcher;
 
         [HttpGet]
         [Route(nameof(GetCodeSources))]
-        public FetchResult<IEnumerable<CodeSource>> GetCodeSources(string searchQuery, bool preview, string contentQuery = "", int? showResults = 0)
+        public FetchResult<IEnumerable<CodeSource>> GetCodeSources(string searchQuery, bool preview, string indexName, string contentQuery = "", int? showResults = 0)
         {
             FetchResult<IEnumerable<CodeSource>> result;
 
             try
             {
+                indexName.RequireNotNullOrEmpty(nameof(indexName));
                 searchQuery.RequireNotNullOrEmpty(nameof(searchQuery));
 
                 var showResultsValue = showResults.HasValue && showResults.Value <= codeIndexConfiguration.MaximumResults && showResults.Value > 0 ? showResults.Value : 100;
 
                 result = new FetchResult<IEnumerable<CodeSource>>
                 {
-                    Result = SearchCodeSource(searchQuery, out var query, showResultsValue),
+                    Result = SearchCodeSource(searchQuery, out var query, indexName, showResultsValue),
                     Status = new Status
                     {
                         Success = true
                     }
                 };
 
-                var queryForContent = string.IsNullOrWhiteSpace(contentQuery) ? null : generator.GetQueryFromStr(contentQuery);
-                var maxContentHighlightLength = codeIndexConfiguration.MaxContentHighlightLength;
-
-                if (maxContentHighlightLength <= 0)
-                {
-                    maxContentHighlightLength = Constants.DefaultMaxContentHighlightLength;
-                }
-
                 if (preview)
                 {
                     foreach (var item in result.Result)
                     {
-                        item.Content = Startup.CodeIndexSearcherLight.GenerateHtmlPreviewText(queryForContent, item.Content, 30, maxContentHighlightLength: maxContentHighlightLength);
+                        item.Content = codeIndexSearcher.GenerateHtmlPreviewText(contentQuery, item.Content, 30, indexName);
                     }
                 }
                 else if (!preview)
                 {
                     foreach (var item in result.Result)
                     {
-                        item.Content = Startup.CodeIndexSearcherLight.GenerateHtmlPreviewText(queryForContent, item.Content, int.MaxValue, returnRawContentWhenResultIsEmpty: true, maxContentHighlightLength: maxContentHighlightLength);
+                        item.Content = codeIndexSearcher.GenerateHtmlPreviewText(contentQuery, item.Content, int.MaxValue, indexName, returnRawContentWhenResultIsEmpty: true);
                     }
                 }
 
@@ -95,7 +90,7 @@ namespace CodeIndex.Server.Controllers
 
         [HttpGet]
         [Route(nameof(GetCodeSourcesWithMatchedLine))]
-        public FetchResult<IEnumerable<CodeSourceWithMatchedLine>> GetCodeSourcesWithMatchedLine(string searchQuery, string contentQuery = "", int? showResults = 0, bool needReplaceSuffixAndPrefix = true, bool forWeb = true)
+        public FetchResult<IEnumerable<CodeSourceWithMatchedLine>> GetCodeSourcesWithMatchedLine(string searchQuery, string indexName, string contentQuery = "", int? showResults = 0, bool needReplaceSuffixAndPrefix = true, bool forWeb = true)
         {
             FetchResult<IEnumerable<CodeSourceWithMatchedLine>> result;
 
@@ -105,9 +100,9 @@ namespace CodeIndex.Server.Controllers
 
                 var showResultsValue = showResults.HasValue && showResults.Value <= codeIndexConfiguration.MaximumResults && showResults.Value > 0 ? showResults.Value : 100;
 
-                var codeSources = SearchCodeSource(searchQuery, out var query, showResultsValue);
+                var codeSources = SearchCodeSource(searchQuery, out var query, indexName, showResultsValue);
 
-                var queryForContent = string.IsNullOrWhiteSpace(contentQuery) ? null : generator.GetQueryFromStr(contentQuery);
+                var queryForContent = string.IsNullOrWhiteSpace(contentQuery) ? null : codeIndexSearcher.GetQueryFromStr(contentQuery, indexName);
 
                 var maxContentHighlightLength = codeIndexConfiguration.MaxContentHighlightLength;
 
@@ -133,7 +128,7 @@ namespace CodeIndex.Server.Controllers
 
                     foreach (var codeSource in codeSources)
                     {
-                        var matchedLines = Startup.CodeIndexSearcherLight.GeneratePreviewTextWithLineNumber(queryForContent, codeSource.Content, int.MaxValue, generator.Analyzer, showResultsValue - totalResult, forWeb: forWeb, needReplaceSuffixAndPrefix: needReplaceSuffixAndPrefix);
+                        var matchedLines = codeIndexSearcher.GeneratePreviewTextWithLineNumber(queryForContent, codeSource.Content, int.MaxValue, showResultsValue - totalResult, indexName, forWeb: forWeb, needReplaceSuffixAndPrefix: needReplaceSuffixAndPrefix);
                         codeSource.Content = string.Empty; // Empty content to reduce response size
 
                         foreach (var matchedLine in matchedLines)
@@ -174,7 +169,7 @@ namespace CodeIndex.Server.Controllers
 
         [HttpGet]
         [Route(nameof(GetHints))]
-        public FetchResult<IEnumerable<string>> GetHints(string word)
+        public FetchResult<IEnumerable<string>> GetHints(string word, string indexName)
         {
             FetchResult<IEnumerable<string>> result;
             try
@@ -183,7 +178,7 @@ namespace CodeIndex.Server.Controllers
 
                 result = new FetchResult<IEnumerable<string>>
                 {
-                    Result = Startup.CodeIndexSearcherLight.GetHints(word),
+                    Result = codeIndexSearcher.GetHints(word, indexName),
                     Status = new Status
                     {
                         Success = true
@@ -209,13 +204,10 @@ namespace CodeIndex.Server.Controllers
             return result;
         }
 
-        CodeSource[] SearchCodeSource(string searchStr, out Query query, int showResults = 100)
+        CodeSource[] SearchCodeSource(string searchStr, out Query query, string indexName, int showResults = 100)
         {
-            query = generator.GetQueryFromStr(searchStr);
-            return Startup.CodeIndexSearcherLight.SearchCode(query, showResults);
+            return codeIndexSearcher.SearchCode(searchStr, out query, showResults, indexName);
         }
-
-        static readonly QueryGenerator generator = new QueryGenerator();
 
         [HttpGet]
         [Route(nameof(GetTokenizeStr))]

@@ -43,7 +43,7 @@ namespace CodeIndex.MaintainIndex
         {
             if (IsDisposing)
             {
-                return ManagementIsDisposing();
+                return ManagementIsDisposing<bool>();
             }
 
             lock (syncLock)
@@ -81,7 +81,7 @@ namespace CodeIndex.MaintainIndex
         {
             if (IsDisposing)
             {
-                return ManagementIsDisposing();
+                return ManagementIsDisposing<bool>();
             }
 
             lock (syncLock)
@@ -120,14 +120,13 @@ namespace CodeIndex.MaintainIndex
         {
             if (IsDisposing)
             {
-                return ManagementIsDisposing();
+                return ManagementIsDisposing<bool>();
             }
 
             lock (syncLock)
             {
                 if (ValidToDelete(indexName, out var message, out var needDisposeAndRemovedWrapper) && needDisposeAndRemovedWrapper != null)
                 {
-                    needDisposeAndRemovedWrapper.Status = IndexStatus.Deleting;
                     needDisposeAndRemovedWrapper.Dispose();
                     DeleteIndexFolder(needDisposeAndRemovedWrapper.IndexConfig.MonitorFolder);
 
@@ -155,17 +154,46 @@ namespace CodeIndex.MaintainIndex
             }
         }
 
+        public FetchResult<IndexMaintainerWrapper> GetIndexMaintainerWrapper(string indexName)
+        {
+            if (IsDisposing)
+            {
+                return ManagementIsDisposing<IndexMaintainerWrapper>();
+            }
+
+            if (MaintainerPool.TryGetValue(indexName, out var wrapper))
+            {
+                return new FetchResult<IndexMaintainerWrapper>
+                {
+                    Result = wrapper,
+                    Status = new Status
+                    {
+                        Success = true
+                    }
+                };
+            }
+
+            return new FetchResult<IndexMaintainerWrapper>
+            {
+                Status = new Status
+                {
+                    Success = false,
+                    StatusDesc = "Index Not Exist"
+                }
+            };
+        }
+
         void DeleteIndexFolder(string monitorFolder)
         {
             Log.Info($"Delete all files under {monitorFolder}");
             Directory.Delete(monitorFolder, true);
         }
 
-        FetchResult<bool> ManagementIsDisposing()
+        FetchResult<T> ManagementIsDisposing<T>()
         {
-            return new FetchResult<bool>
+            return new FetchResult<T>
             {
-                Result = false,
+                Result = default,
                 Status = new Status
                 {
                     StatusDesc = "Index Management Is Disposing",
@@ -240,9 +268,9 @@ namespace CodeIndex.MaintainIndex
             {
                 validationMessage += "Index Not Exist" + Environment.NewLine;
             }
-            else if (needDisposeAndRemovedWrapper.Status == IndexStatus.Deleting)
+            else if (needDisposeAndRemovedWrapper.Status == IndexStatus.Disposing)
             {
-                validationMessage += "Index Under Deleting Status" + Environment.NewLine;
+                validationMessage += "Index Under Disposing Status" + Environment.NewLine;
             }
 
             return string.IsNullOrEmpty(validationMessage);

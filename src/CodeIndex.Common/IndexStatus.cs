@@ -6,7 +6,6 @@
         Initializing,
         Monitoring,
         Error,
-        Deleting,
         Initialized,
         Disposing,
         Disposed

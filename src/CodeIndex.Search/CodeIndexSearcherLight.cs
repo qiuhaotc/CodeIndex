@@ -16,30 +16,58 @@ namespace CodeIndex.Search
 {
     public class CodeIndexSearcherLight
     {
-        public CodeIndexSearcherLight(IndexMaintainer indexMaintainer)
+        public CodeIndexSearcherLight(IndexManagement indexManagement, ILog log)
         {
-            IndexMaintainer = indexMaintainer;
+            IndexManagement = indexManagement;
+            Log = log;
         }
 
-        public IndexMaintainer IndexMaintainer { get; }
+        public IndexManagement IndexManagement { get; }
+        public ILog Log { get; }
 
-        public CodeSource[] SearchCode(Query query, int maxResults)
+        public CodeSource[] SearchCode(string searchStr, out Query query, int maxResults, string indexName)
         {
-            query.RequireNotNull(nameof(query));
+            searchStr.RequireNotNullOrEmpty(nameof(searchStr));
+            indexName.RequireNotNullOrEmpty(nameof(indexName));
             maxResults.RequireRange(nameof(maxResults), int.MaxValue, 1);
 
-            return StatusValid ? IndexMaintainer.IndexBuilderLight.CodeIndexPool.Search(query, maxResults).Select(GetCodeSourceFromDocument).ToArray() : Array.Empty<CodeSource>();
+            var maintainer = GetIndexMaintainerWrapper(indexName);
+
+            if (maintainer == null)
+            {
+                query = null;
+                return Array.Empty<CodeSource>();
+            }
+
+            query = maintainer.QueryGenerator.GetQueryFromStr(searchStr);
+            return StatusValid(maintainer) ? maintainer.Maintainer.IndexBuilderLight.CodeIndexPool.Search(query, maxResults).Select(GetCodeSourceFromDocument).ToArray() : Array.Empty<CodeSource>();
         }
 
-        public string GenerateHtmlPreviewText(Query query, string text, int length, string prefix = "<label class='highlight'>", string suffix = "</label>", bool returnRawContentWhenResultIsEmpty = false, int maxContentHighlightLength = Constants.DefaultMaxContentHighlightLength)
+        public string GenerateHtmlPreviewText(string contentQuery, string text, int length, string indexName, string prefix = "<label class='highlight'>", string suffix = "</label>", bool returnRawContentWhenResultIsEmpty = false)
         {
+            var maintainer = GetIndexMaintainerWrapper(indexName);
+
+            if (maintainer == null)
+            {
+                return string.Empty;
+            }
+
+            var queryForContent = string.IsNullOrWhiteSpace(contentQuery) ? null : maintainer.QueryGenerator.GetQueryFromStr(contentQuery);
+
             string result = null;
+
+            var maxContentHighlightLength = maintainer.IndexConfig.MaxContentHighlightLength;
+
+            if (maxContentHighlightLength <= 0)
+            {
+                maxContentHighlightLength = Constants.DefaultMaxContentHighlightLength;
+            }
 
             if (text.Length <= maxContentHighlightLength) // For performance
             {
-                if (query != null)
+                if (queryForContent != null)
                 {
-                    var scorer = new QueryScorer(query);
+                    var scorer = new QueryScorer(queryForContent);
                     var formatter = new SimpleHTMLFormatter(HighLightPrefix, HighLightSuffix);
 
                     var highlighter = new Highlighter(formatter, scorer)
@@ -48,7 +76,7 @@ namespace CodeIndex.Search
                         MaxDocCharsToAnalyze = maxContentHighlightLength
                     };
 
-                    var stream = IndexMaintainer.IndexBuilderLight.CodeIndexPool.Analyzer.GetTokenStream(nameof(CodeSource.Content), new StringReader(text));
+                    using var stream = maintainer.Maintainer.IndexBuilderLight.CodeIndexPool.Analyzer.GetTokenStream(nameof(CodeSource.Content), new StringReader(text));
 
                     result = highlighter.GetBestFragments(stream, text, 3, "...");
                 }
@@ -65,7 +93,7 @@ namespace CodeIndex.Search
             return result;
         }
 
-        public string[] GetHints(string word, int maxResults = 20, bool caseSensitive = false)
+        public string[] GetHints(string word, string indexName, int maxResults = 20, bool caseSensitive = false)
         {
             if (string.IsNullOrWhiteSpace(word))
             {
@@ -83,15 +111,27 @@ namespace CodeIndex.Search
                 query = new PrefixQuery(new Term(nameof(CodeWord.WordLower), word.ToLower()));
             }
 
-            return StatusValid ? IndexMaintainer.IndexBuilderLight.HintIndexPool.Search(query, maxResults).Select(u => u.Get(nameof(CodeWord.Word))).ToArray() : Array.Empty<string>();
+            var maintainer = GetIndexMaintainerWrapper(indexName);
+            return StatusValid(maintainer) ? maintainer.Maintainer.IndexBuilderLight.HintIndexPool.Search(query, maxResults).Select(u => u.Get(nameof(CodeWord.Word))).ToArray() : Array.Empty<string>();
         }
 
-        public (string MatchedLineContent, int LineNumber)[] GeneratePreviewTextWithLineNumber(Query query, string text, int length, Analyzer analyzer, int maxResults, bool forWeb = true, bool needReplaceSuffixAndPrefix = true, string prefix = "<label class='highlight'>", string suffix = "</label>")
+        public Query GetQueryFromStr(string contentQuery, string indexName)
         {
-            string highLightResult = null;
+            return GetIndexMaintainerWrapper(indexName)?.QueryGenerator.GetQueryFromStr(contentQuery);
+        }
+
+        public (string MatchedLineContent, int LineNumber)[] GeneratePreviewTextWithLineNumber(Query query, string text, int length, int maxResults, string indexName, bool forWeb = true, bool needReplaceSuffixAndPrefix = true, string prefix = "<label class='highlight'>", string suffix = "</label>")
+        {
             (string, int)[] results;
 
-            var maxContentHighlightLength = IndexMaintainer.IndexConfig.MaxContentHighlightLength;
+            var maintainer = GetIndexMaintainerWrapper(indexName);
+            if (maintainer == null)
+            {
+                return Array.Empty<(string, int)>();
+            }
+
+            string highLightResult = null;
+            var maxContentHighlightLength = maintainer.IndexConfig.MaxContentHighlightLength;
 
             if (maxContentHighlightLength <= 0)
             {
@@ -111,7 +151,7 @@ namespace CodeIndex.Search
                         MaxDocCharsToAnalyze = maxContentHighlightLength
                     };
 
-                    var stream = analyzer.GetTokenStream(nameof(CodeSource.Content), new StringReader(text));
+                    using var stream = maintainer.Maintainer.IndexBuilderLight.CodeIndexPool.Analyzer.GetTokenStream(nameof(CodeSource.Content), new StringReader(text));
 
                     highLightResult = highlighter.GetBestFragments(stream, text, 3, "...");
                 }
@@ -177,6 +217,33 @@ namespace CodeIndex.Search
             };
         }
 
-        bool StatusValid => IndexMaintainer.Status == IndexStatus.Initialized || IndexMaintainer.Status == IndexStatus.Initializing || IndexMaintainer.Status == IndexStatus.Monitoring;
+        object syncLock = new object();
+
+        IndexMaintainerWrapper GetIndexMaintainerWrapper(string indexName)
+        {
+            var result = IndexManagement.GetIndexMaintainerWrapper(indexName);
+            if (result.Status.Success)
+            {
+                // Make sure InitializeIndex and MaintainIndexes only call once
+                if (result.Result.Maintainer.Status == IndexStatus.Idle)
+                {
+                    lock (syncLock)
+                    {
+                        if (result.Result.Maintainer.Status == IndexStatus.Idle)
+                        {
+                            Log.Info($"Start initializing and monitoring for index {indexName}");
+                            result.Result.Maintainer.InitializeIndex(false).ContinueWith(u => result.Result.Maintainer.MaintainIndexes());
+                        }
+                    }
+                }
+
+                return result.Result;
+            }
+
+            Log.Info($"Index {indexName} not exist in Index Management: {result.Status.StatusDesc}");
+            return null;
+        }
+
+        bool StatusValid(IndexMaintainerWrapper indexMaintainer) => indexMaintainer != null && (indexMaintainer.Status == IndexStatus.Initialized || indexMaintainer.Status == IndexStatus.Initializing || indexMaintainer.Status == IndexStatus.Monitoring);
     }
 }

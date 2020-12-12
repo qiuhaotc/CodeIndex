@@ -3,6 +3,7 @@ using System.Collections.Generic;
 using Lucene.Net.Analysis;
 using Lucene.Net.Documents;
 using Lucene.Net.Index;
+using Lucene.Net.QueryParsers.Classic;
 using Lucene.Net.Search;
 
 namespace CodeIndex.IndexBuilder
@@ -24,5 +25,7 @@ namespace CodeIndex.IndexBuilder
         string LuceneIndex { get; }
 
         Analyzer Analyzer { get; }
+
+        QueryParser GetQueryParser();
     }
 }
