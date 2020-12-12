@@ -10,8 +10,7 @@ namespace CodeIndex.Test
     {
         public CodeIndexConfiguration Config => new CodeIndexConfiguration
         {
-            LuceneIndex = TempIndexDir,
-            MonitorFolder = MonitorFolder
+            LuceneIndex = TempIndexDir
         };
 
         QueryGenerator generator;
@@ -21,15 +20,11 @@ namespace CodeIndex.Test
         protected override void SetUp()
         {
             base.SetUp();
-            WordsHintBuilder.Words.Clear();
         }
 
         [TearDown]
         protected override void TearDown()
         {
-            LucenePool.SaveResultsAndClearLucenePool(Config);
-            WordsHintBuilder.Words.Clear();
-
             base.TearDown();
         }
     }

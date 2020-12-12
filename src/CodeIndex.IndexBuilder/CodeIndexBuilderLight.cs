@@ -66,14 +66,13 @@ namespace CodeIndex.IndexBuilder
                 readWriteSlimLock.EnterReadLock();
                 try
                 {
-
                     if (fileInfo.Exists)
                     {
                         var source = CodeSource.GetCodeSource(fileInfo, FilesContentHelper.ReadAllText(fileInfo.FullName));
 
                         AddHintWords(hintWords, wholeWords, source.Content);
 
-                        var doc = CodeIndexBuilder.GetDocumentFromSource(source);
+                        var doc = IndexBuilderHelper.GetDocumentFromSource(source);
                         codeDocuments.Add(doc);
 
                         Log.Info($"{Name}: Add index For {source.FilePath}");
@@ -163,7 +162,7 @@ namespace CodeIndex.IndexBuilder
                     var words = new HashSet<string>();
                     AddHintWords(words, source.Content);
 
-                    var doc = CodeIndexBuilder.GetDocumentFromSource(source);
+                    var doc = IndexBuilderHelper.GetDocumentFromSource(source);
                     CodeIndexPool.BuildIndex(new[] { doc }, false);
 
                     foreach (var word in words)
@@ -309,7 +308,7 @@ namespace CodeIndex.IndexBuilder
                     var words = new HashSet<string>();
                     AddHintWords(words, source.Content);
 
-                    var doc = CodeIndexBuilder.GetDocumentFromSource(source);
+                    var doc = IndexBuilderHelper.GetDocumentFromSource(source);
                     CodeIndexPool.UpdateIndex(GetNoneTokenizeFieldTerm(nameof(CodeSource.FilePath), source.FilePath), doc);
 
                     foreach (var word in words)

@@ -75,6 +75,8 @@ namespace CodeIndex.MaintainIndex
 
             Log.Info($"{IndexConfig.IndexName}: Start Maintain Indexes");
 
+            Status = IndexStatus.Monitoring;
+
             await MaintainIndexesCore();
         }
 
@@ -255,7 +257,7 @@ namespace CodeIndex.MaintainIndex
             List<FileInfo> needToBuildIndex = null;
             var failedUpdateOrDeleteFiles = new List<string>();
 
-            if (CodeIndexBuilder.IndexExists(IndexBuilderLight.CodeIndexPool.LuceneIndex))
+            if (IndexBuilderHelper.IndexExists(IndexBuilderLight.CodeIndexPool.LuceneIndex))
             {
                 if (forceRebuild)
                 {

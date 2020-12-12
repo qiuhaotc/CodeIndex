@@ -209,7 +209,7 @@ namespace CodeIndex.Test
 
         Document GetDocument(CodeSource codeSource)
         {
-            return CodeIndexBuilder.GetDocumentFromSource(codeSource);
+            return IndexBuilderHelper.GetDocumentFromSource(codeSource);
         }
     }
 }

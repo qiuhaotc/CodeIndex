@@ -103,13 +103,6 @@ namespace CodeIndex.Server.Controllers
 
                 var queryForContent = string.IsNullOrWhiteSpace(contentQuery) ? null : codeIndexSearcher.GetQueryFromStr(contentQuery, indexName);
 
-                var maxContentHighlightLength = codeIndexConfiguration.MaxContentHighlightLength;
-
-                if (maxContentHighlightLength <= 0)
-                {
-                    maxContentHighlightLength = Constants.DefaultMaxContentHighlightLength;
-                }
-
                 var codeSourceWithMatchedLineList = new List<CodeSourceWithMatchedLine>();
 
                 result = new FetchResult<IEnumerable<CodeSourceWithMatchedLine>>
@@ -285,9 +278,9 @@ namespace CodeIndex.Server.Controllers
         }
 
         [HttpGet]
-        public async Task<FetchResult<string[]>> GetIndexNameList([FromServices] IndexManagement indexManagement)
+        public async Task<FetchResult<IndexConfigForView[]>> GetIndexViewList([FromServices] IndexManagement indexManagement)
         {
-            return await Task.FromResult(indexManagement.GetIndexNameList());
+            return await Task.FromResult(indexManagement.GetIndexViewList());
         }
     }
 }

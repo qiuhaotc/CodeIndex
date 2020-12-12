@@ -56,11 +56,11 @@
                 <span class="input-group-text">Index Name</span>
             </div>
             <select class="form-control" @bind="IndexName">
-                @if (IndexNames != null)
+                @if (IndexConfigs != null)
                 {
-                    foreach (var indexName in IndexNames)
+                    foreach (var indexConfig in IndexConfigs)
                     {
-                        <option value="@indexName">@indexName</option>
+                        <option value="@indexConfig.IndexName">@indexConfig.IndexName</option>
                     }
                 }
             </select>
@@ -155,7 +155,7 @@
                             <pre>@((MarkupString)item.Content)</pre>
                         </td>
                         <td>
-                            <a href="@Config.OpenIDEUriFormat.Replace("{FilePath}", GetPath(item.FilePath))">@item.FilePath?.SubStringSafeWithEllipsis(item.FilePath.Length - 50, 50)</a>
+                            <a href="@CurrentIndexConfig.OpenIDEUriFormat.Replace("{FilePath}", GetPath(item.FilePath))">@item.FilePath?.SubStringSafeWithEllipsis(item.FilePath.Length - 50, 50)</a>
                         </td>
                         <td>@item.FileExtension</td>
                         <td>
@@ -194,7 +194,11 @@
 
     public FetchResult<IEnumerable<string>> HintWords { get; set; }
 
-    public string[] IndexNames { get; set; }
+    public IndexConfigForView[] IndexConfigs { get; set; }
+
+    public IndexConfigForView CurrentIndexConfig => IndexConfigs?.FirstOrDefault(u => u.IndexName == IndexName) ?? (empty ??= new IndexConfigForView());
+
+    IndexConfigForView empty;
 
     bool IsSearching;
 
@@ -204,19 +208,19 @@
 
         try
         {
-            var listResult = await Client.GetJsonAsync<FetchResult<string[]>>($"{Config.LocalUrl}/api/lucene/GetIndexNameList");
+            var listResult = await Client.GetJsonAsync<FetchResult<IndexConfigForView[]>>($"{Config.LocalUrl}/api/lucene/GetIndexViewList");
             if (listResult.Status.Success)
             {
-                IndexNames = listResult.Result;
+                IndexConfigs = listResult.Result;
             }
             else
             {
-                IndexNames = Array.Empty<string>();
+                IndexConfigs = Array.Empty<IndexConfigForView>();
             }
         }
         catch
         {
-            IndexNames = Array.Empty<string>();
+            IndexConfigs = Array.Empty<IndexConfigForView>();
         }
 
         ContentQuery = Storage.GetValue("ContentQuery")?.ToString();
@@ -225,9 +229,9 @@
         FilePathQuery = Storage.GetValue("FilePathQuery")?.ToString();
         IndexName = Storage.GetValue("IndexName")?.ToString();
 
-        if (IndexName == null || IndexNames.All(u => u != IndexName))
+        if (IndexName == null || IndexConfigs.All(u => u.IndexName != IndexName))
         {
-            IndexName = IndexNames.FirstOrDefault() ?? string.Empty;
+            IndexName = IndexConfigs.FirstOrDefault()?.IndexName ?? string.Empty;
         }
 
         if (int.TryParse(Storage.GetValue(nameof(ShowResults))?.ToString(), out var result))
@@ -308,9 +312,9 @@
 
     string GetPath(string path)
     {
-        if (path != null && path.StartsWith("/monitorfolder") && !string.IsNullOrEmpty(Config.MonitorFolderRealPath))
+        if (path != null && path.StartsWith("/monitorfolder") && !string.IsNullOrEmpty(CurrentIndexConfig.MonitorFolderRealPath))
         {
-            return Config.MonitorFolderRealPath + path.SubStringSafe("/monitorfolder".Length, path.Length);
+            return CurrentIndexConfig.MonitorFolderRealPath + path.SubStringSafe("/monitorfolder".Length, path.Length);
         }
         else
         {

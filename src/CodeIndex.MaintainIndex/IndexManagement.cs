@@ -56,21 +56,44 @@ namespace CodeIndex.MaintainIndex
             };
         }
 
-        public FetchResult<string[]> GetIndexNameList()
+        readonly IndexStatus[] validStatusForSearching = { IndexStatus.Idle, IndexStatus.Initializing, IndexStatus.Initialized, IndexStatus.Initializing_ComponentInitializeFinished, IndexStatus.Monitoring };
+
+        public FetchResult<IndexConfigForView[]> GetIndexViewList()
         {
             if (IsDisposing)
             {
-                return ManagementIsDisposing<string[]>();
+                return ManagementIsDisposing<IndexConfigForView[]>();
             }
 
-            return new FetchResult<string[]>
+            return new FetchResult<IndexConfigForView[]>
             {
-                Result = MaintainerPool.Select(u => u.Value.IndexConfig.IndexName).ToArray(),
+                Result = MaintainerPool.Where(u => validStatusForSearching.Contains(u.Value.Status)).Select(u => IndexConfigForView.GetIndexConfigForView(u.Value.IndexConfig)).ToArray(),
                 Status = new Status
                 {
                     Success = true
                 }
             };
+        }
+
+        public IndexConfigForView GetIndexView(string indexName)
+        {
+            if (IsDisposing)
+            {
+                return new IndexConfigForView();
+            }
+
+            IndexConfigForView indexConfigForView;
+
+            if (MaintainerPool.TryGetValue(indexName ?? string.Empty, out var wrapper))
+            {
+                indexConfigForView = IndexConfigForView.GetIndexConfigForView(wrapper.IndexConfig);
+            }
+            else
+            {
+                indexConfigForView = new IndexConfigForView();
+            }
+
+            return indexConfigForView;
         }
 
         public FetchResult<bool> AddIndex(IndexConfig indexConfig)
