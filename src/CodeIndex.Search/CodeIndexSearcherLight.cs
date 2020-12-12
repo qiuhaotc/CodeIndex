@@ -5,8 +5,8 @@ using System.Linq;
 using System.Threading;
 using System.Web;
 using CodeIndex.Common;
+using CodeIndex.IndexBuilder;
 using CodeIndex.MaintainIndex;
-using Lucene.Net.Analysis;
 using Lucene.Net.Documents;
 using Lucene.Net.Index;
 using Lucene.Net.Search;
@@ -77,7 +77,7 @@ namespace CodeIndex.Search
                         MaxDocCharsToAnalyze = maxContentHighlightLength
                     };
 
-                    using var stream = maintainer.Maintainer.IndexBuilderLight.CodeIndexPool.Analyzer.GetTokenStream(nameof(CodeSource.Content), new StringReader(text));
+                    using var stream = LucenePoolLight.Analyzer.GetTokenStream(nameof(CodeSource.Content), new StringReader(text));
 
                     result = highlighter.GetBestFragments(stream, text, 3, "...");
                 }
@@ -152,7 +152,7 @@ namespace CodeIndex.Search
                         MaxDocCharsToAnalyze = maxContentHighlightLength
                     };
 
-                    using var stream = maintainer.Maintainer.IndexBuilderLight.CodeIndexPool.Analyzer.GetTokenStream(nameof(CodeSource.Content), new StringReader(text));
+                    using var stream = LucenePoolLight.Analyzer.GetTokenStream(nameof(CodeSource.Content), new StringReader(text));
 
                     highLightResult = highlighter.GetBestFragments(stream, text, 3, "...");
                 }

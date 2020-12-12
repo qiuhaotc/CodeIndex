@@ -7,7 +7,9 @@ namespace CodeIndex.Common
     {
         public const char SplitChar = '|';
 
+        // TODO: Index Name readonly when edit, not allow special characters
         public string IndexName { get; set; }
+
         public string MonitorFolder { get; set; }
         public int MaxContentHighlightLength { get; set; } = 3000000;
         public int SaveIntervalSeconds { get; set; } = 300;
@@ -52,7 +54,13 @@ namespace CodeIndex.Common
 
         public (string CodeIndexFolder, string HintIndexFolder) GetFolders(string parentFolder)
         {
-            return (Path.Combine(parentFolder, CodeIndexConfiguration.CodeIndexesFolder, IndexName, CodeIndexConfiguration.CodeIndexFolder), Path.Combine(parentFolder, CodeIndexConfiguration.CodeIndexesFolder, IndexName, CodeIndexConfiguration.HintIndexFolder));
+            var rootFolder = GetRootFolder(parentFolder);
+            return (Path.Combine(rootFolder, CodeIndexConfiguration.CodeIndexFolder), Path.Combine(rootFolder, CodeIndexConfiguration.HintIndexFolder));
+        }
+
+        public string GetRootFolder(string parentFolder)
+        {
+            return Path.Combine(parentFolder, CodeIndexConfiguration.CodeIndexesFolder, IndexName);
         }
 
         string[] GetSplitStringArray(string value)

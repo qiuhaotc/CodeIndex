@@ -43,7 +43,7 @@ namespace CodeIndex.Test
 
                 File.Create(Path.Combine(TempDir, "SubDir", "AAA.cs")).Close();
                 Thread.Sleep(waitMS);
-                Assert.AreEqual(5, changeHit);
+                Assert.IsTrue(changeHit == 4 || changeHit == 5, "Different behavior under different machines, not important due to logic doesn't care about the folder change events");
                 Assert.AreEqual(1, renameHit);
 
                 File.AppendAllText(Path.Combine(TempDir, "SubDir", "AAA.cs"), "AA BB");

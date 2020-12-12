@@ -162,7 +162,11 @@ namespace CodeIndex.MaintainIndex
                 if (ValidToDelete(indexName, out var message, out var needDisposeAndRemovedWrapper) && needDisposeAndRemovedWrapper != null)
                 {
                     needDisposeAndRemovedWrapper.Dispose();
-                    DeleteIndexFolder(needDisposeAndRemovedWrapper.IndexConfig.MonitorFolder);
+                    DeleteIndexFolderSafe(needDisposeAndRemovedWrapper.IndexConfig.GetRootFolder(CodeIndexConfiguration.LuceneIndex));
+                    if (MaintainerPool.TryRemove(indexName, out _))
+                    {
+                        ConfigMaintainer.DeleteIndexConfig(indexName);
+                    }
 
                     return new FetchResult<bool>
                     {
@@ -254,10 +258,21 @@ namespace CodeIndex.MaintainIndex
             };
         }
 
-        void DeleteIndexFolder(string monitorFolder)
+        void DeleteIndexFolderSafe(string monitorFolder)
         {
             Log.Info($"Delete all files under {monitorFolder}");
-            Directory.Delete(monitorFolder, true);
+
+            try
+            {
+                if (Directory.Exists(monitorFolder))
+                {
+                    Directory.Delete(monitorFolder, true);
+                }
+            }
+            catch (Exception ex)
+            {
+                Log.Info($"Failed to delete all files under {monitorFolder}, exception: {ex}");
+            }
         }
 
         FetchResult<T> ManagementIsDisposing<T>()

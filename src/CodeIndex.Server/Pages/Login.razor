@@ -32,7 +32,7 @@
             @LoginModel.Status @LoginModel.Message
         </div>
     }
-    <button type="button" class="btn btn-primary" @onclick="@DoLogin">Login</button>
+    <button type="button" class="btn btn-primary" @onclick="DoLogin">Login</button>
 </form>
 @code {
     public ClientLoginModel LoginModel { get; set; } = new ClientLoginModel();
@@ -45,7 +45,7 @@
     {
         await base.OnInitializedAsync();
 
-        await SetPicture();
+        SetPicture();
     }
 
     async Task DoLogin()
@@ -59,17 +59,15 @@
         {
             OnLogin = true;
 
-            var loginResponse = await Client.PostAsJsonAsync<ClientLoginModel>("/api/management/login", LoginModel);
-            LoginModel = await loginResponse.Content.ReadFromJsonAsync<ClientLoginModel>();
+            LoginModel = await JSRuntime.InvokeAsync<ClientLoginModel>("DoAjaxPost", "api/management/login", LoginModel);
 
             if (LoginModel.Status == LoginStatus.Succesful)
             {
                 NavigationManager.NavigateTo("/IndexManagement");
-                var headers = loginResponse.Headers.SingleOrDefault(header => header.Key == "Set-Cookie").Value;
             }
             else
             {
-                await SetPicture();
+                SetPicture();
             }
         }
         catch (Exception ex)
@@ -83,18 +81,8 @@
         }
     }
 
-    async Task SetPicture()
+    void SetPicture()
     {
-        try
-        {
-            var captchaUrl = Config.LocalUrl + "api/management/GenerateCaptcha?timestamp=" + DateTime.Now.Ticks;
-            var picture = await (await Client.GetAsync(captchaUrl)).Content.ReadAsByteArrayAsync();
-            Picture = $"data:image/*;base64,{Convert.ToBase64String(picture)}";
-        }
-        catch (Exception ex)
-        {
-            LoginModel.Message = ex.Message;
-            LoginModel.Status = LoginStatus.Exception;
-        }
+        Picture = Config.LocalUrl + "api/management/GenerateCaptcha?timestamp=" + DateTime.Now.Ticks;
     }
 }

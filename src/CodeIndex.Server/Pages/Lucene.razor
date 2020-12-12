@@ -223,14 +223,19 @@
         FileNameQuery = Storage.GetValue("FileNameQuery")?.ToString();
         FileExtensionQuery = Storage.GetValue("FileExtensionQuery")?.ToString();
         FilePathQuery = Storage.GetValue("FilePathQuery")?.ToString();
-        IndexName = Storage.GetValue("IndexName")?.ToString() ?? IndexNames.FirstOrDefault();
+        IndexName = Storage.GetValue("IndexName")?.ToString();
+
+        if (IndexName == null || IndexNames.All(u => u != IndexName))
+        {
+            IndexName = IndexNames.FirstOrDefault() ?? string.Empty;
+        }
 
         if (int.TryParse(Storage.GetValue(nameof(ShowResults))?.ToString(), out var result))
         {
             ShowResults = result;
         }
 
-        if (!string.IsNullOrEmpty(SearchQuery))
+        if (!string.IsNullOrEmpty(SearchQuery) && !string.IsNullOrEmpty(IndexName))
         {
             await SearchLuceneIndex();
         }

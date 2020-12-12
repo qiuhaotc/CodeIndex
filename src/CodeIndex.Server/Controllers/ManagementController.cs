@@ -94,13 +94,13 @@ namespace CodeIndex.Server.Controllers
             return await Task.FromResult(indexManagement.EditIndex(indexConfig));
         }
 
-        [HttpPost]
+        [HttpGet]
         public async Task<FetchResult<bool>> DeleteIndex(string indexName, [FromServices] IndexManagement indexManagement)
         {
             return await Task.FromResult(indexManagement.DeleteIndex(indexName));
         }
 
-        [HttpPost]
+        [HttpGet]
         public async Task<FetchResult<bool>> StopIndex(string indexName, [FromServices] IndexManagement indexManagement)
         {
             return await Task.FromResult(indexManagement.StopIndex(indexName));

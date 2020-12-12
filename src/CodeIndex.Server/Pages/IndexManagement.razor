@@ -1,7 +1,6 @@
 ﻿@page "/IndexManagement"
-@inject HttpClient Client
-@inject CodeIndexConfiguration Config
 @inject NavigationManager NavigationManager
+@inject IJSRuntime JSRuntime
 
 <div class="row">
     <div class="col-sm">
@@ -35,6 +34,7 @@
                         <p>Status: @indexStatus.IndexStatus</p>
                         <p>Monitor Folder: @indexStatus.IndexConfig.MonitorFolder</p>
                         <button class="btn btn-primary btn-sm" @onclick="() => Edit(indexStatus)">Edit</button>
+                        <button class="btn btn-info btn-sm" @onclick="() => StopIndex(indexStatus)">Stop</button>
                         <button class="btn btn-danger btn-sm" @onclick="() => Delete(indexStatus)">Delete</button>
                     </div>
                 </div>
@@ -113,14 +113,19 @@
     {
         try
         {
-            var result = (await Client.PostJsonAsync<FetchResult<bool>>($"{Config.LocalUrl}api/management/editindex", indexStatusInfo.IndexConfig));
+            var result = (await JSRuntime.InvokeAsync<FetchResult<bool>>("DoAjaxPost", "api/management/editindex", indexStatusInfo.IndexConfig));
             if (result.Status.Success)
             {
                 await GetLists();
+                StatusMessage = string.Empty;
             }
             else
             {
                 StatusMessage = result.Status.StatusDesc;
+                if (StatusMessage == "401")
+                {
+                    Navigate();
+                }
             }
         }
         catch (Exception ex)
@@ -134,14 +139,51 @@
     {
         try
         {
-            var result = (await Client.PostJsonAsync<FetchResult<bool>>($"{Config.LocalUrl}api/management/deleteindex", indexStatusInfo.IndexConfig.IndexName));
-            if (result.Status.Success)
+            if (await JSRuntime.InvokeAsync<bool>("ShowConfirm", "Are you sure you want to delete this index? This operation can't cancel."))
             {
-                await GetLists();
+                var result = (await JSRuntime.InvokeAsync<FetchResult<bool>>("DoAjaxGet", "api/management/deleteindex", new { IndexName = indexStatusInfo.IndexConfig.IndexName }));
+                if (result.Status.Success)
+                {
+                    await GetLists();
+                    StatusMessage = string.Empty;
+                }
+                else
+                {
+                    StatusMessage = result.Status.StatusDesc;
+                    if (StatusMessage == "401")
+                    {
+                        Navigate();
+                    }
+                }
             }
-            else
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = ex.ToString();
+            NavigateIfNotLogin(ex);
+        }
+    }
+
+    async Task StopIndex(IndexStatusInfo indexStatusInfo)
+    {
+        try
+        {
+            if (await JSRuntime.InvokeAsync<bool>("ShowConfirm", "Are you sure you want to stop index and searching for this one?"))
             {
-                StatusMessage = result.Status.StatusDesc;
+                var result = (await JSRuntime.InvokeAsync<FetchResult<bool>>("DoAjaxGet", "api/management/stopindex", new { IndexName = indexStatusInfo.IndexConfig.IndexName }));
+                if (result.Status.Success)
+                {
+                    await GetLists();
+                    StatusMessage = string.Empty;
+                }
+                else
+                {
+                    StatusMessage = result.Status.StatusDesc;
+                    if (StatusMessage == "401")
+                    {
+                        Navigate();
+                    }
+                }
             }
         }
         catch (Exception ex)
@@ -157,14 +199,19 @@
         {
             try
             {
-                var result = (await Client.PostJsonAsync<FetchResult<bool>>($"{Config.LocalUrl}api/management/addindex", IndexStatusInfoForEditOrAdd.IndexConfig));
+                var result = (await JSRuntime.InvokeAsync<FetchResult<bool>>("DoAjaxPost", "api/management/addindex", IndexStatusInfoForEditOrAdd.IndexConfig));
                 if (result.Status.Success)
                 {
                     await GetLists();
+                    StatusMessage = string.Empty;
                 }
                 else
                 {
                     StatusMessage = result.Status.StatusDesc;
+                    if (StatusMessage == "401")
+                    {
+                        Navigate();
+                    }
                 }
             }
             catch (Exception ex)
@@ -183,14 +230,19 @@
     {
         try
         {
-            var result = (await Client.GetJsonAsync<FetchResult<IndexStatusInfo[]>>($"{Config.LocalUrl}api/management/GetIndexLists"));
+            var result = (await JSRuntime.InvokeAsync<FetchResult<IndexStatusInfo[]>>("DoAjaxGet", "api/management/GetIndexLists"));
             if (result.Status.Success)
             {
                 IndexStatusInfos = result.Result.ToList();
+                StatusMessage = string.Empty;
             }
             else
             {
                 StatusMessage = result.Status.StatusDesc;
+                if (StatusMessage == "401")
+                {
+                    Navigate();
+                }
             }
         }
         catch (Exception ex)
@@ -207,8 +259,9 @@
         {
             if (exHttp.StatusCode == System.Net.HttpStatusCode.Unauthorized)
             {
-                NavigationManager.NavigateTo("/Login");
+                Navigate();
             }
         }
     }
+    void Navigate() => NavigationManager.NavigateTo("/Login");
 }

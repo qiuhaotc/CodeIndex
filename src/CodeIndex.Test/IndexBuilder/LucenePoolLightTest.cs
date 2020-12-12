@@ -77,8 +77,7 @@ namespace CodeIndex.Test
         [Test]
         public void TestAnalyzer()
         {
-            using var light = new LucenePoolLight("Dummy");
-            Assert.NotNull(light.Analyzer);
+            Assert.NotNull(LucenePoolLight.Analyzer);
         }
 
         [Test]

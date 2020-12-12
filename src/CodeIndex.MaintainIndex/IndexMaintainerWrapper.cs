@@ -1,5 +1,6 @@
 ﻿using System;
 using CodeIndex.Common;
+using CodeIndex.IndexBuilder;
 using Lucene.Net.QueryParsers.Classic;
 
 namespace CodeIndex.MaintainIndex
@@ -34,7 +35,7 @@ namespace CodeIndex.MaintainIndex
         }
 
         QueryParser queryParser;
-        public QueryParser CodeIndexQueryParser => queryParser ??= Maintainer.IndexBuilderLight.CodeIndexPool.GetQueryParser();
+        public QueryParser CodeIndexQueryParser => queryParser ??= LucenePoolLight.GetQueryParser();
 
         QueryGenerator queryGenerator;
         public QueryGenerator QueryGenerator => queryGenerator ??= new QueryGenerator(CodeIndexQueryParser);

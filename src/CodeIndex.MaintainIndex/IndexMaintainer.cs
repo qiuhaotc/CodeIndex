@@ -26,7 +26,7 @@ namespace CodeIndex.MaintainIndex
 
             ExcludedExtensions = indexConfig.ExcludedExtensionsArray.Select(u => u.ToUpperInvariant()).ToArray();
             ExcludedPaths = FilePathHelper.GetPaths(indexConfig.ExcludedPathsArray, codeIndexConfiguration.IsInLinux);
-            IncludedExtensions = indexConfig.IncludedExtensionsArray?.Select(u => u.ToUpperInvariant()).ToArray() ?? Array.Empty<string>();
+            IncludedExtensions = indexConfig.IncludedExtensionsArray.Select(u => u.ToUpperInvariant()).ToArray() ?? Array.Empty<string>();
             TokenSource = new CancellationTokenSource();
         }
 

@@ -45,15 +45,31 @@
     </div>
 </div>
 <div class="row">
-    <div class="col-sm-8">
+    <div class="col-sm">
         <div class="input-group mb-3">
             <button type="button" class="btn btn-primary" @onclick="SearchLuceneIndex">Search</button>
         </div>
     </div>
-    <div class="col-sm-4 form-inline">
+    <div class="col-sm">
+        <div class="input-group">
+            <div class="input-group-prepend">
+                <span class="input-group-text">Index Name</span>
+            </div>
+            <select class="form-control" @bind="IndexName">
+                @if (IndexNames != null)
+                {
+                    foreach (var indexName in IndexNames)
+                    {
+                        <option value="@indexName">@indexName</option>
+                    }
+                }
+            </select>
+        </div>
+    </div>
+    <div class="col-sm">
         <div class="input-group mb-3">
             <div class="input-group-prepend">
-                <span class="input-group-text" id="basic-addon4">Show Results</span>
+                <span class="input-group-text">Show Results</span>
             </div>
             <select class="form-control" @bind="ShowResults">
                 <option value="10">10</option>
@@ -145,7 +161,7 @@
                         </td>
                         <td>@item.CodeSource.FileExtension</td>
                         <td>
-                            <a href="/Details/@item.CodeSource.CodePK/@System.Web.HttpUtility.UrlEncode(ContentQuery ?? string.Empty)">Details</a>
+                            <a href="/Details/@item.CodeSource.CodePK/@System.Web.HttpUtility.UrlEncode(IndexName ?? string.Empty)/@System.Web.HttpUtility.UrlEncode(ContentQuery ?? string.Empty)">Details</a>
                         </td>
                     </tr>
                 }
@@ -161,6 +177,10 @@
 </div>
 
 @code {
+
+    public string IndexName { get; set; }
+
+    public string[] IndexNames { get; set; }
 
     public string SearchQuery => MaintainIndex.QueryGenerator.GetSearchStr(FileNameQuery, ContentQuery, FileExtensionQuery, FilePathQuery);
 
@@ -184,17 +204,40 @@
     {
         await base.OnInitializedAsync();
 
+        try
+        {
+            var listResult = await Client.GetJsonAsync<FetchResult<string[]>>($"{Config.LocalUrl}/api/lucene/GetIndexNameList");
+            if (listResult.Status.Success)
+            {
+                IndexNames = listResult.Result;
+            }
+            else
+            {
+                IndexNames = Array.Empty<string>();
+            }
+        }
+        catch
+        {
+            IndexNames = Array.Empty<string>();
+        }
+
         ContentQuery = Storage.GetValue("ContentQuery")?.ToString();
         FileNameQuery = Storage.GetValue("FileNameQuery")?.ToString();
         FileExtensionQuery = Storage.GetValue("FileExtensionQuery")?.ToString();
         FilePathQuery = Storage.GetValue("FilePathQuery")?.ToString();
+        IndexName = Storage.GetValue("IndexName")?.ToString();
+
+        if (IndexName == null || IndexNames.All(u => u != IndexName))
+        {
+            IndexName = IndexNames.FirstOrDefault() ?? string.Empty;
+        }
 
         if (int.TryParse(Storage.GetValue(nameof(ShowResults))?.ToString(), out var result))
         {
             ShowResults = result;
         }
 
-        if (!string.IsNullOrEmpty(SearchQuery))
+        if (!string.IsNullOrEmpty(SearchQuery) && !string.IsNullOrEmpty(IndexName))
         {
             await SearchLuceneIndex();
         }
@@ -212,15 +255,16 @@
         Storage.SetOrUpdate("FileExtensionQuery", FileExtensionQuery);
         Storage.SetOrUpdate("FilePathQuery", FilePathQuery);
         Storage.SetOrUpdate(nameof(ShowResults), ShowResults);
+        Storage.SetOrUpdate("IndexName", IndexName);
 
         IsSearching = true;
         FetchResult = null;
 
         try
         {
-            if (!string.IsNullOrEmpty(SearchQuery))
+            if (!string.IsNullOrEmpty(SearchQuery) && !string.IsNullOrEmpty(IndexName))
             {
-                FetchResult = await Client.GetJsonAsync<FetchResult<IEnumerable<CodeSourceWithMatchedLine>>>($"{Config.LocalUrl}api/lucene/GetCodeSourcesWithMatchedLine?searchQuery=" + System.Web.HttpUtility.UrlEncode(SearchQuery) + "&showResults=" + ShowResults + "&contentQuery=" + System.Web.HttpUtility.UrlEncode(ContentQuery ?? string.Empty));
+                FetchResult = await Client.GetJsonAsync<FetchResult<IEnumerable<CodeSourceWithMatchedLine>>>($"{Config.LocalUrl}api/lucene/GetCodeSourcesWithMatchedLine?searchQuery=" + System.Web.HttpUtility.UrlEncode(SearchQuery) + "&showResults=" + ShowResults + "&contentQuery=" + System.Web.HttpUtility.UrlEncode(ContentQuery ?? string.Empty) + "&indexName=" + System.Web.HttpUtility.UrlEncode(IndexName ?? string.Empty));
             }
             else
             {
@@ -255,7 +299,7 @@
             var inputWord = ContentQuery.Split(" ", StringSplitOptions.RemoveEmptyEntries).LastOrDefault();
             if (inputWord?.Length >= 3)
             {
-                HintWords = await Client.GetJsonAsync<FetchResult<IEnumerable<string>>>($"{Config.LocalUrl}api/lucene/GetHints?word=" + System.Web.HttpUtility.UrlEncode(inputWord));
+                HintWords = await Client.GetJsonAsync<FetchResult<IEnumerable<string>>>($"{Config.LocalUrl}api/lucene/GetHints?word=" + System.Web.HttpUtility.UrlEncode(inputWord) + "&indexName=" + System.Web.HttpUtility.UrlEncode(IndexName ?? string.Empty));
             }
         }
         else

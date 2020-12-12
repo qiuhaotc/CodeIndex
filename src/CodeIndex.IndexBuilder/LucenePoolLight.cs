@@ -96,9 +96,9 @@ namespace CodeIndex.IndexBuilder
             return documents;
         }
 
-        public Analyzer Analyzer => analyzer ??= new CodeAnalyzer(Constants.AppLuceneVersion, true);
+        public static Analyzer Analyzer => analyzer ??= new CodeAnalyzer(Constants.AppLuceneVersion, true);
 
-        public QueryParser GetQueryParser()
+        public static QueryParser GetQueryParser()
         {
             return new QueryParser(Constants.AppLuceneVersion, nameof(CodeSource.Content), Analyzer);
         }
@@ -110,7 +110,7 @@ namespace CodeIndex.IndexBuilder
         readonly ReaderWriterLockSlim readerWriteLock = new ReaderWriterLockSlim();
         int indexChangeCount;
         bool isDisposing;
-        CodeAnalyzer analyzer;
+        static CodeAnalyzer analyzer;
 
         #endregion
 
