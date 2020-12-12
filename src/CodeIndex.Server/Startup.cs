@@ -31,6 +31,16 @@ namespace CodeIndex.Server
         // For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=398940
         public void ConfigureServices(IServiceCollection services)
         {
+            #region Config swagger
+
+            // Register the Swagger services
+            services.AddSwaggerDocument(config =>
+            {
+                config.Title = "CodeIndex Server API";
+            });
+
+            #endregion
+
             services.AddSession(options =>
             {
                 options.IdleTimeout = TimeSpan.FromMinutes(60);
@@ -71,7 +81,7 @@ namespace CodeIndex.Server
             services.AddSingleton(config);
 
             // Server Side Blazor doesn't register HttpClient by default
-            if (!services.Any(x => x.ServiceType == typeof(HttpClient)))
+            if (services.All(x => x.ServiceType != typeof(HttpClient)))
             {
                 // Setup HttpClient for server side in a client side compatible fashion
                 services.AddScoped(s =>
@@ -105,6 +115,15 @@ namespace CodeIndex.Server
 
             app.UseRouting();
 
+            // Register the Swagger generator and the Swagger UI middlewares
+            app.UseOpenApi();
+            app.UseSwaggerUi3();
+
+            app.UseAuthentication();
+            app.UseAuthorization();
+
+            app.UseSession();
+
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
@@ -114,36 +133,14 @@ namespace CodeIndex.Server
 
             lifeTime.ApplicationStopping.Register(OnShutdown);
 
-            // TODO: Delete
-
-            maintainer = new IndexMaintainer(new IndexConfig
-            {
-                ExcludedExtensions = config.ExcludedExtensions,
-                ExcludedPaths = config.ExcludedPaths,
-                IncludedExtensions = config.IncludedExtensions,
-                IndexName = "TestIndex",
-                MaxContentHighlightLength = config.MaxContentHighlightLength,
-                MonitorFolder = config.MonitorFolder,
-                OpenIDEUriFormat = config.OpenIDEUriFormat,
-                MonitorFolderRealPath = config.MonitorFolderRealPath,
-                SaveIntervalSeconds = config.SaveIntervalSeconds
-            }, config, log);
-
-            maintainer.InitializeIndex(false).ContinueWith(u => maintainer.MaintainIndexes());
-
-            CodeIndexSearcherLight = new CodeIndexSearcherLight(indexManagement, log);
-
             IndexManagement = indexManagement;
         }
 
-        IndexMaintainer maintainer;
         CodeIndexConfiguration config;
-        public static CodeIndexSearcherLight CodeIndexSearcherLight { get; private set; }
         public IndexManagement IndexManagement { get; private set; }
 
         void OnShutdown()
         {
-            maintainer?.Dispose();
             IndexManagement?.Dispose();
         }
     }

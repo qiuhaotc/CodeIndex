@@ -4,6 +4,7 @@ using System.Security.Claims;
 using System.Text;
 using System.Threading.Tasks;
 using CodeIndex.Common;
+using CodeIndex.MaintainIndex;
 using Microsoft.AspNetCore.Authentication;
 using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Authorization;
@@ -13,10 +14,12 @@ using Microsoft.AspNetCore.Mvc;
 namespace CodeIndex.Server.Controllers
 {
     [Authorize]
+    [ApiController]
     [Route("api/[controller]/[action]")]
     public class ManagementController : ControllerBase
     {
         [AllowAnonymous]
+        [HttpPost]
         public async Task<ClientLoginModel> Login([FromServices] CodeIndexConfiguration codeIndexConfiguration, ClientLoginModel loginModel)
         {
             if (string.IsNullOrWhiteSpace(loginModel.Captcha) || HttpContext.Session.GetString(nameof(ClientLoginModel.Captcha)) != loginModel.Captcha.ToLowerInvariant())
@@ -74,29 +77,33 @@ namespace CodeIndex.Server.Controllers
             return File(images, "image/png");
         }
 
-        public async Task GetIndexLists()
+        public async Task<FetchResult<IndexStatusInfo[]>> GetIndexLists([FromServices] IndexManagement indexManagement)
         {
-            await Task.FromException(new NotImplementedException());
+            return await Task.FromResult(indexManagement.GetIndexList());
         }
 
-        public async Task AddIndex(IndexConfig indexConfig)
+        [HttpPost]
+        public async Task<FetchResult<bool>> AddIndex(IndexConfig indexConfig, [FromServices] IndexManagement indexManagement)
         {
-            await Task.FromException(new NotImplementedException());
+            return await Task.FromResult(indexManagement.AddIndex(indexConfig));
         }
 
-        public async Task EditIndex(IndexConfig indexConfig)
+        [HttpPost]
+        public async Task<FetchResult<bool>> EditIndex(IndexConfig indexConfig, [FromServices] IndexManagement indexManagement)
         {
-            await Task.FromException(new NotImplementedException());
+            return await Task.FromResult(indexManagement.EditIndex(indexConfig));
         }
 
-        public async Task DeleteIndex(Guid indexConfigPK)
+        [HttpPost]
+        public async Task<FetchResult<bool>> DeleteIndex(string indexName, [FromServices] IndexManagement indexManagement)
         {
-            await Task.FromException(new NotImplementedException());
+            return await Task.FromResult(indexManagement.DeleteIndex(indexName));
         }
 
-        public async Task StopIndex(Guid indexConfigPK)
+        [HttpPost]
+        public async Task<FetchResult<bool>> StopIndex(string indexName, [FromServices] IndexManagement indexManagement)
         {
-            await Task.FromException(new NotImplementedException());
+            return await Task.FromResult(indexManagement.StopIndex(indexName));
         }
     }
 }

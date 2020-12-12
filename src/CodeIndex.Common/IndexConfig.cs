@@ -9,12 +9,10 @@ namespace CodeIndex.Common
 
         public string IndexName { get; set; }
         public string MonitorFolder { get; set; }
-        public int MaxContentHighlightLength { get; set; }
-        public int SaveIntervalSeconds { get; set; }
+        public int MaxContentHighlightLength { get; set; } = 3000000;
+        public int SaveIntervalSeconds { get; set; } = 300;
         public string OpenIDEUriFormat { get; set; }
         public string MonitorFolderRealPath { get; set; }
-        public DateTime IndexCreatedDate { get; set; }
-        public DateTime IndexLastUpdatedDate { get; set; }
 
         public string ExcludedPaths
         {
@@ -70,8 +68,8 @@ namespace CodeIndex.Common
         string[] excludedPathsArray;
         string[] includedExtensionsArray;
         string[] excludedExtensionsArray;
-        string excludedPaths;
-        string includedExtensions;
-        string excludedExtensions;
+        string excludedPaths = "\\RELEASES\\|\\BIN\\|\\OBJ\\|\\DEBUGPUBLIC\\";
+        string includedExtensions = ".CS|.XML|.XAML|.JS|.TXT|.SQL";
+        string excludedExtensions = ".DLL|.PBD";
     }
 }

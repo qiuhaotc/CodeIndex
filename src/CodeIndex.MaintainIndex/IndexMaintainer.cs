@@ -243,6 +243,8 @@ namespace CodeIndex.MaintainIndex
 
             IndexBuilderLight.InitIndexFolderIfNeeded();
 
+            Status = IndexStatus.Initializing_ComponentInitializeFinished;
+
             ChangedSources = new ConcurrentQueue<ChangedSource>();
             PendingRetryCodeSources = new ConcurrentQueue<PendingRetrySource>();
             FilesWatcher = FilesWatcherHelper.StartWatch(IndexConfig.MonitorFolder, OnChange, OnRename);

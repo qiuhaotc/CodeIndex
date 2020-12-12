@@ -10,7 +10,7 @@ namespace CodeIndex.MaintainIndex
     {
         public ConfigIndexMaintainer(CodeIndexConfiguration codeIndexConfiguration, ILog log)
         {
-            CodeIndexConfiguration.RequireNotNull(nameof(codeIndexConfiguration));
+            codeIndexConfiguration.RequireNotNull(nameof(codeIndexConfiguration));
             log.RequireNotNull(nameof(log));
 
             CodeIndexConfiguration = codeIndexConfiguration;

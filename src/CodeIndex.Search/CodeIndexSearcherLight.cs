@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using System.Web;
 using CodeIndex.Common;
 using CodeIndex.MaintainIndex;
@@ -224,8 +225,8 @@ namespace CodeIndex.Search
             var result = IndexManagement.GetIndexMaintainerWrapper(indexName);
             if (result.Status.Success)
             {
-                // Make sure InitializeIndex and MaintainIndexes only call once
-                if (result.Result.Maintainer.Status == IndexStatus.Idle)
+                // Make sure InitializeIndex and MaintainIndexes only call once, make sure the index pool initialized and able to searching
+                if (result.Result.Maintainer.Status == IndexStatus.Idle || result.Result.Maintainer.Status == IndexStatus.Initializing)
                 {
                     lock (syncLock)
                     {
@@ -233,6 +234,14 @@ namespace CodeIndex.Search
                         {
                             Log.Info($"Start initializing and monitoring for index {indexName}");
                             result.Result.Maintainer.InitializeIndex(false).ContinueWith(u => result.Result.Maintainer.MaintainIndexes());
+                        }
+
+                        if (result.Result.Maintainer.Status == IndexStatus.Initializing)
+                        {
+                            while (result.Result.Maintainer.Status == IndexStatus.Initializing) // Wait Maintainer able to screening
+                            {
+                                Thread.Sleep(100);
+                            }
                         }
                     }
                 }
@@ -244,6 +253,6 @@ namespace CodeIndex.Search
             return null;
         }
 
-        bool StatusValid(IndexMaintainerWrapper indexMaintainer) => indexMaintainer != null && (indexMaintainer.Status == IndexStatus.Initialized || indexMaintainer.Status == IndexStatus.Initializing || indexMaintainer.Status == IndexStatus.Monitoring);
+        bool StatusValid(IndexMaintainerWrapper indexMaintainer) => indexMaintainer != null && (indexMaintainer.Status == IndexStatus.Initialized || indexMaintainer.Status == IndexStatus.Initializing_ComponentInitializeFinished || indexMaintainer.Status == IndexStatus.Monitoring);
     }
 }

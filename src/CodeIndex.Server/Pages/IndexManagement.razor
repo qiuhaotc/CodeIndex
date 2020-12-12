@@ -1,4 +1,7 @@
 ﻿@page "/IndexManagement"
+@inject HttpClient Client
+@inject CodeIndexConfiguration Config
+@inject NavigationManager NavigationManager
 
 <div class="row">
     <div class="col-sm">
@@ -11,19 +14,32 @@
 <h4>Stored Indexes</h4>
 
 <div class="row">
-    @foreach (var indexStatus in IndexStatusInfos)
+    @if (!string.IsNullOrEmpty(StatusMessage))
     {
-    <div class="col-md-3 p-1">
-        <div class="card">
-            <div class="card-body">
-                <p>Name: @indexStatus.IndexConfig.IndexName</p>
-                <p>Status: @indexStatus.IndexStatus</p>
-                <p>Monitor Folder: @indexStatus.IndexConfig.MonitorFolder</p>
-                <button class="btn btn-primary btn-sm" @onclick="() => Edit(indexStatus)">Edit</button>
-                <button class="btn btn-danger btn-sm" @onclick="() => Delete(indexStatus)">Delete</button>
-            </div>
+        <div class="alert alert-danger" role="alert">
+            @StatusMessage
         </div>
-    </div>
+    }
+</div>
+
+<div class="row">
+
+    @if (IndexStatusInfos != null)
+    {
+        foreach (var indexStatus in IndexStatusInfos)
+        {
+            <div class="col-md-3 p-1">
+                <div class="card">
+                    <div class="card-body">
+                        <p>Name: @indexStatus.IndexConfig.IndexName</p>
+                        <p>Status: @indexStatus.IndexStatus</p>
+                        <p>Monitor Folder: @indexStatus.IndexConfig.MonitorFolder</p>
+                        <button class="btn btn-primary btn-sm" @onclick="() => Edit(indexStatus)">Edit</button>
+                        <button class="btn btn-danger btn-sm" @onclick="() => Delete(indexStatus)">Delete</button>
+                    </div>
+                </div>
+            </div>
+        }
     }
 </div>
 
@@ -75,36 +91,17 @@
 
 @code {
 
-    public List<IndexStatusInfo> IndexStatusInfos { get; set; }
+    public List<IndexStatusInfo> IndexStatusInfos { get; set; } = new List<IndexStatusInfo>();
+
+    public string StatusMessage { get; set; }
 
     public IndexStatusInfo IndexStatusInfoForEditOrAdd { get; set; } = new IndexStatusInfo(IndexStatus.Idle, new IndexConfig());
 
-    protected override void OnInitialized()
+    protected override async Task OnInitializedAsync()
     {
-        base.OnInitialized();
+        await base.OnInitializedAsync();
 
-        IndexStatusInfos = new List<IndexStatusInfo>{
-            new IndexStatusInfo(IndexStatus.Idle, new IndexConfig
-            {
-                IndexName = "Dummy1",
-                MonitorFolder = "c:/dummy1"
-            }),
-            new IndexStatusInfo(IndexStatus.Initializing, new IndexConfig
-            {
-                IndexName = "Dummy2",
-                MonitorFolder = "c:/dummy2"
-            }),
-            new IndexStatusInfo(IndexStatus.Disposing, new IndexConfig
-            {
-                IndexName = "Dummy3",
-                MonitorFolder = "c:/dummy3"
-            }),
-            new IndexStatusInfo(IndexStatus.Monitoring, new IndexConfig
-            {
-                IndexName = "Dummy4",
-                MonitorFolder = "c:/dummy4"
-            })
-        };
+        await GetLists();
     }
 
     void Edit(IndexStatusInfo indexStatusInfo)
@@ -112,18 +109,106 @@
         IndexStatusInfoForEditOrAdd = indexStatusInfo;
     }
 
-    void Delete(IndexStatusInfo indexStatusInfo)
+    async Task SaveEdit(IndexStatusInfo indexStatusInfo)
     {
-        IndexStatusInfos.Remove(indexStatusInfo);
+        try
+        {
+            var result = (await Client.PostJsonAsync<FetchResult<bool>>($"{Config.LocalUrl}api/management/editindex", indexStatusInfo.IndexConfig));
+            if (result.Status.Success)
+            {
+                await GetLists();
+            }
+            else
+            {
+                StatusMessage = result.Status.StatusDesc;
+            }
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = ex.ToString();
+            NavigateIfNotLogin(ex);
+        }
     }
 
-    void SaveIndexInfo()
+    async Task Delete(IndexStatusInfo indexStatusInfo)
+    {
+        try
+        {
+            var result = (await Client.PostJsonAsync<FetchResult<bool>>($"{Config.LocalUrl}api/management/deleteindex", indexStatusInfo.IndexConfig.IndexName));
+            if (result.Status.Success)
+            {
+                await GetLists();
+            }
+            else
+            {
+                StatusMessage = result.Status.StatusDesc;
+            }
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = ex.ToString();
+            NavigateIfNotLogin(ex);
+        }
+    }
+
+    async Task SaveIndexInfo()
     {
         if (!IndexStatusInfos.Contains(IndexStatusInfoForEditOrAdd))
         {
-            IndexStatusInfos.Add(IndexStatusInfoForEditOrAdd);
+            try
+            {
+                var result = (await Client.PostJsonAsync<FetchResult<bool>>($"{Config.LocalUrl}api/management/addindex", IndexStatusInfoForEditOrAdd.IndexConfig));
+                if (result.Status.Success)
+                {
+                    await GetLists();
+                }
+                else
+                {
+                    StatusMessage = result.Status.StatusDesc;
+                }
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = ex.ToString();
+                NavigateIfNotLogin(ex);
+            }
         }
+        else
+        {
+            await SaveEdit(IndexStatusInfoForEditOrAdd);
+        }
+    }
 
-        IndexStatusInfoForEditOrAdd = new IndexStatusInfo(IndexStatus.Initializing, new IndexConfig());
+    async Task GetLists()
+    {
+        try
+        {
+            var result = (await Client.GetJsonAsync<FetchResult<IndexStatusInfo[]>>($"{Config.LocalUrl}api/management/GetIndexLists"));
+            if (result.Status.Success)
+            {
+                IndexStatusInfos = result.Result.ToList();
+            }
+            else
+            {
+                StatusMessage = result.Status.StatusDesc;
+            }
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = ex.ToString();
+
+            NavigateIfNotLogin(ex);
+        }
+    }
+
+    void NavigateIfNotLogin(Exception ex)
+    {
+        if (ex is HttpRequestException exHttp)
+        {
+            if (exHttp.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            {
+                NavigationManager.NavigateTo("/Login");
+            }
+        }
     }
 }

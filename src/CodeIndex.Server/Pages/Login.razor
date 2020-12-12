@@ -1,0 +1,100 @@
+﻿@page "/login"
+@inject HttpClient Client
+@inject CodeIndexConfiguration Config
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JSRuntime
+
+<h3>Login</h3>
+
+<form>
+    <div class="form-group">
+        <label for="UserName">User Name</label>
+        <input type="text" class="form-control" id="UserName" @bind-value="@LoginModel.UserName">
+    </div>
+    <div class="form-group">
+        <label for="ServerPassword">Password</label>
+        <input type="password" class="form-control" id="ServerPassword" @bind-value="@LoginModel.Password">
+    </div>
+    <div class="form-group">
+        <label for="captchaNumber">
+            Captcha
+            <img class="img-fluid" style="height:2.1em;width:7em;margin-left:1em" src="@Picture" id="captchaImage" @onclick="SetPicture" />
+        </label>
+        <input type="text" name="captchaNumber" class="form-control" id="captchaNumber" @bind-value="@LoginModel.Captcha">
+    </div>
+    <div class="form-group form-check">
+        <input type="checkbox" class="form-check-input" id="SaveLoginInfo" @bind-value="@LoginModel.Persist">
+        <label class="form-check-label" for="SaveLoginInfo">Save Login Info</label>
+    </div>
+    @if (LoginModel.Status != LoginStatus.Succesful)
+    {
+        <div class="alert alert-danger" role="alert">
+            @LoginModel.Status @LoginModel.Message
+        </div>
+    }
+    <button type="button" class="btn btn-primary" @onclick="@DoLogin">Login</button>
+</form>
+@code {
+    public ClientLoginModel LoginModel { get; set; } = new ClientLoginModel();
+
+    public bool OnLogin { get; set; }
+
+    public string Picture { get; set; }
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+
+        await SetPicture();
+    }
+
+    async Task DoLogin()
+    {
+        if (OnLogin)
+        {
+            return;
+        }
+
+        try
+        {
+            OnLogin = true;
+
+            var loginResponse = await Client.PostAsJsonAsync<ClientLoginModel>("/api/management/login", LoginModel);
+            LoginModel = await loginResponse.Content.ReadFromJsonAsync<ClientLoginModel>();
+
+            if (LoginModel.Status == LoginStatus.Succesful)
+            {
+                NavigationManager.NavigateTo("/IndexManagement");
+                var headers = loginResponse.Headers.SingleOrDefault(header => header.Key == "Set-Cookie").Value;
+            }
+            else
+            {
+                await SetPicture();
+            }
+        }
+        catch (Exception ex)
+        {
+            LoginModel.Message = ex.Message;
+            LoginModel.Status = LoginStatus.Exception;
+        }
+        finally
+        {
+            OnLogin = false;
+        }
+    }
+
+    async Task SetPicture()
+    {
+        try
+        {
+            var captchaUrl = Config.LocalUrl + "api/management/GenerateCaptcha?timestamp=" + DateTime.Now.Ticks;
+            var picture = await (await Client.GetAsync(captchaUrl)).Content.ReadAsByteArrayAsync();
+            Picture = $"data:image/*;base64,{Convert.ToBase64String(picture)}";
+        }
+        catch (Exception ex)
+        {
+            LoginModel.Message = ex.Message;
+            LoginModel.Status = LoginStatus.Exception;
+        }
+    }
+}

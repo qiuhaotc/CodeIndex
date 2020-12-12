@@ -1,5 +1,5 @@
-﻿@page "/Details/{CodePK}"
-@page "/Details/{CodePK}/{ContentQuery}"
+﻿@page "/Details/{CodePK}/{IndexName}"
+@page "/Details/{CodePK}/{IndexName}/{ContentQuery}"
 @inject HttpClient Client
 @inject CodeIndexConfiguration Config
 
@@ -22,11 +22,14 @@
     [Parameter]
     public string ContentQuery { get; set; }
 
+    [Parameter]
+    public string IndexName { get; set; }
+
     public CodeSource Source { get; set; }
 
     protected override async Task OnInitializedAsync()
     {
-        var result = await Client.GetJsonAsync<FetchResult<IEnumerable<CodeSource>>>($"{Config.LocalUrl}api/lucene/GetCodeSources?searchQuery=" + System.Web.HttpUtility.UrlEncode($"CodePK:\"{CodePK}\"") + "&contentQuery=" + ContentQuery);
+        var result = await Client.GetJsonAsync<FetchResult<IEnumerable<CodeSource>>>($"{Config.LocalUrl}api/lucene/GetCodeSources?searchQuery=" + System.Web.HttpUtility.UrlEncode($"CodePK:\"{CodePK}\"") + "&contentQuery=" + ContentQuery + "&indexName=" + IndexName);
         Source = result.Result.FirstOrDefault();
         await base.OnInitializedAsync();
     }

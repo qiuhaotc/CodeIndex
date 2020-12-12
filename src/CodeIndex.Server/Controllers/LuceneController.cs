@@ -7,6 +7,7 @@ using System.Text;
 using System.Threading.Tasks;
 using CodeIndex.Common;
 using CodeIndex.IndexBuilder;
+using CodeIndex.MaintainIndex;
 using CodeIndex.Search;
 using Lucene.Net.Analysis;
 using Lucene.Net.Analysis.Core;
@@ -17,7 +18,7 @@ using Microsoft.AspNetCore.Mvc;
 
 namespace CodeIndex.Server.Controllers
 {
-    [Route("api/[controller]")]
+    [Route("api/[controller]/[action]")]
     [ApiController]
     public class LuceneController : ControllerBase
     {
@@ -33,7 +34,6 @@ namespace CodeIndex.Server.Controllers
         private readonly CodeIndexSearcherLight codeIndexSearcher;
 
         [HttpGet]
-        [Route(nameof(GetCodeSources))]
         public FetchResult<IEnumerable<CodeSource>> GetCodeSources(string searchQuery, bool preview, string indexName, string contentQuery = "", int? showResults = 0)
         {
             FetchResult<IEnumerable<CodeSource>> result;
@@ -89,7 +89,6 @@ namespace CodeIndex.Server.Controllers
         }
 
         [HttpGet]
-        [Route(nameof(GetCodeSourcesWithMatchedLine))]
         public FetchResult<IEnumerable<CodeSourceWithMatchedLine>> GetCodeSourcesWithMatchedLine(string searchQuery, string indexName, string contentQuery = "", int? showResults = 0, bool needReplaceSuffixAndPrefix = true, bool forWeb = true)
         {
             FetchResult<IEnumerable<CodeSourceWithMatchedLine>> result;
@@ -168,7 +167,6 @@ namespace CodeIndex.Server.Controllers
         }
 
         [HttpGet]
-        [Route(nameof(GetHints))]
         public FetchResult<IEnumerable<string>> GetHints(string word, string indexName)
         {
             FetchResult<IEnumerable<string>> result;
@@ -210,7 +208,6 @@ namespace CodeIndex.Server.Controllers
         }
 
         [HttpGet]
-        [Route(nameof(GetTokenizeStr))]
         public FetchResult<string> GetTokenizeStr(string searchStr)
         {
             return new FetchResult<string>()
@@ -243,7 +240,6 @@ namespace CodeIndex.Server.Controllers
         }
 
         [HttpGet]
-        [Route(nameof(GetLogs))]
         public async Task<FetchResult<string>> GetLogs()
         {
             FetchResult<string> result;
@@ -286,6 +282,12 @@ namespace CodeIndex.Server.Controllers
             }
 
             return result;
+        }
+
+        [HttpGet]
+        public async Task<FetchResult<string[]>> GetIndexNameList([FromServices] IndexManagement indexManagement)
+        {
+            return await Task.FromResult(indexManagement.GetIndexNameList());
         }
     }
 }

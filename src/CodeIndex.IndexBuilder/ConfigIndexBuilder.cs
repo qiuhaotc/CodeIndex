@@ -61,8 +61,6 @@ namespace CodeIndex.IndexBuilder
                 new Int32Field(nameof(IndexConfig.SaveIntervalSeconds), indexConfig.SaveIntervalSeconds, Field.Store.YES),
                 new StringField(nameof(IndexConfig.OpenIDEUriFormat), indexConfig.OpenIDEUriFormat.ToStringSafe(), Field.Store.YES),
                 new StringField(nameof(IndexConfig.MonitorFolderRealPath), indexConfig.MonitorFolderRealPath.ToStringSafe(), Field.Store.YES),
-                new Int64Field(nameof(IndexConfig.IndexCreatedDate), indexConfig.IndexCreatedDate.Ticks, Field.Store.YES),
-                new Int64Field(nameof(IndexConfig.IndexLastUpdatedDate), indexConfig.IndexLastUpdatedDate.Ticks, Field.Store.YES),
                 new StringField(nameof(IndexConfig.ExcludedPaths), indexConfig.ExcludedPaths.ToStringSafe(), Field.Store.YES),
                 new StringField(nameof(IndexConfig.IncludedExtensions), indexConfig.IncludedExtensions.ToStringSafe(), Field.Store.YES),
                 new StringField(nameof(IndexConfig.ExcludedExtensions), indexConfig.ExcludedExtensions.ToStringSafe(), Field.Store.YES),
