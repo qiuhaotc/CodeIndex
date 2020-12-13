@@ -34,20 +34,19 @@ namespace CodeIndex.Server.Controllers
         private readonly CodeIndexSearcherLight codeIndexSearcher;
 
         [HttpGet]
-        public FetchResult<IEnumerable<CodeSource>> GetCodeSources(string searchQuery, bool preview, string indexName, string contentQuery = "", int? showResults = 0)
+        public FetchResult<IEnumerable<CodeSource>> GetCodeSources(string searchQuery, bool preview, Guid indexPk, string contentQuery = "", int? showResults = 0)
         {
             FetchResult<IEnumerable<CodeSource>> result;
 
             try
             {
-                indexName.RequireNotNullOrEmpty(nameof(indexName));
                 searchQuery.RequireNotNullOrEmpty(nameof(searchQuery));
 
                 var showResultsValue = showResults.HasValue && showResults.Value <= codeIndexConfiguration.MaximumResults && showResults.Value > 0 ? showResults.Value : 100;
 
                 result = new FetchResult<IEnumerable<CodeSource>>
                 {
-                    Result = SearchCodeSource(searchQuery, out var query, indexName, showResultsValue),
+                    Result = SearchCodeSource(searchQuery, out var query, indexPk, showResultsValue),
                     Status = new Status
                     {
                         Success = true
@@ -58,14 +57,14 @@ namespace CodeIndex.Server.Controllers
                 {
                     foreach (var item in result.Result)
                     {
-                        item.Content = codeIndexSearcher.GenerateHtmlPreviewText(contentQuery, item.Content, 30, indexName);
+                        item.Content = codeIndexSearcher.GenerateHtmlPreviewText(contentQuery, item.Content, 30, indexPk);
                     }
                 }
                 else if (!preview)
                 {
                     foreach (var item in result.Result)
                     {
-                        item.Content = codeIndexSearcher.GenerateHtmlPreviewText(contentQuery, item.Content, int.MaxValue, indexName, returnRawContentWhenResultIsEmpty: true);
+                        item.Content = codeIndexSearcher.GenerateHtmlPreviewText(contentQuery, item.Content, int.MaxValue, indexPk, returnRawContentWhenResultIsEmpty: true);
                     }
                 }
 
@@ -89,7 +88,7 @@ namespace CodeIndex.Server.Controllers
         }
 
         [HttpGet]
-        public FetchResult<IEnumerable<CodeSourceWithMatchedLine>> GetCodeSourcesWithMatchedLine(string searchQuery, string indexName, string contentQuery = "", int? showResults = 0, bool needReplaceSuffixAndPrefix = true, bool forWeb = true)
+        public FetchResult<IEnumerable<CodeSourceWithMatchedLine>> GetCodeSourcesWithMatchedLine(string searchQuery, Guid indexPk, string contentQuery = "", int? showResults = 0, bool needReplaceSuffixAndPrefix = true, bool forWeb = true)
         {
             FetchResult<IEnumerable<CodeSourceWithMatchedLine>> result;
 
@@ -99,9 +98,9 @@ namespace CodeIndex.Server.Controllers
 
                 var showResultsValue = showResults.HasValue && showResults.Value <= codeIndexConfiguration.MaximumResults && showResults.Value > 0 ? showResults.Value : 100;
 
-                var codeSources = SearchCodeSource(searchQuery, out var query, indexName, showResultsValue);
+                var codeSources = SearchCodeSource(searchQuery, out var query, indexPk, showResultsValue);
 
-                var queryForContent = string.IsNullOrWhiteSpace(contentQuery) ? null : codeIndexSearcher.GetQueryFromStr(contentQuery, indexName);
+                var queryForContent = string.IsNullOrWhiteSpace(contentQuery) ? null : codeIndexSearcher.GetQueryFromStr(contentQuery, indexPk);
 
                 var codeSourceWithMatchedLineList = new List<CodeSourceWithMatchedLine>();
 
@@ -120,7 +119,7 @@ namespace CodeIndex.Server.Controllers
 
                     foreach (var codeSource in codeSources)
                     {
-                        var matchedLines = codeIndexSearcher.GeneratePreviewTextWithLineNumber(queryForContent, codeSource.Content, int.MaxValue, showResultsValue - totalResult, indexName, forWeb: forWeb, needReplaceSuffixAndPrefix: needReplaceSuffixAndPrefix);
+                        var matchedLines = codeIndexSearcher.GeneratePreviewTextWithLineNumber(queryForContent, codeSource.Content, int.MaxValue, showResultsValue - totalResult, indexPk, forWeb: forWeb, needReplaceSuffixAndPrefix: needReplaceSuffixAndPrefix);
                         codeSource.Content = string.Empty; // Empty content to reduce response size
 
                         foreach (var matchedLine in matchedLines)
@@ -160,7 +159,7 @@ namespace CodeIndex.Server.Controllers
         }
 
         [HttpGet]
-        public FetchResult<IEnumerable<string>> GetHints(string word, string indexName)
+        public FetchResult<IEnumerable<string>> GetHints(string word, Guid indexPk)
         {
             FetchResult<IEnumerable<string>> result;
             try
@@ -169,7 +168,7 @@ namespace CodeIndex.Server.Controllers
 
                 result = new FetchResult<IEnumerable<string>>
                 {
-                    Result = codeIndexSearcher.GetHints(word, indexName),
+                    Result = codeIndexSearcher.GetHints(word, indexPk),
                     Status = new Status
                     {
                         Success = true
@@ -195,9 +194,9 @@ namespace CodeIndex.Server.Controllers
             return result;
         }
 
-        CodeSource[] SearchCodeSource(string searchStr, out Query query, string indexName, int showResults = 100)
+        CodeSource[] SearchCodeSource(string searchStr, out Query query, Guid pk, int showResults = 100)
         {
-            return codeIndexSearcher.SearchCode(searchStr, out query, showResults, indexName);
+            return codeIndexSearcher.SearchCode(searchStr, out query, showResults, pk);
         }
 
         [HttpGet]

@@ -55,12 +55,12 @@
             <div class="input-group-prepend">
                 <span class="input-group-text">Index Name</span>
             </div>
-            <select class="form-control" @bind="IndexName">
+            <select class="form-control" @bind="IndexPk">
                 @if (IndexConfigs != null)
                 {
                     foreach (var indexConfig in IndexConfigs)
                     {
-                        <option value="@indexConfig.IndexName">@indexConfig.IndexName</option>
+                        <option value="@indexConfig.Pk">@indexConfig.IndexName</option>
                     }
                 }
             </select>
@@ -157,11 +157,11 @@
                             <pre>@((MarkupString)item.MatchedContent)</pre>
                         </td>
                         <td>
-                            <a href="@CurrentIndexConfig.OpenIDEUriFormat.Replace("{FilePath}", GetPath(item.CodeSource.FilePath))">@item.CodeSource.FilePath?.SubStringSafeWithEllipsis(item.CodeSource.FilePath.Length - 50, 50)</a>
+                            <a href="@RazorPageUtils.GetOpenIDEUri(CurrentIndexConfig.OpenIDEUriFormat, item.CodeSource.FilePath, CurrentIndexConfig.MonitorFolderRealPath)">@item.CodeSource.FilePath?.SubStringSafeWithEllipsis(item.CodeSource.FilePath.Length - 50, 50)</a>
                         </td>
                         <td>@item.CodeSource.FileExtension</td>
                         <td>
-                            <a href="/Details/@item.CodeSource.CodePK/@System.Web.HttpUtility.UrlEncode(IndexName ?? string.Empty)/@System.Web.HttpUtility.UrlEncode(ContentQuery ?? string.Empty)">Details</a>
+                            <a href="/Details/@item.CodeSource.CodePK/@IndexPk.ToString()/@System.Web.HttpUtility.UrlEncode(ContentQuery ?? string.Empty)">Details</a>
                         </td>
                     </tr>
                 }
@@ -178,7 +178,7 @@
 
 @code {
 
-    public string IndexName { get; set; }
+    public Guid IndexPk { get; set; }
 
     public string SearchQuery => MaintainIndex.QueryGenerator.GetSearchStr(FileNameQuery, ContentQuery, FileExtensionQuery, FilePathQuery);
 
@@ -198,7 +198,7 @@
 
     public IndexConfigForView[] IndexConfigs { get; set; }
 
-    public IndexConfigForView CurrentIndexConfig => IndexConfigs?.FirstOrDefault(u => u.IndexName == IndexName) ?? (empty ??= new IndexConfigForView());
+    public IndexConfigForView CurrentIndexConfig => IndexConfigs?.FirstOrDefault(u => u.Pk == IndexPk) ?? (empty ??= new IndexConfigForView());
 
     IndexConfigForView empty;
 
@@ -229,11 +229,17 @@
         FileNameQuery = Storage.GetValue("FileNameQuery")?.ToString();
         FileExtensionQuery = Storage.GetValue("FileExtensionQuery")?.ToString();
         FilePathQuery = Storage.GetValue("FilePathQuery")?.ToString();
-        IndexName = Storage.GetValue("IndexName")?.ToString();
 
-        if (IndexName == null || IndexConfigs.All(u => u.IndexName != IndexName))
+        var indexPkStr = Storage.GetValue("IndexPk")?.ToString();
+        Guid? indexPk = indexPkStr == null ? null : new Guid(indexPkStr);
+
+        if (indexPk == null || IndexConfigs.All(u => u.Pk != indexPk))
         {
-            IndexName = IndexConfigs.FirstOrDefault()?.IndexName ?? string.Empty;
+            IndexPk = IndexConfigs.FirstOrDefault()?.Pk ?? Guid.Empty;
+        }
+        else
+        {
+            IndexPk = indexPk.Value;
         }
 
         if (int.TryParse(Storage.GetValue(nameof(ShowResults))?.ToString(), out var result))
@@ -241,7 +247,7 @@
             ShowResults = result;
         }
 
-        if (!string.IsNullOrEmpty(SearchQuery) && !string.IsNullOrEmpty(IndexName))
+        if (!string.IsNullOrEmpty(SearchQuery) && IndexPk != Guid.Empty)
         {
             await SearchLuceneIndex();
         }
@@ -259,16 +265,16 @@
         Storage.SetOrUpdate("FileExtensionQuery", FileExtensionQuery);
         Storage.SetOrUpdate("FilePathQuery", FilePathQuery);
         Storage.SetOrUpdate(nameof(ShowResults), ShowResults);
-        Storage.SetOrUpdate("IndexName", IndexName);
+        Storage.SetOrUpdate("IndexPk", IndexPk);
 
         IsSearching = true;
         FetchResult = null;
 
         try
         {
-            if (!string.IsNullOrEmpty(SearchQuery) && !string.IsNullOrEmpty(IndexName))
+            if (!string.IsNullOrEmpty(SearchQuery) && IndexPk != Guid.Empty)
             {
-                FetchResult = await Client.GetJsonAsync<FetchResult<IEnumerable<CodeSourceWithMatchedLine>>>($"{Config.LocalUrl}api/lucene/GetCodeSourcesWithMatchedLine?searchQuery=" + System.Web.HttpUtility.UrlEncode(SearchQuery) + "&showResults=" + ShowResults + "&contentQuery=" + System.Web.HttpUtility.UrlEncode(ContentQuery ?? string.Empty) + "&indexName=" + System.Web.HttpUtility.UrlEncode(IndexName ?? string.Empty));
+                FetchResult = await Client.GetJsonAsync<FetchResult<IEnumerable<CodeSourceWithMatchedLine>>>($"{Config.LocalUrl}api/lucene/GetCodeSourcesWithMatchedLine?searchQuery=" + System.Web.HttpUtility.UrlEncode(SearchQuery) + "&showResults=" + ShowResults + "&contentQuery=" + System.Web.HttpUtility.UrlEncode(ContentQuery ?? string.Empty) + "&indexPk=" + IndexPk);
             }
             else
             {
@@ -288,7 +294,7 @@
         }
     }
 
-    private async Task KeyPress(KeyboardEventArgs e)
+    async Task KeyPress(KeyboardEventArgs e)
     {
         if (e.Key == "Enter")
         {
@@ -296,31 +302,19 @@
         }
     }
 
-    private async Task KeyPressForContent(KeyboardEventArgs e)
+    async Task KeyPressForContent(KeyboardEventArgs e)
     {
-        if (e.Key != "Enter" && ContentQuery != null && !ContentQuery.EndsWith(" "))
+        if (e.Key != "Enter" && ContentQuery != null && !ContentQuery.EndsWith(" ") && IndexPk != Guid.Empty)
         {
             var inputWord = ContentQuery.Split(" ", StringSplitOptions.RemoveEmptyEntries).LastOrDefault();
             if (inputWord?.Length >= 3)
             {
-                HintWords = await Client.GetJsonAsync<FetchResult<IEnumerable<string>>>($"{Config.LocalUrl}api/lucene/GetHints?word=" + System.Web.HttpUtility.UrlEncode(inputWord) + "&indexName=" + System.Web.HttpUtility.UrlEncode(IndexName ?? string.Empty));
+                HintWords = await Client.GetJsonAsync<FetchResult<IEnumerable<string>>>($"{Config.LocalUrl}api/lucene/GetHints?word=" + System.Web.HttpUtility.UrlEncode(inputWord) + "&indexPk=" + IndexPk);
             }
         }
         else
         {
             await KeyPress(e);
-        }
-    }
-
-    string GetPath(string path)
-    {
-        if (path != null && path.StartsWith("/monitorfolder") && !string.IsNullOrEmpty(CurrentIndexConfig.MonitorFolderRealPath))
-        {
-            return CurrentIndexConfig.MonitorFolderRealPath + path.SubStringSafe("/monitorfolder".Length, path.Length);
-        }
-        else
-        {
-            return path;
         }
     }
 }

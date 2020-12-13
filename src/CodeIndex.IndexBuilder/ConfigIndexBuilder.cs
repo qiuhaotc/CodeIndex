@@ -27,15 +27,15 @@ namespace CodeIndex.IndexBuilder
             ConfigPool.BuildIndex(new[] { GetDocumet(indexConfig) }, true);
         }
 
-        public void DeleteIndexConfig(string indexName)
+        public void DeleteIndexConfig(Guid pk)
         {
-            ConfigPool.DeleteIndex(new Term(nameof(IndexConfig.IndexName), indexName));
+            ConfigPool.DeleteIndex(new Term(nameof(IndexConfig.Pk), pk.ToString()));
             ConfigPool.Commit();
         }
 
         public void EditIndexConfig(IndexConfig indexConfig)
         {
-            ConfigPool.UpdateIndex(new Term(nameof(IndexConfig.IndexName), indexConfig.IndexName), GetDocumet(indexConfig));
+            ConfigPool.UpdateIndex(new Term(nameof(IndexConfig.Pk), indexConfig.Pk.ToString()), GetDocumet(indexConfig));
             ConfigPool.Commit();
         }
 
@@ -55,6 +55,7 @@ namespace CodeIndex.IndexBuilder
         {
             return new Document
             {
+                new StringField(nameof(IndexConfig.Pk), indexConfig.Pk.ToString(), Field.Store.YES),
                 new StringField(nameof(IndexConfig.IndexName), indexConfig.IndexName.ToStringSafe(), Field.Store.YES),
                 new StringField(nameof(IndexConfig.MonitorFolder), indexConfig.MonitorFolder.ToStringSafe(), Field.Store.YES),
                 new Int32Field(nameof(IndexConfig.MaxContentHighlightLength), indexConfig.MaxContentHighlightLength, Field.Store.YES),

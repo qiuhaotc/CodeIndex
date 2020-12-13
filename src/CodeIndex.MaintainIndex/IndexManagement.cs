@@ -2,13 +2,14 @@
 using System.Collections.Concurrent;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using CodeIndex.Common;
 
 namespace CodeIndex.MaintainIndex
 {
     public class IndexManagement : IDisposable
     {
-        ConcurrentDictionary<string, IndexMaintainerWrapper> MaintainerPool { get; set; }
+        ConcurrentDictionary<Guid, IndexMaintainerWrapper> MaintainerPool { get; set; }
         CodeIndexConfiguration CodeIndexConfiguration { get; }
         ILog Log { get; }
         ConfigIndexMaintainer ConfigMaintainer { get; }
@@ -21,7 +22,7 @@ namespace CodeIndex.MaintainIndex
             codeIndexConfiguration.RequireNotNull(nameof(codeIndexConfiguration));
             log.RequireNotNull(nameof(log));
 
-            MaintainerPool = new ConcurrentDictionary<string, IndexMaintainerWrapper>();
+            MaintainerPool = new ConcurrentDictionary<Guid, IndexMaintainerWrapper>();
             CodeIndexConfiguration = codeIndexConfiguration;
             Log = log;
             ConfigMaintainer = new ConfigIndexMaintainer(codeIndexConfiguration, log);
@@ -33,10 +34,14 @@ namespace CodeIndex.MaintainIndex
         {
             var allConfigs = ConfigMaintainer.GetConfigs();
 
+            Log.Info("Initialize Maintainer Pool Start");
+
             foreach (var config in allConfigs)
             {
-                MaintainerPool.TryAdd(config.IndexName, new IndexMaintainerWrapper(config, CodeIndexConfiguration, Log));
+                MaintainerPool.TryAdd(config.Pk, new IndexMaintainerWrapper(config, CodeIndexConfiguration, Log));
             }
+
+            Log.Info("Initialize Maintainer Pool Finished");
         }
 
         public FetchResult<IndexStatusInfo[]> GetIndexList()
@@ -58,6 +63,8 @@ namespace CodeIndex.MaintainIndex
 
         readonly IndexStatus[] validStatusForSearching = { IndexStatus.Idle, IndexStatus.Initializing, IndexStatus.Initialized, IndexStatus.Initializing_ComponentInitializeFinished, IndexStatus.Monitoring };
 
+        public static bool ValidToStart(IndexStatus status) => status == IndexStatus.Disposed || status == IndexStatus.Idle;
+
         public FetchResult<IndexConfigForView[]> GetIndexViewList()
         {
             if (IsDisposing)
@@ -75,7 +82,7 @@ namespace CodeIndex.MaintainIndex
             };
         }
 
-        public IndexConfigForView GetIndexView(string indexName)
+        public IndexConfigForView GetIndexView(Guid pk)
         {
             if (IsDisposing)
             {
@@ -84,7 +91,7 @@ namespace CodeIndex.MaintainIndex
 
             IndexConfigForView indexConfigForView;
 
-            if (MaintainerPool.TryGetValue(indexName ?? string.Empty, out var wrapper))
+            if (MaintainerPool.TryGetValue(pk, out var wrapper))
             {
                 indexConfigForView = IndexConfigForView.GetIndexConfigForView(wrapper.IndexConfig);
             }
@@ -105,10 +112,14 @@ namespace CodeIndex.MaintainIndex
 
             lock (syncLock)
             {
+                indexConfig.TrimValues();
+
                 if (ValidToAdd(indexConfig, out var message))
                 {
                     ConfigMaintainer.AddIndexConfig(indexConfig);
-                    MaintainerPool.TryAdd(indexConfig.IndexName, new IndexMaintainerWrapper(indexConfig, CodeIndexConfiguration, Log));
+                    MaintainerPool.TryAdd(indexConfig.Pk, new IndexMaintainerWrapper(indexConfig, CodeIndexConfiguration, Log));
+
+                    Log.Info($"Add Index Config {indexConfig} Successful");
 
                     return new FetchResult<bool>
                     {
@@ -143,11 +154,15 @@ namespace CodeIndex.MaintainIndex
 
             lock (syncLock)
             {
+                indexConfig.TrimValues();
+
                 if (ValidToEdit(indexConfig, out var message, out var needDisposeAndRemovedWrapper) && needDisposeAndRemovedWrapper != null)
                 {
                     ConfigMaintainer.EditIndexConfig(indexConfig);
                     needDisposeAndRemovedWrapper.Dispose();
-                    MaintainerPool.TryUpdate(indexConfig.IndexName, new IndexMaintainerWrapper(indexConfig, CodeIndexConfiguration, Log), needDisposeAndRemovedWrapper);
+                    MaintainerPool.TryUpdate(indexConfig.Pk, new IndexMaintainerWrapper(indexConfig, CodeIndexConfiguration, Log), needDisposeAndRemovedWrapper);
+
+                    Log.Info($"Edit Index Config {indexConfig} Successful");
 
                     return new FetchResult<bool>
                     {
@@ -173,7 +188,7 @@ namespace CodeIndex.MaintainIndex
             }
         }
 
-        public FetchResult<bool> DeleteIndex(string indexName)
+        public FetchResult<bool> DeleteIndex(Guid pk)
         {
             if (IsDisposing)
             {
@@ -182,21 +197,76 @@ namespace CodeIndex.MaintainIndex
 
             lock (syncLock)
             {
-                if (ValidToDelete(indexName, out var message, out var needDisposeAndRemovedWrapper) && needDisposeAndRemovedWrapper != null)
+                if (ValidToDelete(pk, out var message, out var needDisposeAndRemovedWrapper) && needDisposeAndRemovedWrapper != null)
                 {
                     needDisposeAndRemovedWrapper.Dispose();
                     DeleteIndexFolderSafe(needDisposeAndRemovedWrapper.IndexConfig.GetRootFolder(CodeIndexConfiguration.LuceneIndex));
-                    if (MaintainerPool.TryRemove(indexName, out _))
+                    if (MaintainerPool.TryRemove(pk, out _))
                     {
-                        ConfigMaintainer.DeleteIndexConfig(indexName);
+                        ConfigMaintainer.DeleteIndexConfig(pk);
+                    }
+
+                    Log.Info($"Delete Index Config {needDisposeAndRemovedWrapper.IndexConfig} Successful");
+
+                    return new FetchResult<bool>
+                    {
+                        Result = true,
+                        Status = new Status
+                        {
+                            Success = true
+                        }
+                    };
+                }
+                else
+                {
+                    return new FetchResult<bool>
+                    {
+                        Result = false,
+                        Status = new Status
+                        {
+                            StatusDesc = message,
+                            Success = false
+                        }
+                    };
+                }
+            }
+        }
+
+        public FetchResult<bool> StartIndex(Guid pk)
+        {
+            if (IsDisposing)
+            {
+                return ManagementIsDisposing<bool>();
+            }
+
+            lock (syncLock)
+            {
+                if (ValidToStart(pk, out var message, out var needDisposeWrapper) && needDisposeWrapper != null)
+                {
+                    if (needDisposeWrapper.Status != IndexStatus.Idle)
+                    {
+                        needDisposeWrapper.Dispose();
+                        MaintainerPool.TryUpdate(pk, new IndexMaintainerWrapper(needDisposeWrapper.IndexConfig, CodeIndexConfiguration, Log), needDisposeWrapper);
+                    }
+
+                    var result = GetIndexMaintainerWrapperAndInitializeIfNeeded(pk);
+
+                    if (result.Status.Success)
+                    {
+                        Log.Info($"Start Index Config {needDisposeWrapper.IndexConfig} Successful");
+                    }
+                    else
+                    {
+                        Log.Info($"Start Index Config {needDisposeWrapper.IndexConfig} Failed: {result.Status.StatusDesc}");
                     }
 
                     return new FetchResult<bool>
                     {
-                        Result = true,
+                        Result = result.Status.Success,
                         Status = new Status
                         {
-                            Success = true
+                            Success = result.Status.Success,
+                            StatusDesc = result.Status.StatusDesc
                         }
                     };
                 }
@@ -215,7 +285,7 @@ namespace CodeIndex.MaintainIndex
             }
         }
 
-        public FetchResult<bool> StopIndex(string indexName)
+        public FetchResult<bool> StopIndex(Guid pk)
         {
             if (IsDisposing)
             {
@@ -224,7 +294,7 @@ namespace CodeIndex.MaintainIndex
 
             lock (syncLock)
             {
-                if (ValidToStop(indexName, out var message, out var needDisposeWrapper) && needDisposeWrapper != null)
+                if (ValidToStop(pk, out var message, out var needDisposeWrapper) && needDisposeWrapper != null)
                 {
                     needDisposeWrapper.Dispose();
 
@@ -252,15 +322,38 @@ namespace CodeIndex.MaintainIndex
             }
         }
 
-        public FetchResult<IndexMaintainerWrapper> GetIndexMaintainerWrapper(string indexName)
+        object syncLockForInitializeMaintainer = new object();
+
+        public FetchResult<IndexMaintainerWrapper> GetIndexMaintainerWrapperAndInitializeIfNeeded(Guid pk)
         {
             if (IsDisposing)
             {
                 return ManagementIsDisposing<IndexMaintainerWrapper>();
             }
 
-            if (MaintainerPool.TryGetValue(indexName, out var wrapper))
+            if (MaintainerPool.TryGetValue(pk, out var wrapper))
             {
+                // Make sure InitializeIndex and MaintainIndexes only call once, make sure the index pool initialized and able to searching
+                if (wrapper.Maintainer.Status == IndexStatus.Idle || wrapper.Maintainer.Status == IndexStatus.Initializing)
+                {
+                    lock (syncLockForInitializeMaintainer)
+                    {
+                        if (wrapper.Maintainer.Status == IndexStatus.Idle)
+                        {
+                            Log.Info($"Start initializing and monitoring for index {wrapper.IndexConfig.IndexName}");
+                            wrapper.Maintainer.InitializeIndex(false).ContinueWith(u => wrapper.Maintainer.MaintainIndexes());
+                        }
+
+                        if (wrapper.Maintainer.Status == IndexStatus.Initializing)
+                        {
+                            while (wrapper.Maintainer.Status == IndexStatus.Initializing) // Wait Maintainer able to screening
+                            {
+                                Thread.Sleep(100);
+                            }
+                        }
+                    }
+                }
+
                 return new FetchResult<IndexMaintainerWrapper>
                 {
                     Result = wrapper,
@@ -317,24 +410,39 @@ namespace CodeIndex.MaintainIndex
 
             if (string.IsNullOrWhiteSpace(indexConfig.IndexName))
             {
-                validationMessage += "Index Name Is Empty" + Environment.NewLine;
+                validationMessage += "Index Name Is Empty;" + Environment.NewLine;
             }
-            else if (MaintainerPool.ContainsKey(indexConfig.IndexName))
+            else if (indexConfig.IndexName.Length > 100)
             {
-                validationMessage += "Duplicate Index Name" + Environment.NewLine;
+                validationMessage += $"Index Name Too Long;" + Environment.NewLine;
+            }
+            else if (MaintainerPool.Any(u => u.Value.IndexConfig.IndexName == indexConfig.IndexName))
+            {
+                validationMessage += $"Duplicate Index Name;" + Environment.NewLine;
+            }
+
+            if (MaintainerPool.ContainsKey(indexConfig.Pk))
+            {
+                validationMessage += "Duplicate Index Pk;" + Environment.NewLine;
             }
 
             if (string.IsNullOrWhiteSpace(indexConfig.MonitorFolder))
             {
-                validationMessage += "Monitor Folder Is Empty" + Environment.NewLine;
+                validationMessage += "Monitor Folder Is Empty;" + Environment.NewLine;
             }
             else if (MaintainerPool.Any(u => u.Value.IndexConfig.MonitorFolder.Equals(indexConfig.MonitorFolder, StringComparison.InvariantCultureIgnoreCase)))
             {
-                validationMessage += "Duplicate Monitor Folder" + Environment.NewLine;
+                validationMessage += "Duplicate Monitor Folder;" + Environment.NewLine;
+            }
+            else if (!Directory.Exists(indexConfig.MonitorFolder))
+            {
+                validationMessage += "Monitor Folder Not Exist;" + Environment.NewLine;
             }
 
             return string.IsNullOrEmpty(validationMessage);
         }
+
+        public static bool ValidToEdit(IndexStatus status) => status == IndexStatus.Idle || status == IndexStatus.Disposed;
 
         bool ValidToEdit(IndexConfig indexConfig, out string validationMessage, out IndexMaintainerWrapper needDisposeAndRemovedWrapper)
         {
@@ -343,62 +451,80 @@ namespace CodeIndex.MaintainIndex
 
             if (string.IsNullOrWhiteSpace(indexConfig.IndexName))
             {
-                validationMessage += "Index Name Is Empty" + Environment.NewLine;
+                validationMessage += "Index Name Is Empty;" + Environment.NewLine;
             }
-            else if (!MaintainerPool.TryGetValue(indexConfig.IndexName, out needDisposeAndRemovedWrapper))
+            else if (indexConfig.IndexName.Length > 100)
             {
-                validationMessage += "Index Not Exist" + Environment.NewLine;
+                validationMessage += "Index Name Too Long;" + Environment.NewLine;
             }
-            else if (needDisposeAndRemovedWrapper.Status != IndexStatus.Idle && needDisposeAndRemovedWrapper.Status != IndexStatus.Disposed)
+            else if (!MaintainerPool.TryGetValue(indexConfig.Pk, out needDisposeAndRemovedWrapper))
             {
-                validationMessage += "Only Idle or Disposed Index Can Be Edit" + Environment.NewLine;
+                validationMessage += "Index Not Exist;" + Environment.NewLine;
+            }
+            else if (!ValidToEdit(needDisposeAndRemovedWrapper.Status))
+            {
+                validationMessage += "Only Idle or Disposed Index Can Be Edit;" + Environment.NewLine;
+            }
+            else if (MaintainerPool.Any(u => u.Key != indexConfig.Pk && u.Value.IndexConfig.IndexName == indexConfig.IndexName))
+            {
+                validationMessage += "Duplicate Index Name;" + Environment.NewLine;
             }
 
             if (string.IsNullOrWhiteSpace(indexConfig.MonitorFolder))
             {
-                validationMessage += "Monitor Folder Is Empty" + Environment.NewLine;
+                validationMessage += "Monitor Folder Is Empty;" + Environment.NewLine;
+            }
+            else if (!Directory.Exists(indexConfig.MonitorFolder))
+            {
+                validationMessage += "Monitor Folder Not Exist;" + Environment.NewLine;
             }
 
             return string.IsNullOrEmpty(validationMessage);
         }
 
-        bool ValidToDelete(string indexName, out string validationMessage, out IndexMaintainerWrapper needDisposeAndRemovedWrapper)
+        bool ValidToDelete(Guid pk, out string validationMessage, out IndexMaintainerWrapper needDisposeAndRemovedWrapper)
         {
             validationMessage = string.Empty;
-            needDisposeAndRemovedWrapper = null;
 
-            if (string.IsNullOrWhiteSpace(indexName))
+            if (!MaintainerPool.TryGetValue(pk, out needDisposeAndRemovedWrapper))
             {
-                validationMessage += "Index Name Is Empty" + Environment.NewLine;
-            }
-            else if (!MaintainerPool.TryGetValue(indexName, out needDisposeAndRemovedWrapper))
-            {
-                validationMessage += "Index Not Exist" + Environment.NewLine;
+                validationMessage += "Index Not Exist;" + Environment.NewLine;
             }
             else if (needDisposeAndRemovedWrapper.Status == IndexStatus.Disposing)
             {
-                validationMessage += "Index Under Disposing Status" + Environment.NewLine;
+                validationMessage += "Index Under Disposing Status;" + Environment.NewLine;
             }
 
             return string.IsNullOrEmpty(validationMessage);
         }
 
-        bool ValidToStop(string indexName, out string validationMessage, out IndexMaintainerWrapper needDisposeWrapper)
+        bool ValidToStart(Guid pk, out string validationMessage, out IndexMaintainerWrapper needDisposedWrapper)
         {
             validationMessage = string.Empty;
-            needDisposeWrapper = null;
 
-            if (string.IsNullOrWhiteSpace(indexName))
+            if (!MaintainerPool.TryGetValue(pk, out needDisposedWrapper))
             {
-                validationMessage += "Index Name Is Empty" + Environment.NewLine;
+                validationMessage += "Index Not Exist;" + Environment.NewLine;
             }
-            else if (!MaintainerPool.TryGetValue(indexName, out needDisposeWrapper))
+            else if (!ValidToStart(needDisposedWrapper.Status))
             {
-                validationMessage += "Index Not Exist" + Environment.NewLine;
+                validationMessage += "Index Not Valid To Start;" + Environment.NewLine;
+            }
+
+            return string.IsNullOrEmpty(validationMessage);
+        }
+
+        bool ValidToStop(Guid pk, out string validationMessage, out IndexMaintainerWrapper needDisposeWrapper)
+        {
+            validationMessage = string.Empty;
+
+            if (!MaintainerPool.TryGetValue(pk, out needDisposeWrapper))
+            {
+                validationMessage += "Index Not Exist;" + Environment.NewLine;
             }
             else if (needDisposeWrapper.Status == IndexStatus.Disposed || needDisposeWrapper.Status == IndexStatus.Disposing)
             {
-                validationMessage += "Index Under Disposed/Disposing Status" + Environment.NewLine;
+                validationMessage += "Index Under Disposed/Disposing Status;" + Environment.NewLine;
             }
 
             return string.IsNullOrEmpty(validationMessage);

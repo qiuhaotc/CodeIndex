@@ -95,15 +95,21 @@ namespace CodeIndex.Server.Controllers
         }
 
         [HttpGet]
-        public async Task<FetchResult<bool>> DeleteIndex(string indexName, [FromServices] IndexManagement indexManagement)
+        public async Task<FetchResult<bool>> DeleteIndex(Guid indexPk, [FromServices] IndexManagement indexManagement)
         {
-            return await Task.FromResult(indexManagement.DeleteIndex(indexName));
+            return await Task.FromResult(indexManagement.DeleteIndex(indexPk));
         }
 
         [HttpGet]
-        public async Task<FetchResult<bool>> StopIndex(string indexName, [FromServices] IndexManagement indexManagement)
+        public async Task<FetchResult<bool>> StopIndex(Guid indexPk, [FromServices] IndexManagement indexManagement)
         {
-            return await Task.FromResult(indexManagement.StopIndex(indexName));
+            return await Task.FromResult(indexManagement.StopIndex(indexPk));
+        }
+
+        [HttpGet]
+        public async Task<FetchResult<bool>> StartIndex(Guid indexPk, [FromServices] IndexManagement indexManagement)
+        {
+            return await Task.FromResult(indexManagement.StartIndex(indexPk));
         }
     }
 }

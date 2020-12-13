@@ -37,9 +37,9 @@ namespace CodeIndex.MaintainIndex
             ConfigIndexBuilder.AddIndexConfig(indexConfig);
         }
 
-        public void DeleteIndexConfig(string indexName)
+        public void DeleteIndexConfig(Guid pk)
         {
-            ConfigIndexBuilder.DeleteIndexConfig(indexName);
+            ConfigIndexBuilder.DeleteIndexConfig(pk);
         }
 
         public void EditIndexConfig(IndexConfig indexConfig)

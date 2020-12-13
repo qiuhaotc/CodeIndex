@@ -1,43 +1,42 @@
 using System;
 using System.IO;
 using System.Linq;
+using System.Threading;
 using CodeIndex.Common;
-using CodeIndex.IndexBuilder;
 using CodeIndex.MaintainIndex;
 using CodeIndex.Search;
-using Lucene.Net.Index;
-using Lucene.Net.Search;
 using NUnit.Framework;
 
 namespace CodeIndex.Test
 {
     public class CodeIndexBuilderTest : BaseTest
     {
-        //[Test]
-        //public void TestBuildIndex()
-        //{
-        //    BuildIndex();
-        //    LucenePool.SaveResultsAndClearLucenePool(Config.LuceneIndexForCode);
+        [Test]
+        public void TestBuildIndex()
+        {
+            var logger = new DummyLog();
+            using var indexManagement = new IndexManagement(Config, new DummyLog());
+            var indexSearcher = new CodeIndexSearcherLight(indexManagement, logger);
 
-        //    var result1 = CodeIndexSearcher.Search(Config.LuceneIndexForCode, Generator.GetQueryFromStr($"{nameof(CodeSource.FileName)}:\"Dummy File\""), 10);
-        //    Assert.That(result1.Length, Is.EqualTo(1));
-        //    Assert.AreEqual(@"Dummy File", result1[0].Get(nameof(CodeSource.FileName)));
-        //    Assert.AreEqual(@"cs", result1[0].Get(nameof(CodeSource.FileExtension)));
-        //    Assert.AreEqual(@"C:\Dummy File.cs", result1[0].Get(nameof(CodeSource.FilePath)));
-        //    Assert.AreEqual(@"C:\Dummy File.cs", result1[0].Get(nameof(CodeSource.FilePath) + Constants.NoneTokenizeFieldSuffix));
-        //    Assert.AreEqual("Test Content" + Environment.NewLine + "A New Line For Test", result1[0].Get(nameof(CodeSource.Content)));
-        //    Assert.AreEqual(new DateTime(2020, 1, 1).Ticks, result1[0].GetField(nameof(CodeSource.IndexDate)).GetInt64Value());
+            var config = BuildIndex(indexManagement);
 
-        //    var generator = Generator;
-        //    var result2 = CodeIndexSearcher.Search(Config.LuceneIndexForCode, generator.GetQueryFromStr("FFFF test"), 10);
-        //    Assert.That(result2.Length, Is.EqualTo(2));
-        //    Assert.IsTrue(result2.Any(u => u.Get(nameof(CodeSource.FileName)) == "Dummy File"));
-        //    Assert.IsTrue(result2.Any(u => u.Get(nameof(CodeSource.FileName)) == "A new File"));
+            var result1 = indexSearcher.SearchCode($"{nameof(CodeSource.FileName)}:\"Dummy File\"", out var query, 10, config.Pk);
+            Assert.That(result1.Length, Is.EqualTo(1));
+            Assert.AreEqual(@"Dummy File.txt", result1[0].FileName);
+            Assert.AreEqual(@"txt", result1[0].FileExtension);
+            Assert.AreEqual(Path.Combine(MonitorFolder, "Dummy File.txt"), result1[0].FilePath);
+            Assert.AreEqual("Test Content" + Environment.NewLine + "A New Line For Test", result1[0].Content);
+            Assert.GreaterOrEqual(DateTime.UtcNow, result1[0].IndexDate);
 
-        //    var result3 = CodeIndexSearcher.Search(Config.LuceneIndexForCode, generator.GetQueryFromStr("FFFF"), 10);
-        //    Assert.That(result3.Length, Is.EqualTo(1));
-        //    Assert.IsTrue(result3.Any(u => u.Get(nameof(CodeSource.FileName)) == "A new File"));
-        //}
+            var result2 = indexSearcher.SearchCode("BBBB test", out query, 10, config.Pk);
+            Assert.That(result2.Length, Is.EqualTo(2));
+            Assert.IsTrue(result2.Any(u => u.FileName == "Dummy File.txt"));
+            Assert.IsTrue(result2.Any(u => u.FileName == "A new File.xml"));
+
+            var result3 = indexSearcher.SearchCode("BBBB", out query, 10, config.Pk);
+            Assert.That(result3.Length, Is.EqualTo(1));
+            Assert.IsTrue(result3.Any(u => u.FileName == "A new File.xml"));
+        }
 
         //[Test]
         //public void TestBuildIndex_DeleteOldIndexWithSamePath()
@@ -184,23 +183,29 @@ namespace CodeIndex.Test
         //    Assert.IsTrue(Directory.Exists(Config.LuceneIndexForHint));
         //}
 
-        //void BuildIndex()
-        //{
-        //    IndexBuilderHelper.BuildIndex(Config, true, true, true, new[] { new CodeSource
-        //    {
-        //        FileName = "Dummy File",
-        //        FileExtension = "cs",
-        //        FilePath = @"C:\Dummy File.cs",
-        //        Content = "Test Content" + Environment.NewLine + "A New Line For Test",
-        //        IndexDate = new DateTime(2020, 1, 1)
-        //    },
-        //    new CodeSource
-        //    {
-        //        FileName = "A new File",
-        //        FileExtension = "xml",
-        //        FilePath = @"D:\DDDD\A new Name.cs",
-        //        Content = "FFFF Content A new Line"
-        //    }});
-        //}
+        IndexConfig BuildIndex(IndexManagement indexManagement)
+        {
+            var indexConfig = new IndexConfig
+            {
+                IndexName = "dummy",
+                MonitorFolder = MonitorFolder
+            };
+
+            indexManagement.AddIndex(indexConfig);
+
+            File.AppendAllText(Path.Combine(MonitorFolder, "Dummy File.txt"), "Test Content" + Environment.NewLine + "A New Line For Test");
+            File.AppendAllText(Path.Combine(MonitorFolder, "A new File.xml"), "BBBB Content A new Line");
+
+            var result = indexManagement.StartIndex(indexConfig.Pk);
+
+            Assert.IsTrue(result.Status.Success);
+
+            while (indexManagement.GetIndexList().Result.First(u => u.IndexConfig == indexConfig).IndexStatus != IndexStatus.Monitoring)
+            {
+                Thread.Sleep(100);
+            }
+
+            return indexConfig;
+        }
     }
 }

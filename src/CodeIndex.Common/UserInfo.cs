@@ -1,6 +1,6 @@
 ﻿namespace CodeIndex.Common
 {
-    public class UserInfo
+    public record UserInfo
     {
         public int Id { get; set; }
         public string UserName { get; set; }

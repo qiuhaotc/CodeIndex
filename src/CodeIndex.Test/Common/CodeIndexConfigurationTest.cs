@@ -13,7 +13,16 @@ namespace CodeIndex.Test
                 IsInLinux = true,
                 LocalUrl = "http://localhost:1234",
                 LuceneIndex = "AAA/BBB",
-                MaximumResults = 234
+                MaximumResults = 234,
+                ManagerUsers = new[]
+                {
+                    new UserInfo
+                    {
+                        Id = 1,
+                        Password = "ABC",
+                        UserName = "DEF"
+                    }
+                }
             };
 
             Assert.Multiple(() =>
@@ -22,6 +31,13 @@ namespace CodeIndex.Test
                 Assert.AreEqual("http://localhost:1234", config.LocalUrl);
                 Assert.AreEqual("AAA/BBB", config.LuceneIndex);
                 Assert.AreEqual(234, config.MaximumResults);
+                CollectionAssert.AreEquivalent(new[] { new UserInfo
+                    {
+                        Id = 1,
+                        Password = "ABC",
+                        UserName = "DEF"
+                    }
+                }, config.ManagerUsers);
             });
         }
     }

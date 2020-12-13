@@ -26,13 +26,12 @@ namespace CodeIndex.Search
         public IndexManagement IndexManagement { get; }
         public ILog Log { get; }
 
-        public CodeSource[] SearchCode(string searchStr, out Query query, int maxResults, string indexName)
+        public CodeSource[] SearchCode(string searchStr, out Query query, int maxResults, Guid pk)
         {
             searchStr.RequireNotNullOrEmpty(nameof(searchStr));
-            indexName.RequireNotNullOrEmpty(nameof(indexName));
             maxResults.RequireRange(nameof(maxResults), int.MaxValue, 1);
 
-            var maintainer = GetIndexMaintainerWrapper(indexName);
+            var maintainer = GetIndexMaintainerWrapper(pk);
 
             if (maintainer == null)
             {
@@ -44,9 +43,9 @@ namespace CodeIndex.Search
             return StatusValid(maintainer) ? maintainer.Maintainer.IndexBuilderLight.CodeIndexPool.Search(query, maxResults).Select(GetCodeSourceFromDocument).ToArray() : Array.Empty<CodeSource>();
         }
 
-        public string GenerateHtmlPreviewText(string contentQuery, string text, int length, string indexName, string prefix = "<label class='highlight'>", string suffix = "</label>", bool returnRawContentWhenResultIsEmpty = false)
+        public string GenerateHtmlPreviewText(string contentQuery, string text, int length, Guid pk, string prefix = "<label class='highlight'>", string suffix = "</label>", bool returnRawContentWhenResultIsEmpty = false)
         {
-            var maintainer = GetIndexMaintainerWrapper(indexName);
+            var maintainer = GetIndexMaintainerWrapper(pk);
 
             if (maintainer == null)
             {
@@ -94,38 +93,44 @@ namespace CodeIndex.Search
             return result;
         }
 
-        public string[] GetHints(string word, string indexName, int maxResults = 20, bool caseSensitive = false)
+        public string[] GetHints(string word, Guid pk, int maxResults = 20, bool caseSensitive = false)
         {
             if (string.IsNullOrWhiteSpace(word))
             {
                 return Array.Empty<string>();
             }
 
-            PrefixQuery query;
+            var searchQuery = new BooleanQuery();
 
             if (caseSensitive)
             {
-                query = new PrefixQuery(new Term(nameof(CodeWord.Word), word));
+                var query1 = new TermQuery(new Term(nameof(CodeWord.Word), word));
+                var query2 = new PrefixQuery(new Term(nameof(CodeWord.Word), word));
+                searchQuery.Add(query1, Occur.SHOULD);
+                searchQuery.Add(query2, Occur.SHOULD);
             }
             else
             {
-                query = new PrefixQuery(new Term(nameof(CodeWord.WordLower), word.ToLower()));
+                var query1 = new TermQuery(new Term(nameof(CodeWord.WordLower), word.ToLower()));
+                var query2 = new PrefixQuery(new Term(nameof(CodeWord.WordLower), word.ToLower()));
+                searchQuery.Add(query1, Occur.SHOULD);
+                searchQuery.Add(query2, Occur.SHOULD);
             }
 
-            var maintainer = GetIndexMaintainerWrapper(indexName);
-            return StatusValid(maintainer) ? maintainer.Maintainer.IndexBuilderLight.HintIndexPool.Search(query, maxResults).Select(u => u.Get(nameof(CodeWord.Word))).ToArray() : Array.Empty<string>();
+            var maintainer = GetIndexMaintainerWrapper(pk);
+            return StatusValid(maintainer) ? maintainer.Maintainer.IndexBuilderLight.HintIndexPool.Search(searchQuery, maxResults).Select(u => u.Get(nameof(CodeWord.Word))).ToArray() : Array.Empty<string>();
         }
 
-        public Query GetQueryFromStr(string contentQuery, string indexName)
+        public Query GetQueryFromStr(string contentQuery, Guid pk)
         {
-            return GetIndexMaintainerWrapper(indexName)?.QueryGenerator.GetQueryFromStr(contentQuery);
+            return GetIndexMaintainerWrapper(pk)?.QueryGenerator.GetQueryFromStr(contentQuery);
         }
 
-        public (string MatchedLineContent, int LineNumber)[] GeneratePreviewTextWithLineNumber(Query query, string text, int length, int maxResults, string indexName, bool forWeb = true, bool needReplaceSuffixAndPrefix = true, string prefix = "<label class='highlight'>", string suffix = "</label>")
+        public (string MatchedLineContent, int LineNumber)[] GeneratePreviewTextWithLineNumber(Query query, string text, int length, int maxResults, Guid pk, bool forWeb = true, bool needReplaceSuffixAndPrefix = true, string prefix = "<label class='highlight'>", string suffix = "</label>")
         {
             (string, int)[] results;
 
-            var maintainer = GetIndexMaintainerWrapper(indexName);
+            var maintainer = GetIndexMaintainerWrapper(pk);
             if (maintainer == null)
             {
                 return Array.Empty<(string, int)>();
@@ -218,38 +223,15 @@ namespace CodeIndex.Search
             };
         }
 
-        object syncLock = new object();
-
-        IndexMaintainerWrapper GetIndexMaintainerWrapper(string indexName)
+        IndexMaintainerWrapper GetIndexMaintainerWrapper(Guid pk)
         {
-            var result = IndexManagement.GetIndexMaintainerWrapper(indexName);
+            var result = IndexManagement.GetIndexMaintainerWrapperAndInitializeIfNeeded(pk);
             if (result.Status.Success)
             {
-                // Make sure InitializeIndex and MaintainIndexes only call once, make sure the index pool initialized and able to searching
-                if (result.Result.Maintainer.Status == IndexStatus.Idle || result.Result.Maintainer.Status == IndexStatus.Initializing)
-                {
-                    lock (syncLock)
-                    {
-                        if (result.Result.Maintainer.Status == IndexStatus.Idle)
-                        {
-                            Log.Info($"Start initializing and monitoring for index {indexName}");
-                            result.Result.Maintainer.InitializeIndex(false).ContinueWith(u => result.Result.Maintainer.MaintainIndexes());
-                        }
-
-                        if (result.Result.Maintainer.Status == IndexStatus.Initializing)
-                        {
-                            while (result.Result.Maintainer.Status == IndexStatus.Initializing) // Wait Maintainer able to screening
-                            {
-                                Thread.Sleep(100);
-                            }
-                        }
-                    }
-                }
-
                 return result.Result;
             }
 
-            Log.Info($"Index {indexName} not exist in Index Management: {result.Status.StatusDesc}");
+            Log.Info($"Index {pk} not exist in Index Management: {result.Status.StatusDesc}");
             return null;
         }
 

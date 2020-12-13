@@ -1,6 +1,7 @@
 ﻿@page "/Management"
 @inject NavigationManager NavigationManager
 @inject IJSRuntime JSRuntime
+@inject CodeIndexConfiguration Configuration
 
 <div class="row">
     <div class="col-sm">
@@ -27,14 +28,15 @@
     {
         foreach (var indexStatus in IndexStatusInfos)
         {
-            <div class="col-md-3 p-1">
+            <div class="col-md-4 p-1">
                 <div class="card">
                     <div class="card-body">
                         <p>Name: @indexStatus.IndexConfig.IndexName</p>
                         <p>Status: @indexStatus.IndexStatus</p>
                         <p>Monitor Folder: @indexStatus.IndexConfig.MonitorFolder</p>
-                        <button class="btn btn-primary btn-sm" @onclick="() => Edit(indexStatus)">Edit</button>
-                        <button class="btn btn-info btn-sm" @onclick="() => StopIndex(indexStatus)">Stop</button>
+                        <p>Indexed File Path: @indexStatus.IndexConfig.GetRootFolder(Configuration.LuceneIndex)</p>
+                        <button class="btn btn-primary btn-sm" @onclick="() => Edit(indexStatus)" disabled="@(!IndexManagement.ValidToEdit(indexStatus.IndexStatus))" title="@(IndexManagement.ValidToEdit(indexStatus.IndexStatus) ? string.Empty: "Only Idle or Disposed Index Can Be Edit")">Edit</button>
+                        <button class="btn btn-info btn-sm" @onclick="() => StopOrStartIndex(indexStatus)">@(IndexManagement.ValidToStart(indexStatus.IndexStatus) ? "Start" : "Stop")</button>
                         <button class="btn btn-danger btn-sm" @onclick="() => Delete(indexStatus)">Delete</button>
                     </div>
                 </div>
@@ -47,7 +49,7 @@
 
 <h4>
     Add or Edit Index Info
-    <button type="button" class="btn btn-primary btn-sm" @onclick="SaveIndexInfo">Save Index Info</button>
+    <button type="button" class="btn btn-primary btn-sm" @onclick="SaveIndexInfo">Save @EditType Info</button>
 </h4>
 
 <div class="row">
@@ -95,6 +97,10 @@
 
     public string StatusMessage { get; set; }
 
+    public string EditModel { get; set; }
+
+    public string EditType => IndexStatusInfos.Contains(IndexStatusInfoForEditOrAdd) ? "Edit Config" : "New Config";
+
     public IndexStatusInfo IndexStatusInfoForEditOrAdd { get; set; } = new IndexStatusInfo(IndexStatus.Idle, new IndexConfig());
 
     protected override async Task OnInitializedAsync()
@@ -117,7 +123,6 @@
             if (result.Status.Success)
             {
                 await GetLists();
-                StatusMessage = string.Empty;
             }
             else
             {
@@ -141,11 +146,10 @@
         {
             if (await JSRuntime.InvokeAsync<bool>("ShowConfirm", "Are you sure you want to delete this index? This operation can't cancel."))
             {
-                var result = (await JSRuntime.InvokeAsync<FetchResult<bool>>("DoAjaxGet", "api/management/deleteindex", new { IndexName = indexStatusInfo.IndexConfig.IndexName }));
+                var result = (await JSRuntime.InvokeAsync<FetchResult<bool>>("DoAjaxGet", "api/management/deleteindex", new { indexPk = indexStatusInfo.IndexConfig.Pk }));
                 if (result.Status.Success)
                 {
                     await GetLists();
-                    StatusMessage = string.Empty;
                 }
                 else
                 {
@@ -164,17 +168,21 @@
         }
     }
 
-    async Task StopIndex(IndexStatusInfo indexStatusInfo)
+    async Task StopOrStartIndex(IndexStatusInfo indexStatusInfo)
     {
         try
         {
-            if (await JSRuntime.InvokeAsync<bool>("ShowConfirm", "Are you sure you want to stop index and searching for this one?"))
+            var validToStart = IndexManagement.ValidToStart(indexStatusInfo.IndexStatus);
+            var message = validToStart ? "start" : "stop";
+
+            if (await JSRuntime.InvokeAsync<bool>("ShowConfirm", $"Are you sure you want to {message} indexing and searching for this one?"))
             {
-                var result = (await JSRuntime.InvokeAsync<FetchResult<bool>>("DoAjaxGet", "api/management/stopindex", new { IndexName = indexStatusInfo.IndexConfig.IndexName }));
+                var callEndpoint = validToStart ? "StartIndex" : "StopIndex";
+
+                var result = (await JSRuntime.InvokeAsync<FetchResult<bool>>("DoAjaxGet", $"api/management/{callEndpoint}", new { indexPk = indexStatusInfo.IndexConfig.Pk }));
                 if (result.Status.Success)
                 {
                     await GetLists();
-                    StatusMessage = string.Empty;
                 }
                 else
                 {
@@ -203,7 +211,6 @@
                 if (result.Status.Success)
                 {
                     await GetLists();
-                    StatusMessage = string.Empty;
                 }
                 else
                 {
@@ -235,6 +242,7 @@
             {
                 IndexStatusInfos = result.Result.ToList();
                 StatusMessage = string.Empty;
+                IndexStatusInfoForEditOrAdd = new IndexStatusInfo(IndexStatus.Idle, new IndexConfig());
             }
             else
             {

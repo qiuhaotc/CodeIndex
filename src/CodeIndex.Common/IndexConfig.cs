@@ -3,18 +3,16 @@ using System.IO;
 
 namespace CodeIndex.Common
 {
-    public class IndexConfig
+    public record IndexConfig
     {
         public const char SplitChar = '|';
-
-        // TODO: Index Name readonly when edit, not allow special characters
-        public string IndexName { get; set; }
-
-        public string MonitorFolder { get; set; }
+        public Guid Pk { get; set; } = Guid.NewGuid();
+        public string IndexName { get; set; } = string.Empty;
+        public string MonitorFolder { get; set; } = string.Empty;
         public int MaxContentHighlightLength { get; set; } = 3000000;
         public int SaveIntervalSeconds { get; set; } = 300;
-        public string OpenIDEUriFormat { get; set; }
-        public string MonitorFolderRealPath { get; set; }
+        public string OpenIDEUriFormat { get; set; } = "vscode://file/{FilePath}";
+        public string MonitorFolderRealPath { get; set; } = string.Empty;
 
         public string ExcludedPaths
         {
@@ -60,7 +58,18 @@ namespace CodeIndex.Common
 
         public string GetRootFolder(string parentFolder)
         {
-            return Path.Combine(parentFolder, CodeIndexConfiguration.CodeIndexesFolder, IndexName);
+            return Path.Combine(parentFolder, CodeIndexConfiguration.CodeIndexesFolder, Pk.ToString());
+        }
+
+        public void TrimValues()
+        {
+            IndexName = IndexName?.Trim();
+            MonitorFolder = MonitorFolder?.Trim();
+            OpenIDEUriFormat = OpenIDEUriFormat?.Trim();
+            MonitorFolderRealPath = MonitorFolderRealPath?.Trim();
+            ExcludedPaths = ExcludedPaths?.Trim();
+            IncludedExtensions = IncludedExtensions?.Trim();
+            ExcludedExtensions = ExcludedExtensions?.Trim();
         }
 
         string[] GetSplitStringArray(string value)
