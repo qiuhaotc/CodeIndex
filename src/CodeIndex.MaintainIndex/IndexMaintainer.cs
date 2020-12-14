@@ -82,7 +82,7 @@ namespace CodeIndex.MaintainIndex
 
         async Task MaintainIndexesCore()
         {
-            while (true)
+            while (!TokenSource.Token.IsCancellationRequested)
             {
                 TokenSource.Token.ThrowIfCancellationRequested();
 
@@ -104,20 +104,37 @@ namespace CodeIndex.MaintainIndex
                     }
                 }
 
-                if (TokenSource.Token.IsCancellationRequested)
+                TokenSource.Token.ThrowIfCancellationRequested();
+
+                var fetchRetryEndDate = DateTime.UtcNow.AddSeconds(-3);
+                var needRetry = PendingRetryCodeSources.Count(u => u.LastRetryUTCDate <= fetchRetryEndDate);
+                if (needRetry > 0)
                 {
-                    throw new OperationCanceledException();
+                    var needRetrySources = new List<ChangedSource>();
+                    for (int index = 0; index < needRetry; index++)
+                    {
+                        if (PendingRetryCodeSources.TryDequeue(out var pendingRetrySource))
+                        {
+                            needRetrySources.Add(pendingRetrySource);
+                        }
+                    }
+
+                    ProcessingChanges(needRetrySources.OrderBy(u => u.ChangedUTCDate).ToList(), true);
+
+                    IndexBuilder.Commit();
                 }
 
                 await Task.Delay(3000, TokenSource.Token);
             }
         }
 
-        void ProcessingChanges(List<ChangedSource> orderedNeedProcessingChanges)
+        void ProcessingChanges(List<ChangedSource> orderedNeedProcessingChanges, bool isFailedChangedSource = false)
         {
-            PreProcessingChanges(orderedNeedProcessingChanges);
+            var prefix = isFailedChangedSource ? "Failed " : string.Empty;
 
-            Log.Info($"{IndexConfig.IndexName}: Processing Changes start, changes count: {orderedNeedProcessingChanges.Count}");
+            PreProcessingChanges(orderedNeedProcessingChanges, prefix);
+
+            Log.Info($"{IndexConfig.IndexName}: Processing {prefix}Changes start, changes count: {orderedNeedProcessingChanges.Count}");
 
             foreach (var changes in orderedNeedProcessingChanges)
             {
@@ -147,12 +164,12 @@ namespace CodeIndex.MaintainIndex
                 }
             }
 
-            Log.Info($"{IndexConfig.IndexName}: Processing Changes finished");
+            Log.Info($"{IndexConfig.IndexName}: Processing {prefix}Changes finished");
         }
 
-        void PreProcessingChanges(IList<ChangedSource> orderedNeedProcessingChanges)
+        void PreProcessingChanges(IList<ChangedSource> orderedNeedProcessingChanges, string prefix)
         {
-            Log.Debug($"{IndexConfig.IndexName}: Pre Processing Changes Start, changes count: {orderedNeedProcessingChanges.Count}");
+            Log.Debug($"{IndexConfig.IndexName}: Pre Processing {prefix}Changes Start, changes count: {orderedNeedProcessingChanges.Count}");
 
             var needDeleted = new List<ChangedSource>();
 
@@ -177,14 +194,17 @@ namespace CodeIndex.MaintainIndex
             }
 
             needDeleted.ForEach(u => orderedNeedProcessingChanges.Remove(u));
-            Log.Debug($"{IndexConfig.IndexName}: Pre Processing Changes Finished");
+            Log.Debug($"{IndexConfig.IndexName}: Pre Processing {prefix}Changes Finished");
         }
 
         void CreateIndex(ChangedSource changes)
         {
             if (IsFile(changes.FilePath))
             {
-                IndexBuilder.CreateIndex(new FileInfo(changes.FilePath));
+                if (IndexBuilder.CreateIndex(new FileInfo(changes.FilePath)) == IndexBuildResults.FailedWithIOException)
+                {
+                    EnqueueToFailedSource(changes);
+                }
             }
         }
 
@@ -201,12 +221,30 @@ namespace CodeIndex.MaintainIndex
             {
                 if (IsFile(changes.FilePath))
                 {
-                    IndexBuilder.RenameFileIndex(changes.OldPath, changes.FilePath);
+                    if (IndexBuilder.RenameFileIndex(changes.OldPath, changes.FilePath) == IndexBuildResults.FailedWithIOException)
+                    {
+                        EnqueueToFailedSource(changes);
+                    }
                 }
                 else if (IsDirectory(changes.FilePath))
                 {
                     IndexBuilder.RenameFolderIndexes(changes.OldPath, changes.FilePath, TokenSource.Token);
                 }
+            }
+        }
+
+        void EnqueueToFailedSource(ChangedSource changes)
+        {
+            if (changes is not PendingRetrySource)
+            {
+                Log.Warn($"Enqueue failed processing changed source {changes}"); PendingRetryCodeSources.Enqueue(new PendingRetrySource
+                {
+                    ChangesType = changes.ChangesType,
+                    FilePath = changes.FilePath,
+                    OldPath = changes.FilePath,
+                    ChangedUTCDate = changes.ChangedUTCDate,
+                    LastRetryUTCDate = DateTime.UtcNow
+                });
             }
         }
 
@@ -229,7 +267,10 @@ namespace CodeIndex.MaintainIndex
         {
             if (IsFile(changes.FilePath))
             {
-                IndexBuilder.UpdateIndex(new FileInfo(changes.FilePath), TokenSource.Token);
+                if (IndexBuilder.UpdateIndex(new FileInfo(changes.FilePath), TokenSource.Token) == IndexBuildResults.FailedWithIOException)
+                {
+                    EnqueueToFailedSource(changes);
+                }
             }
         }
 
@@ -284,7 +325,7 @@ namespace CodeIndex.MaintainIndex
                             if (fileInfo.LastWriteTimeUtc != codeSource.LastWriteTimeUtc)
                             {
                                 Log.Info($"{IndexConfig.IndexName}: File {fileInfo.FullName} modified");
-                                if (!IndexBuilder.UpdateIndex(fileInfo, TokenSource.Token))
+                                if (IndexBuilder.UpdateIndex(fileInfo, TokenSource.Token) != IndexBuildResults.Successful)
                                 {
                                     failedUpdateOrDeleteFiles.Add(codeSource.FilePath);
                                 }

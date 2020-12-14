@@ -80,7 +80,7 @@ namespace CodeIndex.Test
 
             var fileName = Path.Combine(MonitorFolder, "A.txt");
             File.AppendAllText(fileName, "ABCD EEEE");
-            Assert.IsTrue(indexBuilder.CreateIndex(new FileInfo(fileName)));
+            Assert.AreEqual(IndexBuildResults.Successful, indexBuilder.CreateIndex(new FileInfo(fileName)));
 
             var results = indexBuilder.CodeIndexPool.SearchCode(new MatchAllDocsQuery());
             var words = indexBuilder.HintIndexPool.SearchWord(new MatchAllDocsQuery());
@@ -105,7 +105,7 @@ namespace CodeIndex.Test
             var oldFileName = Path.Combine(oldPath, "A.txt");
             var newFileName = Path.Combine(newPath, "A.txt");
             File.AppendAllText(oldFileName, "ABCD EEEE");
-            Assert.IsTrue(indexBuilder.CreateIndex(new FileInfo(oldFileName)));
+            Assert.AreEqual(IndexBuildResults.Successful, indexBuilder.CreateIndex(new FileInfo(oldFileName)));
             Assert.AreEqual(oldFileName, indexBuilder.CodeIndexPool.SearchCode(new MatchAllDocsQuery()).First().FilePath);
 
             Directory.Move(oldPath, newPath);
@@ -126,11 +126,11 @@ namespace CodeIndex.Test
             var oldFileName = Path.Combine(MonitorFolder, "A.txt");
             var newFileName = Path.Combine(MonitorFolder, "B.txt");
             File.AppendAllText(oldFileName, "ABCD EEEE");
-            Assert.IsTrue(indexBuilder.CreateIndex(new FileInfo(oldFileName)));
+            Assert.AreEqual(IndexBuildResults.Successful, indexBuilder.CreateIndex(new FileInfo(oldFileName)));
             Assert.AreEqual(oldFileName, indexBuilder.CodeIndexPool.SearchCode(new MatchAllDocsQuery()).First().FilePath);
 
             Directory.Move(oldFileName, newFileName);
-            Assert.IsTrue(indexBuilder.RenameFileIndex(oldFileName, newFileName));
+            Assert.AreEqual(IndexBuildResults.Successful, indexBuilder.RenameFileIndex(oldFileName, newFileName));
             Assert.AreEqual(newFileName, indexBuilder.CodeIndexPool.SearchCode(new MatchAllDocsQuery()).First().FilePath);
 
             var results = indexBuilder.CodeIndexPool.SearchCode(new TermQuery(indexBuilder.GetNoneTokenizeFieldTerm(nameof(CodeSource.FilePath), newFileName)));
@@ -146,11 +146,11 @@ namespace CodeIndex.Test
 
             var fileName = Path.Combine(MonitorFolder, "A.txt");
             File.AppendAllText(fileName, "ABCD EEEE");
-            Assert.IsTrue(indexBuilder.CreateIndex(new FileInfo(fileName)));
+            Assert.AreEqual(IndexBuildResults.Successful, indexBuilder.CreateIndex(new FileInfo(fileName)));
             Assert.AreEqual("ABCD EEEE", indexBuilder.CodeIndexPool.SearchCode(new MatchAllDocsQuery()).First().Content);
 
             File.AppendAllText(fileName, " NEW");
-            Assert.IsTrue(indexBuilder.UpdateIndex(new FileInfo(fileName), CancellationToken.None));
+            Assert.AreEqual(IndexBuildResults.Successful, indexBuilder.UpdateIndex(new FileInfo(fileName), CancellationToken.None));
             Assert.AreEqual("ABCD EEEE NEW", indexBuilder.CodeIndexPool.SearchCode(new MatchAllDocsQuery()).First().Content);
         }
 
@@ -161,8 +161,8 @@ namespace CodeIndex.Test
 
             File.AppendAllText(Path.Combine(MonitorFolder, "A.txt"), "ABCD EEEE");
             File.AppendAllText(Path.Combine(MonitorFolder, "B.txt"), "ABCD DDDD");
-            Assert.IsTrue(indexBuilder.CreateIndex(new FileInfo(Path.Combine(MonitorFolder, "A.txt"))));
-            Assert.IsTrue(indexBuilder.CreateIndex(new FileInfo(Path.Combine(MonitorFolder, "B.txt"))));
+            Assert.AreEqual(IndexBuildResults.Successful, indexBuilder.CreateIndex(new FileInfo(Path.Combine(MonitorFolder, "A.txt"))));
+            Assert.AreEqual(IndexBuildResults.Successful, indexBuilder.CreateIndex(new FileInfo(Path.Combine(MonitorFolder, "B.txt"))));
             Assert.AreEqual(2, indexBuilder.CodeIndexPool.SearchCode(new MatchAllDocsQuery()).Length);
 
             Assert.IsTrue(indexBuilder.DeleteIndex(Path.Combine(MonitorFolder, "A.txt")));
@@ -184,7 +184,7 @@ namespace CodeIndex.Test
         {
             using var indexBuilder = new CodeIndexBuilder("ABC", new LucenePoolLight(TempCodeIndexDir), new LucenePoolLight(TempHintIndexDir), Log);
             File.AppendAllText(Path.Combine(MonitorFolder, "A.txt"), "ABCD EEEE");
-            Assert.IsTrue(indexBuilder.CreateIndex(new FileInfo(Path.Combine(MonitorFolder, "A.txt"))));
+            Assert.AreEqual(IndexBuildResults.Successful, indexBuilder.CreateIndex(new FileInfo(Path.Combine(MonitorFolder, "A.txt"))));
             Assert.IsFalse(IndexBuilderHelper.IndexExists(TempCodeIndexDir));
 
             indexBuilder.Commit();

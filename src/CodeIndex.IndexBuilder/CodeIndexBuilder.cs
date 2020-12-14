@@ -151,7 +151,7 @@ namespace CodeIndex.IndexBuilder
             return CodeIndexPool.Search(new MatchAllDocsQuery(), int.MaxValue).Select(u => (u.Get(nameof(CodeSource.FilePath)), new DateTime(long.Parse(u.Get(nameof(CodeSource.LastWriteTimeUtc)))))).ToList();
         }
 
-        public bool CreateIndex(FileInfo fileInfo)
+        public IndexBuildResults CreateIndex(FileInfo fileInfo)
         {
             try
             {
@@ -177,18 +177,22 @@ namespace CodeIndex.IndexBuilder
                     Log.Info($"{Name}: Create index For {source.FilePath} finished");
                 }
 
-                return true;
+                return IndexBuildResults.Successful;
             }
             catch (Exception ex)
             {
                 Log.Error($"{Name}: Create index for {fileInfo.FullName} failed, exception: " + ex);
 
-                if (ex is OperationCanceledException)
+                if (ex is IOException)
+                {
+                    return IndexBuildResults.FailedWithIOException;
+                }
+                else if (ex is OperationCanceledException)
                 {
                     throw;
                 }
 
-                return false;
+                return IndexBuildResults.FailedWithError;
             }
         }
 
@@ -254,7 +258,7 @@ namespace CodeIndex.IndexBuilder
             }
         }
 
-        public bool RenameFileIndex(string oldFilePath, string nowFilePath)
+        public IndexBuildResults RenameFileIndex(string oldFilePath, string nowFilePath)
         {
             try
             {
@@ -266,7 +270,7 @@ namespace CodeIndex.IndexBuilder
 
                     Log.Info($"{Name}: Rename file index from {oldFilePath} to {nowFilePath} successful");
 
-                    return true;
+                    return IndexBuildResults.Successful;
                 }
 
                 if (documents.Length == 0)
@@ -276,12 +280,18 @@ namespace CodeIndex.IndexBuilder
                 }
 
                 Log.Warn($"{Name}: Rename file index from {oldFilePath} to {nowFilePath} failed, unable to find one document, there are {documents.Length} document(s) founded");
-                return false;
+                return IndexBuildResults.FailedWithError;
             }
             catch (Exception ex)
             {
                 Log.Error($"{Name}: Rename file index from {oldFilePath} to {nowFilePath} failed, exception: " + ex);
-                return false;
+
+                if(ex is IOException)
+                {
+                    return IndexBuildResults.FailedWithIOException;
+                }
+
+                return IndexBuildResults.FailedWithError;
             }
         }
 
@@ -308,7 +318,7 @@ namespace CodeIndex.IndexBuilder
             }
         }
 
-        public bool UpdateIndex(FileInfo fileInfo, CancellationToken cancellationToken)
+        public IndexBuildResults UpdateIndex(FileInfo fileInfo, CancellationToken cancellationToken)
         {
             try
             {
@@ -338,18 +348,23 @@ namespace CodeIndex.IndexBuilder
                     Log.Info($"{Name}: Update index For {source.FilePath} finished");
                 }
 
-                return true;
+                return IndexBuildResults.Successful;
             }
             catch (Exception ex)
             {
                 Log.Error($"{Name}: Update index for {fileInfo.FullName} failed, exception: " + ex);
 
-                if (ex is OperationCanceledException)
+
+                if (ex is IOException)
+                {
+                    return IndexBuildResults.FailedWithIOException;
+                }
+                else if (ex is OperationCanceledException)
                 {
                     throw;
                 }
 
-                return false;
+                return IndexBuildResults.FailedWithError;
             }
         }
 
