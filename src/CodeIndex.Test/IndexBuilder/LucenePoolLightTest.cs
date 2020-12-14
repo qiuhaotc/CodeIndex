@@ -207,6 +207,18 @@ namespace CodeIndex.Test
             Assert.DoesNotThrowAsync(async () => await Task.WhenAll(taskList));
         }
 
+        [Test]
+        public void TestGetQueryParser()
+        {
+            using var light = new LucenePoolLight(TempIndexDir);
+
+            var parserA = LucenePoolLight.GetQueryParser();
+            var parserB = LucenePoolLight.GetQueryParser();
+            Assert.AreNotEqual(parserA, parserB);
+            Assert.AreEqual(parserA.Analyzer, parserB.Analyzer);
+            Assert.IsTrue(parserA.Analyzer is CodeAnalyzer);
+        }
+
         Document GetDocument(CodeSource codeSource)
         {
             return IndexBuilderHelper.GetDocumentFromSource(codeSource);

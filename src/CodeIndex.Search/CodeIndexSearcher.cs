@@ -2,7 +2,6 @@
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
-using System.Threading;
 using System.Web;
 using CodeIndex.Common;
 using CodeIndex.IndexBuilder;
@@ -15,9 +14,9 @@ using static CodeIndex.IndexBuilder.CodeContentProcessing;
 
 namespace CodeIndex.Search
 {
-    public class CodeIndexSearcherLight
+    public class CodeIndexSearcher
     {
-        public CodeIndexSearcherLight(IndexManagement indexManagement, ILog log)
+        public CodeIndexSearcher(IndexManagement indexManagement, ILog log)
         {
             IndexManagement = indexManagement;
             Log = log;
@@ -40,7 +39,7 @@ namespace CodeIndex.Search
             }
 
             query = maintainer.QueryGenerator.GetQueryFromStr(searchStr);
-            return StatusValid(maintainer) ? maintainer.Maintainer.IndexBuilderLight.CodeIndexPool.Search(query, maxResults).Select(GetCodeSourceFromDocument).ToArray() : Array.Empty<CodeSource>();
+            return StatusValid(maintainer) ? maintainer.Maintainer.IndexBuilder.CodeIndexPool.Search(query, maxResults).Select(GetCodeSourceFromDocument).ToArray() : Array.Empty<CodeSource>();
         }
 
         public string GenerateHtmlPreviewText(string contentQuery, string text, int length, Guid pk, string prefix = "<label class='highlight'>", string suffix = "</label>", bool returnRawContentWhenResultIsEmpty = false)
@@ -118,7 +117,7 @@ namespace CodeIndex.Search
             }
 
             var maintainer = GetIndexMaintainerWrapper(pk);
-            return StatusValid(maintainer) ? maintainer.Maintainer.IndexBuilderLight.HintIndexPool.Search(searchQuery, maxResults).Select(u => u.Get(nameof(CodeWord.Word))).ToArray() : Array.Empty<string>();
+            return StatusValid(maintainer) ? maintainer.Maintainer.IndexBuilder.HintIndexPool.Search(searchQuery, maxResults).Select(u => u.Get(nameof(CodeWord.Word))).ToArray() : Array.Empty<string>();
         }
 
         public Query GetQueryFromStr(string contentQuery, Guid pk)
@@ -209,7 +208,7 @@ namespace CodeIndex.Search
             return results;
         }
 
-        public CodeSource GetCodeSourceFromDocument(Document document)
+        public static CodeSource GetCodeSourceFromDocument(Document document)
         {
             return new CodeSource
             {

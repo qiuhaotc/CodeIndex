@@ -25,9 +25,12 @@
                 <Button Margin="10 0 0 0" Content="Stop Search" Command="{Binding StopSearchCommand}" Style="{StaticResource WarnButton}"/>
             </WrapPanel>
             <WrapPanel DockPanel.Dock="Top">
-                <Label Content="Service Url:"/>
+                <Label Content="Service Url:" VerticalAlignment="Center"/>
                 <TextBox Height="23" TextWrapping="NoWrap" Text="{Binding ServiceUrl}" Width="200"/>
-                <Label Content="Result Info:"/>
+                <Label Content="Index:" VerticalAlignment="Center"/>
+                <ComboBox SelectedValue="{Binding IndexPk}" ItemsSource="{Binding IndexInfos}" DisplayMemberPath="Name" SelectedValuePath="Value" Width="100" VerticalAlignment="Center"/>
+                <Button x:Name="RefreshButton" Margin="10 0 0 0" Content="Refresh Index" Command="{Binding RefreshIndexCommand}" Style="{StaticResource InfoButton}" Height="26" Width="82"/>
+				<Label Content="Result Info:" VerticalAlignment="Center"/>
                 <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="60">
                     <Label Content="{Binding ResultInfo}" Foreground="Yellow"/>
                 </ScrollViewer>

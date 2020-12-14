@@ -100,7 +100,7 @@ namespace CodeIndex.MaintainIndex
 
                         ProcessingChanges(orderedNeedProcessingChanges);
 
-                        IndexBuilderLight.Commit();
+                        IndexBuilder.Commit();
                     }
                 }
 
@@ -184,7 +184,7 @@ namespace CodeIndex.MaintainIndex
         {
             if (IsFile(changes.FilePath))
             {
-                IndexBuilderLight.CreateIndex(new FileInfo(changes.FilePath));
+                IndexBuilder.CreateIndex(new FileInfo(changes.FilePath));
             }
         }
 
@@ -194,18 +194,18 @@ namespace CodeIndex.MaintainIndex
             {
                 if (!IsExcludedFromIndex(changes.OldPath))
                 {
-                    IndexBuilderLight.DeleteIndex(changes.OldPath);
+                    IndexBuilder.DeleteIndex(changes.OldPath);
                 }
             }
             else
             {
                 if (IsFile(changes.FilePath))
                 {
-                    IndexBuilderLight.RenameFileIndex(changes.OldPath, changes.FilePath);
+                    IndexBuilder.RenameFileIndex(changes.OldPath, changes.FilePath);
                 }
                 else if (IsDirectory(changes.FilePath))
                 {
-                    IndexBuilderLight.RenameFolderIndexes(changes.OldPath, changes.FilePath, TokenSource.Token);
+                    IndexBuilder.RenameFolderIndexes(changes.OldPath, changes.FilePath, TokenSource.Token);
                 }
             }
         }
@@ -222,14 +222,14 @@ namespace CodeIndex.MaintainIndex
 
         void DeleteIndex(ChangedSource changes)
         {
-            IndexBuilderLight.DeleteIndex(changes.FilePath);
+            IndexBuilder.DeleteIndex(changes.FilePath);
         }
 
         void UpdateIndex(ChangedSource changes)
         {
             if (IsFile(changes.FilePath))
             {
-                IndexBuilderLight.UpdateIndex(new FileInfo(changes.FilePath), TokenSource.Token);
+                IndexBuilder.UpdateIndex(new FileInfo(changes.FilePath), TokenSource.Token);
             }
         }
 
@@ -237,13 +237,13 @@ namespace CodeIndex.MaintainIndex
         {
             var folders = IndexConfig.GetFolders(CodeIndexConfiguration.LuceneIndex);
 
-            IndexBuilderLight = new CodeIndexBuilderLight(
+            IndexBuilder = new CodeIndexBuilder(
                 IndexConfig.IndexName,
                 new LucenePoolLight(folders.CodeIndexFolder),
                 new LucenePoolLight(folders.HintIndexFolder),
                 Log);
 
-            IndexBuilderLight.InitIndexFolderIfNeeded();
+            IndexBuilder.InitIndexFolderIfNeeded();
 
             Status = IndexStatus.Initializing_ComponentInitializeFinished;
 
@@ -257,18 +257,18 @@ namespace CodeIndex.MaintainIndex
             List<FileInfo> needToBuildIndex = null;
             var failedUpdateOrDeleteFiles = new List<string>();
 
-            if (IndexBuilderHelper.IndexExists(IndexBuilderLight.CodeIndexPool.LuceneIndex))
+            if (IndexBuilderHelper.IndexExists(IndexBuilder.CodeIndexPool.LuceneIndex))
             {
                 if (forceRebuild)
                 {
                     Log.Info($"{IndexConfig.IndexName}: Force rebuild all indexes");
-                    IndexBuilderLight.DeleteAllIndex();
+                    IndexBuilder.DeleteAllIndex();
                 }
                 else
                 {
                     Log.Info($"{IndexConfig.IndexName}: Compare index difference");
 
-                    var allCodeSource = IndexBuilderLight.GetAllIndexedCodeSource();
+                    var allCodeSource = IndexBuilder.GetAllIndexedCodeSource();
 
                     GC.Collect(); // Run GC after fetching massive documents from index
 
@@ -284,7 +284,7 @@ namespace CodeIndex.MaintainIndex
                             if (fileInfo.LastWriteTimeUtc != codeSource.LastWriteTimeUtc)
                             {
                                 Log.Info($"{IndexConfig.IndexName}: File {fileInfo.FullName} modified");
-                                if (!IndexBuilderLight.UpdateIndex(fileInfo, TokenSource.Token))
+                                if (!IndexBuilder.UpdateIndex(fileInfo, TokenSource.Token))
                                 {
                                     failedUpdateOrDeleteFiles.Add(codeSource.FilePath);
                                 }
@@ -295,7 +295,7 @@ namespace CodeIndex.MaintainIndex
                         else
                         {
                             Log.Info($"{IndexConfig.IndexName}: File {codeSource.FilePath} deleted");
-                            if (!IndexBuilderLight.DeleteIndex(codeSource.FilePath))
+                            if (!IndexBuilder.DeleteIndex(codeSource.FilePath))
                             {
                                 failedUpdateOrDeleteFiles.Add(codeSource.FilePath);
                             }
@@ -312,7 +312,7 @@ namespace CodeIndex.MaintainIndex
 
             AddNewIndexFiles(needToBuildIndex ?? allFiles, out var failedIndexFiles);
 
-            IndexBuilderLight.Commit();
+            IndexBuilder.Commit();
 
             if (failedIndexFiles.Count > 0 || failedUpdateOrDeleteFiles.Count > 0)
             {
@@ -326,12 +326,12 @@ namespace CodeIndex.MaintainIndex
 
         void AddNewIndexFiles(IEnumerable<FileInfo> needToBuildIndex, out ConcurrentBag<FileInfo> failedIndexFiles)
         {
-            failedIndexFiles = IndexBuilderLight.BuildIndexByBatch(needToBuildIndex, true, false, false, TokenSource.Token);
+            failedIndexFiles = IndexBuilder.BuildIndexByBatch(needToBuildIndex, true, false, false, TokenSource.Token);
 
             if (failedIndexFiles.Count > 0)
             {
                 Log.Info($"{IndexConfig.IndexName}: Retry failed build indexes files, files count {failedIndexFiles.Count}");
-                failedIndexFiles = IndexBuilderLight.BuildIndexByBatch(failedIndexFiles, true, false, false, TokenSource.Token);
+                failedIndexFiles = IndexBuilder.BuildIndexByBatch(failedIndexFiles, true, false, false, TokenSource.Token);
             }
         }
 
@@ -365,7 +365,7 @@ namespace CodeIndex.MaintainIndex
         public CodeIndexConfiguration CodeIndexConfiguration { get; }
         public ILog Log { get; }
         public IndexStatus Status { get; private set; }
-        public CodeIndexBuilderLight IndexBuilderLight { get; private set; }
+        public CodeIndexBuilder IndexBuilder { get; private set; }
         public string Description { get; set; }
         public bool IsDisposing { get; private set; }
         FileSystemWatcher FilesWatcher { get; set; }
@@ -385,7 +385,7 @@ namespace CodeIndex.MaintainIndex
                 TokenSource.Cancel();
                 TokenSource.Dispose();
                 FilesWatcher?.Dispose();
-                IndexBuilderLight?.Dispose();
+                IndexBuilder?.Dispose();
                 Status = IndexStatus.Disposed;
             }
         }

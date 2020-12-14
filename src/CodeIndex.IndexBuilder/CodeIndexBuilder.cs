@@ -13,9 +13,9 @@ using Lucene.Net.Search;
 
 namespace CodeIndex.IndexBuilder
 {
-    public class CodeIndexBuilderLight : IDisposable
+    public class CodeIndexBuilder : IDisposable
     {
-        public CodeIndexBuilderLight(string name, LucenePoolLight codeIndexPool, LucenePoolLight hintIndexPool, ILog log)
+        public CodeIndexBuilder(string name, LucenePoolLight codeIndexPool, LucenePoolLight hintIndexPool, ILog log)
         {
             name.RequireNotNullOrEmpty(nameof(name));
             codeIndexPool.RequireNotNull(nameof(codeIndexPool));
@@ -60,7 +60,7 @@ namespace CodeIndex.IndexBuilder
             var failedIndexFiles = new ConcurrentBag<FileInfo>();
             using var readWriteSlimLock = new ReaderWriterLockSlim();
 
-            Parallel.ForEach(fileInfos, fileInfo =>
+            Parallel.ForEach(fileInfos, new ParallelOptions { CancellationToken = cancellationToken }, fileInfo =>
             {
                 cancellationToken.ThrowIfCancellationRequested();
                 readWriteSlimLock.EnterReadLock();
@@ -197,7 +197,20 @@ namespace CodeIndex.IndexBuilder
             cancellationToken.ThrowIfCancellationRequested();
 
             Log.Info($"{Name}: Build code index start, documents count {codeDocuments.Count}");
-            CodeIndexPool.BuildIndex(codeDocuments, needCommit, triggerMerge, applyAllDeletes);
+
+            Parallel.ForEach(
+                codeDocuments,
+                () => new List<Document>(),
+                (codeDocument, status, documentLists) =>
+                {
+                    documentLists.Add(codeDocument);
+                    return documentLists;
+                },
+                documentLists =>
+                {
+                    CodeIndexPool.BuildIndex(documentLists, needCommit, triggerMerge, applyAllDeletes);
+                });
+
             Log.Info($"{Name}: Build code index finished");
 
             Log.Info($"{Name}: Build hint index start, documents count {words.Count}");

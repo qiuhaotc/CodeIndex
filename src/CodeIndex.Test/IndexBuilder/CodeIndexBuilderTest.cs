@@ -3,8 +3,9 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using CodeIndex.Common;
-using CodeIndex.MaintainIndex;
-using CodeIndex.Search;
+using CodeIndex.IndexBuilder;
+using Lucene.Net.Index;
+using Lucene.Net.Search;
 using NUnit.Framework;
 
 namespace CodeIndex.Test
@@ -12,200 +13,209 @@ namespace CodeIndex.Test
     public class CodeIndexBuilderTest : BaseTest
     {
         [Test]
-        public void TestBuildIndex()
+        public void TestInitIndexFolderIfNeeded()
         {
-            var logger = new DummyLog();
-            using var indexManagement = new IndexManagement(Config, new DummyLog());
-            var indexSearcher = new CodeIndexSearcherLight(indexManagement, logger);
+            using var indexBuilder = new CodeIndexBuilder("ABC", new LucenePoolLight(TempCodeIndexDir), new LucenePoolLight(TempHintIndexDir), Log);
+            Assert.IsFalse(Directory.Exists(TempCodeIndexDir));
+            Assert.IsFalse(Directory.Exists(TempHintIndexDir));
 
-            var config = BuildIndex(indexManagement);
-
-            var result1 = indexSearcher.SearchCode($"{nameof(CodeSource.FileName)}:\"Dummy File\"", out var query, 10, config.Pk);
-            Assert.That(result1.Length, Is.EqualTo(1));
-            Assert.AreEqual(@"Dummy File.txt", result1[0].FileName);
-            Assert.AreEqual(@"txt", result1[0].FileExtension);
-            Assert.AreEqual(Path.Combine(MonitorFolder, "Dummy File.txt"), result1[0].FilePath);
-            Assert.AreEqual("Test Content" + Environment.NewLine + "A New Line For Test", result1[0].Content);
-            Assert.GreaterOrEqual(DateTime.UtcNow, result1[0].IndexDate);
-
-            var result2 = indexSearcher.SearchCode("BBBB test", out query, 10, config.Pk);
-            Assert.That(result2.Length, Is.EqualTo(2));
-            Assert.IsTrue(result2.Any(u => u.FileName == "Dummy File.txt"));
-            Assert.IsTrue(result2.Any(u => u.FileName == "A new File.xml"));
-
-            var result3 = indexSearcher.SearchCode("BBBB", out query, 10, config.Pk);
-            Assert.That(result3.Length, Is.EqualTo(1));
-            Assert.IsTrue(result3.Any(u => u.FileName == "A new File.xml"));
+            indexBuilder.InitIndexFolderIfNeeded();
+            Assert.IsTrue(Directory.Exists(TempCodeIndexDir));
+            Assert.IsTrue(Directory.Exists(TempHintIndexDir));
         }
 
-        //[Test]
-        //public void TestBuildIndex_DeleteOldIndexWithSamePath()
-        //{
-        //    BuildIndex();
-        //    LucenePool.SaveResultsAndClearLucenePool(Config.LuceneIndexForCode);
-
-        //    var result = CodeIndexSearcher.Search(Config.LuceneIndexForCode, Generator.GetQueryFromStr($"{nameof(CodeSource.FileName)}:\"Dummy File\""), 10);
-        //    Assert.AreEqual("Test Content" + Environment.NewLine + "A New Line For Test", result.Single().Get(nameof(CodeSource.Content)));
-
-        //    IndexBuilderHelper.BuildIndex(Config, true, true, true, new[] { new CodeSource
-        //    {
-        //        FileName = "Dummy File New",
-        //        FileExtension = "cs",
-        //        FilePath = @"C:\Dummy File.cs",
-        //        Content = "ABC",
-        //        IndexDate = new DateTime(2020, 1, 1)
-        //    }});
-        //    LucenePool.SaveResultsAndClearLucenePool(Config.LuceneIndexForCode);
-
-        //    result = CodeIndexSearcher.Search(Config.LuceneIndexForCode, Generator.GetQueryFromStr($"{nameof(CodeSource.FileName)}:\"Dummy File New\""), 10);
-        //    Assert.AreEqual("ABC", result.Single().Get(nameof(CodeSource.Content)));
-        //}
-
-        //[Test]
-        //public void TestDeleteIndex()
-        //{
-        //    BuildIndex();
-        //    LucenePool.SaveResultsAndClearLucenePool(Config.LuceneIndexForCode);
-
-        //    var generator = Generator;
-        //    var result = CodeIndexSearcher.Search(Config.LuceneIndexForCode, generator.GetQueryFromStr("FFFF test"), 10);
-        //    Assert.That(result.Length, Is.EqualTo(2));
-
-        //    IndexBuilderHelper.DeleteIndex(Config.LuceneIndexForCode, new Term(nameof(CodeSource.FileExtension), "xml"));
-        //    LucenePool.SaveResultsAndClearLucenePool(Config.LuceneIndexForCode);
-        //    result = CodeIndexSearcher.Search(Config.LuceneIndexForCode, generator.GetQueryFromStr("FFFF test"), 10);
-        //    Assert.That(result.Length, Is.EqualTo(1));
-
-        //    IndexBuilderHelper.DeleteIndex(Config.LuceneIndexForCode, generator.GetQueryFromStr("Test"));
-        //    LucenePool.SaveResultsAndClearLucenePool(Config.LuceneIndexForCode);
-        //    result = CodeIndexSearcher.Search(Config.LuceneIndexForCode, generator.GetQueryFromStr("FFFF test"), 10);
-        //    Assert.That(result.Length, Is.EqualTo(0));
-        //}
-
-        //[Test]
-        //public void TestUpdateIndex()
-        //{
-        //    BuildIndex();
-        //    LucenePool.SaveResultsAndClearLucenePool(Config.LuceneIndexForCode);
-
-        //    var result = CodeIndexSearcher.Search(Config.LuceneIndexForCode, new TermQuery(new Term(nameof(CodeSource.FilePath) + Constants.NoneTokenizeFieldSuffix, @"D:\DDDD\A new Name.cs")), 10);
-        //    Assert.That(result.Length, Is.EqualTo(1));
-
-        //    IndexBuilderHelper.UpdateIndex(Config.LuceneIndexForCode, new Term(nameof(CodeSource.FilePath) + Constants.NoneTokenizeFieldSuffix, @"d:\dddd\a new name.cs"), IndexBuilderHelper.GetDocumentFromSource(new CodeSource()
-        //    {
-        //        Content = "AAA",
-        //        FileExtension = "CCC",
-        //        FilePath = "BBB",
-        //        FileName = "DDD",
-        //        IndexDate = new DateTime(1999, 12, 31),
-        //        LastWriteTimeUtc = new DateTime(2000, 1, 1)
-        //    }));
-        //    LucenePool.SaveResultsAndClearLucenePool(Config.LuceneIndexForCode);
-
-        //    result = CodeIndexSearcher.Search(Config.LuceneIndexForCode, new TermQuery(new Term(nameof(CodeSource.FilePath) + Constants.NoneTokenizeFieldSuffix, @"d:\dddd\a new name.cs")), 10);
-        //    Assert.That(result.Length, Is.EqualTo(0));
-
-        //    result = CodeIndexSearcher.Search(Config.LuceneIndexForCode, new TermQuery(new Term(nameof(CodeSource.FilePath) + Constants.NoneTokenizeFieldSuffix, "BBB")), 10);
-        //    Assert.That(result.Length, Is.EqualTo(1));
-        //    Assert.AreEqual(@"DDD", result[0].Get(nameof(CodeSource.FileName)));
-        //    Assert.AreEqual(@"CCC", result[0].Get(nameof(CodeSource.FileExtension)));
-        //    Assert.AreEqual(@"BBB", result[0].Get(nameof(CodeSource.FilePath)));
-        //    Assert.AreEqual("AAA", result[0].Get(nameof(CodeSource.Content)));
-        //    Assert.AreEqual(new DateTime(1999, 12, 31).Ticks, result[0].GetField(nameof(CodeSource.IndexDate)).GetInt64Value());
-        //    Assert.AreEqual(new DateTime(2000, 1, 1).Ticks, result[0].GetField(nameof(CodeSource.LastWriteTimeUtc)).GetInt64Value());
-        //}
-
-        //[Test]
-        //public void TestIndexExists()
-        //{
-        //    Assert.IsFalse(IndexBuilderHelper.IndexExists(Config.LuceneIndexForCode));
-
-        //    BuildIndex();
-
-        //    Assert.IsFalse(IndexBuilderHelper.IndexExists(Config.LuceneIndexForCode));
-
-        //    LucenePool.SaveResultsAndClearLucenePool(Config.LuceneIndexForCode);
-
-        //    Assert.IsTrue(IndexBuilderHelper.IndexExists(Config.LuceneIndexForCode));
-        //}
-
-        //[Test]
-        //public void TestDeleteAllIndex()
-        //{
-        //    BuildIndex();
-        //    LucenePool.SaveResultsAndClearLucenePool(Config.LuceneIndexForCode);
-        //    Assert.AreEqual(1, CodeIndexSearcher.Search(Config.LuceneIndexForCode, Generator.GetQueryFromStr($"{nameof(CodeSource.FileName)}:\"Dummy File\""), 10).Length);
-        //    Assert.AreEqual(1, CodeIndexSearcher.Search(Config.LuceneIndexForCode, Generator.GetQueryFromStr($"{nameof(CodeSource.FileName)}:\"A new File\""), 10).Length);
-
-        //    IndexBuilderHelper.DeleteAllIndex(Config);
-        //    Assert.AreEqual(0, CodeIndexSearcher.Search(Config.LuceneIndexForCode, Generator.GetQueryFromStr($"{nameof(CodeSource.FileName)}:\"Dummy File\""), 10).Length);
-        //    Assert.AreEqual(0, CodeIndexSearcher.Search(Config.LuceneIndexForCode, Generator.GetQueryFromStr($"{nameof(CodeSource.FileName)}:\"A new File\""), 10).Length);
-        //}
-
-        //[Test]
-        //public void TestUpdateCodeFilePath()
-        //{
-        //    var document = IndexBuilderHelper.GetDocumentFromSource(new CodeSource
-        //    {
-        //        Content = "AAA",
-        //        FileExtension = "CCC",
-        //        FilePath = "BBB/DDD/1.txt",
-        //        FileName = "1.txt",
-        //        IndexDate = new DateTime(1999, 12, 31),
-        //        LastWriteTimeUtc = new DateTime(2000, 1, 1)
-        //    });
-
-        //    IndexBuilderHelper.UpdateCodeFilePath(document, "BBB/DDD/", "AAA/EEE/");
-        //    Assert.AreEqual(@"AAA/EEE/1.txt", document.Get(nameof(CodeSource.FilePath)));
-        //    Assert.AreEqual(@"AAA/EEE/1.txt", document.Get(nameof(CodeSource.FilePath) + Constants.NoneTokenizeFieldSuffix));
-        //}
-
-        //[Test]
-        //public void TestBuildIndexByBatch_ReturnFailedFiles()
-        //{
-        //    File.WriteAllText(Path.Combine(TempDir, "A.txt"), "ABCD");
-        //    IndexBuilderHelper.BuildIndexByBatch(Config, true, true, true, new[] { new FileInfo(Path.Combine(TempDir, "A.txt")) }, false, new DummyLog { ThrowExceptionWhenLogContains = "Add index For " + Path.Combine(TempDir, "A.txt") }, out var failedIndexFiles);
-        //    Assert.AreEqual(1, failedIndexFiles.Count);
-
-        //    IndexBuilderHelper.BuildIndexByBatch(Config, true, true, true, new[] { new FileInfo(Path.Combine(TempDir, "A.txt")), new FileInfo("BlaBla\\a.txt") }, false, null, out failedIndexFiles);
-        //    Assert.AreEqual(0, failedIndexFiles.Count);
-        //}
-
-        //[Test]
-        //public void TestInitIndexFolderIfNeeded()
-        //{
-        //    Assert.IsFalse(Directory.Exists(Config.LuceneIndexForCode));
-        //    Assert.IsFalse(Directory.Exists(Config.LuceneIndexForHint));
-
-        //    IndexBuilderHelper.InitIndexFolderIfNeeded(Config, null);
-
-        //    Assert.IsTrue(Directory.Exists(Config.LuceneIndexForCode));
-        //    Assert.IsTrue(Directory.Exists(Config.LuceneIndexForHint));
-        //}
-
-        IndexConfig BuildIndex(IndexManagement indexManagement)
+        [Test]
+        public void TestBuildIndexByBatch()
         {
-            var indexConfig = new IndexConfig
+            using var indexBuilder = new CodeIndexBuilder("ABC", new LucenePoolLight(TempCodeIndexDir), new LucenePoolLight(TempHintIndexDir), Log);
+            var fileName1 = Path.Combine(MonitorFolder, "A.txt");
+            var fileName2 = Path.Combine(MonitorFolder, "B.txt");
+            File.AppendAllText(fileName1, "ABCD ABCD" + Environment.NewLine + "ABCD");
+            File.AppendAllText(fileName2, "ABCD EFGH");
+
+            var failedFiles = indexBuilder.BuildIndexByBatch(new[] { new FileInfo(fileName1), new FileInfo(fileName2) }, true, true, true, CancellationToken.None);
+            CollectionAssert.IsEmpty(failedFiles);
+
+            var results = indexBuilder.CodeIndexPool.SearchCode(Generator.GetQueryFromStr("ABCD"));
+
+            Assert.AreEqual(2, results.Length);
+            Assert.AreEqual("A.txt", results[0].FileName);
+            Assert.AreEqual("txt", results[0].FileExtension);
+            Assert.AreEqual(fileName1, results[0].FilePath);
+            Assert.AreEqual("ABCD ABCD" + Environment.NewLine + "ABCD", results[0].Content);
+            Assert.GreaterOrEqual(DateTime.UtcNow, results[0].IndexDate);
+            Assert.AreEqual("B.txt", results[1].FileName);
+            Assert.AreEqual("txt", results[1].FileExtension);
+            Assert.AreEqual(fileName2, results[1].FilePath);
+            Assert.AreEqual("ABCD EFGH", results[1].Content);
+            Assert.GreaterOrEqual(DateTime.UtcNow, results[1].IndexDate);
+            Assert.AreEqual(1, indexBuilder.CodeIndexPool.SearchCode(Generator.GetQueryFromStr("EFGH")).Length);
+            Assert.AreEqual(1, indexBuilder.HintIndexPool.SearchWord(new TermQuery(new Term(nameof(CodeWord.Word), "ABCD"))).Length);
+            Assert.AreEqual(1, indexBuilder.HintIndexPool.SearchWord(new TermQuery(new Term(nameof(CodeWord.Word), "EFGH"))).Length);
+        }
+
+        [Test]
+        public void TestBuildIndexByBatch_FailedFiles()
+        {
+            using var indexBuilder = new CodeIndexBuilder("ABC", new LucenePoolLight(TempCodeIndexDir), new LucenePoolLight(TempHintIndexDir), Log);
+            var fileName1 = Path.Combine(MonitorFolder, "A.txt");
+            var fileName2 = Path.Combine(MonitorFolder, "B.txt");
+            var file = File.Create(fileName1);
+            File.AppendAllText(fileName2, "ABCD ABCD");
+            try
             {
-                IndexName = "dummy",
-                MonitorFolder = MonitorFolder
-            };
-
-            indexManagement.AddIndex(indexConfig);
-
-            File.AppendAllText(Path.Combine(MonitorFolder, "Dummy File.txt"), "Test Content" + Environment.NewLine + "A New Line For Test");
-            File.AppendAllText(Path.Combine(MonitorFolder, "A new File.xml"), "BBBB Content A new Line");
-
-            var result = indexManagement.StartIndex(indexConfig.Pk);
-
-            Assert.IsTrue(result.Status.Success);
-
-            while (indexManagement.GetIndexList().Result.First(u => u.IndexConfig == indexConfig).IndexStatus != IndexStatus.Monitoring)
-            {
-                Thread.Sleep(100);
+                var failedFiles = indexBuilder.BuildIndexByBatch(new[] { new FileInfo(fileName1), new FileInfo(fileName2) }, true, true, true, CancellationToken.None);
+                CollectionAssert.AreEquivalent(new[] { fileName1 }, failedFiles.Select(u => u.FullName));
             }
+            finally
+            {
+                file.Dispose();
+            }
+        }
 
-            return indexConfig;
+        [Test]
+        public void TestCreateIndex()
+        {
+            using var indexBuilder = new CodeIndexBuilder("ABC", new LucenePoolLight(TempCodeIndexDir), new LucenePoolLight(TempHintIndexDir), Log);
+
+            var fileName = Path.Combine(MonitorFolder, "A.txt");
+            File.AppendAllText(fileName, "ABCD EEEE");
+            Assert.IsTrue(indexBuilder.CreateIndex(new FileInfo(fileName)));
+
+            var results = indexBuilder.CodeIndexPool.SearchCode(new MatchAllDocsQuery());
+            var words = indexBuilder.HintIndexPool.SearchWord(new MatchAllDocsQuery());
+            Assert.AreEqual(1, results.Length);
+            Assert.AreEqual(2, words.Length);
+            Assert.AreEqual("A.txt", results[0].FileName);
+            Assert.AreEqual("txt", results[0].FileExtension);
+            Assert.AreEqual(fileName, results[0].FilePath);
+            Assert.AreEqual("ABCD EEEE", results[0].Content);
+            Assert.GreaterOrEqual(DateTime.UtcNow, results[0].IndexDate);
+            CollectionAssert.AreEquivalent(new[] { "ABCD", "EEEE" }, words.Select(u => u.Word));
+        }
+
+        [Test]
+        public void TestRenameFolderIndexes()
+        {
+            using var indexBuilder = new CodeIndexBuilder("ABC", new LucenePoolLight(TempCodeIndexDir), new LucenePoolLight(TempHintIndexDir), Log);
+
+            var oldPath = Path.Combine(MonitorFolder, "ABC");
+            Directory.CreateDirectory(oldPath);
+            var newPath = Path.Combine(MonitorFolder, "EFG");
+            var oldFileName = Path.Combine(oldPath, "A.txt");
+            var newFileName = Path.Combine(newPath, "A.txt");
+            File.AppendAllText(oldFileName, "ABCD EEEE");
+            Assert.IsTrue(indexBuilder.CreateIndex(new FileInfo(oldFileName)));
+            Assert.AreEqual(oldFileName, indexBuilder.CodeIndexPool.SearchCode(new MatchAllDocsQuery()).First().FilePath);
+
+            Directory.Move(oldPath, newPath);
+            Assert.IsTrue(indexBuilder.RenameFolderIndexes(oldPath, newPath, CancellationToken.None));
+            Assert.AreEqual(newFileName, indexBuilder.CodeIndexPool.SearchCode(new MatchAllDocsQuery()).First().FilePath);
+
+            var results = indexBuilder.CodeIndexPool.SearchCode(new PrefixQuery(indexBuilder.GetNoneTokenizeFieldTerm(nameof(CodeSource.FilePath), newPath)));
+            Assert.AreEqual(1, results.Length);
+            Assert.AreEqual(newFileName, results[0].FilePath);
+            Assert.AreEqual("ABCD EEEE", results[0].Content);
+        }
+
+        [Test]
+        public void TestRenameFileIndex()
+        {
+            using var indexBuilder = new CodeIndexBuilder("ABC", new LucenePoolLight(TempCodeIndexDir), new LucenePoolLight(TempHintIndexDir), Log);
+
+            var oldFileName = Path.Combine(MonitorFolder, "A.txt");
+            var newFileName = Path.Combine(MonitorFolder, "B.txt");
+            File.AppendAllText(oldFileName, "ABCD EEEE");
+            Assert.IsTrue(indexBuilder.CreateIndex(new FileInfo(oldFileName)));
+            Assert.AreEqual(oldFileName, indexBuilder.CodeIndexPool.SearchCode(new MatchAllDocsQuery()).First().FilePath);
+
+            Directory.Move(oldFileName, newFileName);
+            Assert.IsTrue(indexBuilder.RenameFileIndex(oldFileName, newFileName));
+            Assert.AreEqual(newFileName, indexBuilder.CodeIndexPool.SearchCode(new MatchAllDocsQuery()).First().FilePath);
+
+            var results = indexBuilder.CodeIndexPool.SearchCode(new TermQuery(indexBuilder.GetNoneTokenizeFieldTerm(nameof(CodeSource.FilePath), newFileName)));
+            Assert.AreEqual(1, results.Length);
+            Assert.AreEqual(newFileName, results[0].FilePath);
+            Assert.AreEqual("ABCD EEEE", results[0].Content);
+        }
+
+        [Test]
+        public void TestUpdateIndex()
+        {
+            using var indexBuilder = new CodeIndexBuilder("ABC", new LucenePoolLight(TempCodeIndexDir), new LucenePoolLight(TempHintIndexDir), Log);
+
+            var fileName = Path.Combine(MonitorFolder, "A.txt");
+            File.AppendAllText(fileName, "ABCD EEEE");
+            Assert.IsTrue(indexBuilder.CreateIndex(new FileInfo(fileName)));
+            Assert.AreEqual("ABCD EEEE", indexBuilder.CodeIndexPool.SearchCode(new MatchAllDocsQuery()).First().Content);
+
+            File.AppendAllText(fileName, " NEW");
+            Assert.IsTrue(indexBuilder.UpdateIndex(new FileInfo(fileName), CancellationToken.None));
+            Assert.AreEqual("ABCD EEEE NEW", indexBuilder.CodeIndexPool.SearchCode(new MatchAllDocsQuery()).First().Content);
+        }
+
+        [Test]
+        public void TestDeleteIndex()
+        {
+            using var indexBuilder = new CodeIndexBuilder("ABC", new LucenePoolLight(TempCodeIndexDir), new LucenePoolLight(TempHintIndexDir), Log);
+
+            File.AppendAllText(Path.Combine(MonitorFolder, "A.txt"), "ABCD EEEE");
+            File.AppendAllText(Path.Combine(MonitorFolder, "B.txt"), "ABCD DDDD");
+            Assert.IsTrue(indexBuilder.CreateIndex(new FileInfo(Path.Combine(MonitorFolder, "A.txt"))));
+            Assert.IsTrue(indexBuilder.CreateIndex(new FileInfo(Path.Combine(MonitorFolder, "B.txt"))));
+            Assert.AreEqual(2, indexBuilder.CodeIndexPool.SearchCode(new MatchAllDocsQuery()).Length);
+
+            Assert.IsTrue(indexBuilder.DeleteIndex(Path.Combine(MonitorFolder, "A.txt")));
+            Assert.AreEqual(1, indexBuilder.CodeIndexPool.SearchCode(new MatchAllDocsQuery()).Length);
+        }
+
+        [Test]
+        public void TestGetNoneTokenizeFieldTerm()
+        {
+            using var indexBuilder = new CodeIndexBuilder("ABC", new LucenePoolLight(TempCodeIndexDir), new LucenePoolLight(TempHintIndexDir), Log);
+
+            var term = indexBuilder.GetNoneTokenizeFieldTerm("ABC", "Value");
+            Assert.AreEqual("ABC" + Constants.NoneTokenizeFieldSuffix, term.Field);
+            Assert.AreEqual("Value", term.Text());
+        }
+
+        [Test]
+        public void TestCommit()
+        {
+            using var indexBuilder = new CodeIndexBuilder("ABC", new LucenePoolLight(TempCodeIndexDir), new LucenePoolLight(TempHintIndexDir), Log);
+            File.AppendAllText(Path.Combine(MonitorFolder, "A.txt"), "ABCD EEEE");
+            Assert.IsTrue(indexBuilder.CreateIndex(new FileInfo(Path.Combine(MonitorFolder, "A.txt"))));
+            Assert.IsFalse(IndexBuilderHelper.IndexExists(TempCodeIndexDir));
+
+            indexBuilder.Commit();
+            Assert.IsTrue(IndexBuilderHelper.IndexExists(TempCodeIndexDir));
+
+            using var dir = Lucene.Net.Store.FSDirectory.Open(TempCodeIndexDir);
+            using var reader = DirectoryReader.Open(dir);
+            var searcher = new IndexSearcher(reader);
+            Assert.AreEqual(1, searcher.Search(new MatchAllDocsQuery(), 1).TotalHits);
+        }
+
+        [Test]
+        public void TestDeleteAllIndex()
+        {
+            using var indexBuilder = new CodeIndexBuilder("ABC", new LucenePoolLight(TempCodeIndexDir), new LucenePoolLight(TempHintIndexDir), Log);
+            Assert.IsFalse(Directory.Exists(TempCodeIndexDir));
+            Assert.IsFalse(Directory.Exists(TempHintIndexDir));
+
+            var fileName1 = Path.Combine(MonitorFolder, "A.txt");
+            var fileName2 = Path.Combine(MonitorFolder, "B.txt");
+            File.AppendAllText(fileName1, "ABCD ABCD");
+            File.AppendAllText(fileName2, "ABCD EFGH");
+
+            var failedFiles = indexBuilder.BuildIndexByBatch(new[] { new FileInfo(fileName1), new FileInfo(fileName2) }, true, true, true, CancellationToken.None);
+            CollectionAssert.IsEmpty(failedFiles);
+            Assert.AreEqual(2, indexBuilder.CodeIndexPool.SearchCode(new MatchAllDocsQuery()).Length);
+            Assert.AreEqual(2, indexBuilder.HintIndexPool.SearchWord(new MatchAllDocsQuery()).Length);
+
+            indexBuilder.DeleteAllIndex();
+            Assert.AreEqual(0, indexBuilder.CodeIndexPool.SearchCode(new MatchAllDocsQuery()).Length);
+            Assert.AreEqual(0, indexBuilder.HintIndexPool.SearchWord(new MatchAllDocsQuery()).Length);
         }
     }
 }

@@ -1,4 +1,5 @@
-﻿using System.Linq;
+﻿using System;
+using System.Linq;
 using CodeIndex.Common;
 using NUnit.Framework;
 
@@ -22,6 +23,7 @@ namespace CodeIndex.Test
                 SaveIntervalSeconds = 10
             };
 
+            Assert.AreNotEqual(Guid.Empty, config.Pk);
             Assert.AreEqual("A|B|C", config.ExcludedExtensions);
             Assert.AreEqual("B|C|D", config.ExcludedPaths);
             Assert.AreEqual("E|F", config.IncludedExtensions);

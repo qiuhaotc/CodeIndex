@@ -24,7 +24,7 @@ namespace CodeIndex.IndexBuilder
                 new TextField(nameof(source.Content), source.Content.ToStringSafe(), Field.Store.YES),
                 new Int64Field(nameof(source.IndexDate), source.IndexDate.Ticks, Field.Store.YES),
                 new Int64Field(nameof(source.LastWriteTimeUtc), source.LastWriteTimeUtc.Ticks, Field.Store.YES),
-                new StringField(nameof(source.CodePK), source.CodePK.ToString(), Field.Store.YES)
+                new StringField(nameof(source.CodePK), source.CodePK, Field.Store.YES)
             };
         }
 

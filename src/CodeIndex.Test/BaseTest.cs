@@ -1,4 +1,5 @@
-﻿using CodeIndex.Common;
+﻿using System.IO;
+using CodeIndex.Common;
 using CodeIndex.IndexBuilder;
 using CodeIndex.MaintainIndex;
 using Lucene.Net.QueryParsers.Classic;
@@ -12,6 +13,8 @@ namespace CodeIndex.Test
         {
             LuceneIndex = TempIndexDir
         };
+
+        protected string TempConfigDir => Path.Combine(TempIndexDir, CodeIndexConfiguration.ConfigurationIndexFolder);
 
         QueryGenerator generator;
         protected QueryGenerator Generator => generator ??= new QueryGenerator(new QueryParser(Constants.AppLuceneVersion, nameof(CodeSource.Content), new CodeAnalyzer(Constants.AppLuceneVersion, true)));

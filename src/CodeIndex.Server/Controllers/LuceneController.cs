@@ -22,7 +22,7 @@ namespace CodeIndex.Server.Controllers
     [ApiController]
     public class LuceneController : ControllerBase
     {
-        public LuceneController(CodeIndexConfiguration codeIndexConfiguration, ILog log, CodeIndexSearcherLight codeIndexSearcher)
+        public LuceneController(CodeIndexConfiguration codeIndexConfiguration, ILog log, CodeIndexSearcher codeIndexSearcher)
         {
             this.codeIndexConfiguration = codeIndexConfiguration;
             this.log = log;
@@ -31,7 +31,7 @@ namespace CodeIndex.Server.Controllers
 
         readonly CodeIndexConfiguration codeIndexConfiguration;
         readonly ILog log;
-        private readonly CodeIndexSearcherLight codeIndexSearcher;
+        private readonly CodeIndexSearcher codeIndexSearcher;
 
         [HttpGet]
         public FetchResult<IEnumerable<CodeSource>> GetCodeSources(string searchQuery, bool preview, Guid indexPk, string contentQuery = "", int? showResults = 0)

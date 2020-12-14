@@ -10,8 +10,10 @@ namespace CodeIndex.Test
         protected string TempDir { get; set; }
         protected string TempIndexDir => Path.Combine(TempDir, "IndexFolder");
         public string MonitorFolder => Path.Combine(TempDir, "CodeFolder");
-        protected string TempCodeIndexDir => Path.Combine(TempDir, "IndexFolder", CodeIndexConfiguration.CodeIndexesFolder, CodeIndexConfiguration.CodeIndexFolder);
-        protected string TempHintIndexDir => Path.Combine(TempDir, "IndexFolder", CodeIndexConfiguration.CodeIndexesFolder, CodeIndexConfiguration.HintIndexFolder);
+        protected string TempCodeIndexDir => Path.Combine(TempIndexDir, CodeIndexConfiguration.CodeIndexesFolder, CodeIndexConfiguration.CodeIndexFolder);
+        protected string TempHintIndexDir => Path.Combine(TempIndexDir, CodeIndexConfiguration.CodeIndexesFolder, CodeIndexConfiguration.HintIndexFolder);
+        protected ILog Log => log ??= new DummyLog();
+        ILog log;
 
         [SetUp]
         protected virtual void SetUp()

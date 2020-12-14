@@ -1,5 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
+using CodeIndex.Common;
 using CodeIndex.IndexBuilder;
 using Lucene.Net.Documents;
 using NUnit.Framework;
@@ -32,6 +33,23 @@ namespace CodeIndex.Test
             Assert.AreNotEqual(new DateTime(), dummyForTest.EEE);
             CollectionAssert.AreEquivalent(new[] { "A", "B", "C", "D", "E" }, dummyForTest.FFF);
             Assert.IsNull(dummyForTest.ReadonlyProperty, "Don't set readonly property");
+
+            var config = new IndexConfig
+            {
+                ExcludedExtensions = "ABC",
+                ExcludedPaths = "CDF",
+                IncludedExtensions = "QQQ",
+                IndexName = "AAA",
+                MaxContentHighlightLength = 100,
+                MonitorFolder = "BCD",
+                MonitorFolderRealPath = "SSS",
+                OpenIDEUriFormat = "DDDD",
+                SaveIntervalSeconds = 22,
+                Pk = Guid.NewGuid()
+            };
+
+            document = ConfigIndexBuilder.GetDocumet(config);
+            Assert.AreEqual(config.ToString(), document.GetObject<IndexConfig>().ToString());
         }
 
         [Test]
