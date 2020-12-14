@@ -3,19 +3,16 @@ using System.IO;
 
 namespace CodeIndex.Common
 {
-    public class IndexConfig
+    public record IndexConfig
     {
         public const char SplitChar = '|';
-
-        public Guid Pk { get; set; }
-        public string IndexName { get; set; }
-        public string MonitorFolder { get; set; }
-        public int MaxContentHighlightLength { get; set; }
-        public int SaveIntervalSeconds { get; set; }
-        public string OpenIDEUriFormat { get; set; }
-        public string MonitorFolderRealPath { get; set; }
-        public DateTime IndexCreatedDate { get; set; }
-        public DateTime IndexLastUpdatedDate { get; set; }
+        public Guid Pk { get; set; } = Guid.NewGuid();
+        public string IndexName { get; set; } = string.Empty;
+        public string MonitorFolder { get; set; } = string.Empty;
+        public int MaxContentHighlightLength { get; set; } = 3000000;
+        public int SaveIntervalSeconds { get; set; } = 300;
+        public string OpenIDEUriFormat { get; set; } = "vscode://file/{FilePath}";
+        public string MonitorFolderRealPath { get; set; } = string.Empty;
 
         public string ExcludedPaths
         {
@@ -53,9 +50,26 @@ namespace CodeIndex.Common
 
         public string[] ExcludedExtensionsArray => excludedExtensionsArray ??= GetSplitStringArray(ExcludedExtensions);
 
-        public (string CodeIndexFolder,string HintIndexFolder) GetFolders(string parentFolder)
+        public (string CodeIndexFolder, string HintIndexFolder) GetFolders(string parentFolder)
         {
-            return (Path.Combine(parentFolder, IndexName, CodeIndexConfiguration.CodeIndexFolder), Path.Combine(parentFolder, IndexName, CodeIndexConfiguration.HintIndexFolder));
+            var rootFolder = GetRootFolder(parentFolder);
+            return (Path.Combine(rootFolder, CodeIndexConfiguration.CodeIndexFolder), Path.Combine(rootFolder, CodeIndexConfiguration.HintIndexFolder));
+        }
+
+        public string GetRootFolder(string parentFolder)
+        {
+            return Path.Combine(parentFolder, CodeIndexConfiguration.CodeIndexesFolder, Pk.ToString());
+        }
+
+        public void TrimValues()
+        {
+            IndexName = IndexName?.Trim();
+            MonitorFolder = MonitorFolder?.Trim();
+            OpenIDEUriFormat = OpenIDEUriFormat?.Trim();
+            MonitorFolderRealPath = MonitorFolderRealPath?.Trim();
+            ExcludedPaths = ExcludedPaths?.Trim();
+            IncludedExtensions = IncludedExtensions?.Trim();
+            ExcludedExtensions = ExcludedExtensions?.Trim();
         }
 
         string[] GetSplitStringArray(string value)
@@ -71,8 +85,8 @@ namespace CodeIndex.Common
         string[] excludedPathsArray;
         string[] includedExtensionsArray;
         string[] excludedExtensionsArray;
-        string excludedPaths;
-        string includedExtensions;
-        string excludedExtensions;
+        string excludedPaths = "\\RELEASES\\|\\BIN\\|\\OBJ\\|\\DEBUGPUBLIC\\";
+        string includedExtensions = ".CS|.XML|.XAML|.JS|.TXT|.SQL";
+        string excludedExtensions = ".DLL|.PBD";
     }
 }

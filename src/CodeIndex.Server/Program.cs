@@ -8,6 +8,8 @@ namespace CodeIndex.Server
         public static void Main(string[] args)
         {
             CreateHostBuilder(args).Build().Run();
+
+            // TODO: Add sitewide NLogger
         }
 
         public static IHostBuilder CreateHostBuilder(string[] args) =>

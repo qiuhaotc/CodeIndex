@@ -8,7 +8,7 @@ namespace CodeIndex.MaintainIndex
         public string FilePath { get; set; }
         public string OldPath { get; set; }
         public WatcherChangeTypes ChangesType { get; set; }
-        public DateTime ChangedUTCDate { get; } = DateTime.UtcNow;
+        public DateTime ChangedUTCDate { get; set; } = DateTime.UtcNow;
 
         public override string ToString()
         {

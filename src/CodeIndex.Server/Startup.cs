@@ -1,10 +1,12 @@
 using System;
 using System.Linq;
+using System.Net;
 using System.Net.Http;
+using System.Threading.Tasks;
 using CodeIndex.Common;
-using CodeIndex.IndexBuilder;
 using CodeIndex.MaintainIndex;
-using CodeIndex.Server.Data;
+using CodeIndex.Search;
+using Microsoft.AspNetCore.Authentication.Cookies;
 using Microsoft.AspNetCore.Builder;
 using Microsoft.AspNetCore.Components;
 using Microsoft.AspNetCore.Hosting;
@@ -16,8 +18,6 @@ namespace CodeIndex.Server
 {
     public class Startup
     {
-        // TODO: Add swagger support
-
         public Startup(IConfiguration configuration)
         {
             Configuration = configuration;
@@ -29,19 +29,57 @@ namespace CodeIndex.Server
         // For more information on how to configure your application, visit https://go.microsoft.com/fwlink/?LinkID=398940
         public void ConfigureServices(IServiceCollection services)
         {
+            #region Config swagger
+
+            // Register the Swagger services
+            services.AddSwaggerDocument(config =>
+            {
+                config.Title = "CodeIndex Server API";
+            });
+
+            #endregion
+
+            services.AddSession(options =>
+            {
+                options.IdleTimeout = TimeSpan.FromMinutes(60);
+                options.Cookie.HttpOnly = true;
+                options.Cookie.IsEssential = true;
+            });
+
+            services.AddAuthentication(CookieAuthenticationDefaults.AuthenticationScheme).AddCookie(options =>
+            {
+                options.Events = new CookieAuthenticationEvents
+                {
+                    OnRedirectToLogin = ctx =>
+                    {
+                        if (ctx.Request.Path.StartsWithSegments("/api"))
+                        {
+                            ctx.Response.StatusCode = (int)HttpStatusCode.Unauthorized;
+                        }
+                        else
+                        {
+                            ctx.Response.Redirect(ctx.RedirectUri);
+                        }
+
+                        return Task.FromResult(0);
+                    }
+                };
+            });
+
             services.AddMvc();
             services.AddRazorPages();
             services.AddServerSideBlazor();
-            services.AddSingleton<WeatherForecastService>();
             services.AddSingleton<ILog>(new NLogger());
+            services.AddSingleton<IndexManagement>();
             services.AddScoped<Storage>();
+            services.AddSingleton<CodeIndexSearcher>();
 
             config = new CodeIndexConfiguration();
             Configuration.GetSection("CodeIndex").Bind(config);
             services.AddSingleton(config);
 
             // Server Side Blazor doesn't register HttpClient by default
-            if (!services.Any(x => x.ServiceType == typeof(HttpClient)))
+            if (services.All(x => x.ServiceType != typeof(HttpClient)))
             {
                 // Setup HttpClient for server side in a client side compatible fashion
                 services.AddScoped(s =>
@@ -57,7 +95,7 @@ namespace CodeIndex.Server
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, IHostApplicationLifetime lifeTime, ILog log)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, IHostApplicationLifetime lifeTime, ILog log, IndexManagement indexManagement)
         {
             if (env.IsDevelopment())
             {
@@ -75,6 +113,15 @@ namespace CodeIndex.Server
 
             app.UseRouting();
 
+            // Register the Swagger generator and the Swagger UI middlewares
+            app.UseOpenApi();
+            app.UseSwaggerUi3();
+
+            app.UseAuthentication();
+            app.UseAuthorization();
+
+            app.UseSession();
+
             app.UseEndpoints(endpoints =>
             {
                 endpoints.MapControllers();
@@ -84,32 +131,15 @@ namespace CodeIndex.Server
 
             lifeTime.ApplicationStopping.Register(OnShutdown);
 
-            System.Threading.Tasks.Task.Run(() =>
-            {
-                try
-                {
-                    initializer = new IndexInitializer(log);
-                    maintainer = new CodeFilesIndexMaintainer(config, log);
-                    maintainer.StartWatch();
-                    initializer.InitializeIndex(config, out var failedIndexFiles);
-
-                    maintainer.SetInitializeFinishedToTrue(failedIndexFiles);
-                }
-                catch (Exception ex)
-                {
-                    log.Error(ex.ToString());
-                }
-            });
+            IndexManagement = indexManagement;
         }
 
-        IndexInitializer initializer;
-        CodeFilesIndexMaintainer maintainer;
         CodeIndexConfiguration config;
+        public IndexManagement IndexManagement { get; private set; }
 
         void OnShutdown()
         {
-            maintainer?.Dispose();
-            LucenePool.SaveResultsAndClearLucenePool(config);
+            IndexManagement?.Dispose();
         }
     }
 }

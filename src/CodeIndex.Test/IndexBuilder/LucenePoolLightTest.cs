@@ -77,8 +77,7 @@ namespace CodeIndex.Test
         [Test]
         public void TestAnalyzer()
         {
-            using var light = new LucenePoolLight("Dummy");
-            Assert.NotNull(light.Analyzer);
+            Assert.NotNull(LucenePoolLight.Analyzer);
         }
 
         [Test]
@@ -208,9 +207,21 @@ namespace CodeIndex.Test
             Assert.DoesNotThrowAsync(async () => await Task.WhenAll(taskList));
         }
 
+        [Test]
+        public void TestGetQueryParser()
+        {
+            using var light = new LucenePoolLight(TempIndexDir);
+
+            var parserA = LucenePoolLight.GetQueryParser();
+            var parserB = LucenePoolLight.GetQueryParser();
+            Assert.AreNotEqual(parserA, parserB);
+            Assert.AreEqual(parserA.Analyzer, parserB.Analyzer);
+            Assert.IsTrue(parserA.Analyzer is CodeAnalyzer);
+        }
+
         Document GetDocument(CodeSource codeSource)
         {
-            return CodeIndexBuilder.GetDocumentFromSource(codeSource);
+            return IndexBuilderHelper.GetDocumentFromSource(codeSource);
         }
     }
 }

@@ -26,7 +26,7 @@ namespace CodeIndex.MaintainIndex
 
             ExcludedExtensions = indexConfig.ExcludedExtensionsArray.Select(u => u.ToUpperInvariant()).ToArray();
             ExcludedPaths = FilePathHelper.GetPaths(indexConfig.ExcludedPathsArray, codeIndexConfiguration.IsInLinux);
-            IncludedExtensions = indexConfig.IncludedExtensionsArray?.Select(u => u.ToUpperInvariant()).ToArray() ?? Array.Empty<string>();
+            IncludedExtensions = indexConfig.IncludedExtensionsArray.Select(u => u.ToUpperInvariant()).ToArray() ?? Array.Empty<string>();
             TokenSource = new CancellationTokenSource();
         }
 
@@ -73,16 +73,20 @@ namespace CodeIndex.MaintainIndex
                 return;
             }
 
+            Log.Info($"{IndexConfig.IndexName}: Start Maintain Indexes");
+
+            Status = IndexStatus.Monitoring;
+
             await MaintainIndexesCore();
         }
 
         async Task MaintainIndexesCore()
         {
-            while (true)
+            while (!TokenSource.Token.IsCancellationRequested)
             {
                 TokenSource.Token.ThrowIfCancellationRequested();
 
-                var fetchEndDate = DateTime.Now.AddSeconds(-6);
+                var fetchEndDate = DateTime.UtcNow.AddSeconds(-6);
                 var notChangedDuring = fetchEndDate.AddSeconds(3);
                 if (ChangedSources.Count(u => u.ChangedUTCDate > fetchEndDate && u.ChangedUTCDate <= notChangedDuring) == 0)
                 {
@@ -96,22 +100,41 @@ namespace CodeIndex.MaintainIndex
 
                         ProcessingChanges(orderedNeedProcessingChanges);
 
-                        IndexBuilderLight.Commit();
+                        IndexBuilder.Commit();
                     }
                 }
 
-                if (TokenSource.Token.IsCancellationRequested)
+                TokenSource.Token.ThrowIfCancellationRequested();
+
+                var fetchRetryEndDate = DateTime.UtcNow.AddSeconds(-3);
+                var needRetry = PendingRetryCodeSources.Count(u => u.LastRetryUTCDate <= fetchRetryEndDate);
+                if (needRetry > 0)
                 {
-                    throw new OperationCanceledException();
+                    var needRetrySources = new List<ChangedSource>();
+                    for (int index = 0; index < needRetry; index++)
+                    {
+                        if (PendingRetryCodeSources.TryDequeue(out var pendingRetrySource))
+                        {
+                            needRetrySources.Add(pendingRetrySource);
+                        }
+                    }
+
+                    ProcessingChanges(needRetrySources.OrderBy(u => u.ChangedUTCDate).ToList(), true);
+
+                    IndexBuilder.Commit();
                 }
 
                 await Task.Delay(3000, TokenSource.Token);
             }
         }
 
-        void ProcessingChanges(List<ChangedSource> orderedNeedProcessingChanges)
+        void ProcessingChanges(List<ChangedSource> orderedNeedProcessingChanges, bool isFailedChangedSource = false)
         {
-            Log.Info($"{IndexConfig.IndexName}: Processing Changes start, changes count: {orderedNeedProcessingChanges.Count}");
+            var prefix = isFailedChangedSource ? "Failed " : string.Empty;
+
+            PreProcessingChanges(orderedNeedProcessingChanges, prefix);
+
+            Log.Info($"{IndexConfig.IndexName}: Processing {prefix}Changes start, changes count: {orderedNeedProcessingChanges.Count}");
 
             foreach (var changes in orderedNeedProcessingChanges)
             {
@@ -122,29 +145,66 @@ namespace CodeIndex.MaintainIndex
                     case WatcherChangeTypes.Changed:
                         UpdateIndex(changes);
                         break;
+
                     case WatcherChangeTypes.Created:
                         CreateIndex(changes);
                         break;
+
                     case WatcherChangeTypes.Deleted:
                         DeleteIndex(changes);
                         break;
+
                     case WatcherChangeTypes.Renamed:
                         RenameIndex(changes);
                         break;
+
                     default:
                         Log.Warn($"{IndexConfig.IndexName}: Unknown changes type {changes}");
                         break;
                 }
             }
 
-            Log.Info($"{IndexConfig.IndexName}: Processing Changes finished");
+            Log.Info($"{IndexConfig.IndexName}: Processing {prefix}Changes finished");
+        }
+
+        void PreProcessingChanges(IList<ChangedSource> orderedNeedProcessingChanges, string prefix)
+        {
+            Log.Debug($"{IndexConfig.IndexName}: Pre Processing {prefix}Changes Start, changes count: {orderedNeedProcessingChanges.Count}");
+
+            var needDeleted = new List<ChangedSource>();
+
+            for (var i = 0; i < orderedNeedProcessingChanges.Count; i++)
+            {
+                var change = orderedNeedProcessingChanges[i];
+
+                if (change.ChangesType == WatcherChangeTypes.Renamed)
+                {
+                    var templateRenameChange = orderedNeedProcessingChanges.Skip(i + 1).FirstOrDefault(u => u.ChangesType == WatcherChangeTypes.Renamed && u.FilePath == change.OldPath);
+
+                    if (templateRenameChange != null)
+                    {
+                        change.ChangesType = WatcherChangeTypes.Changed;
+                        change.FilePath = change.OldPath;
+                        change.OldPath = null;
+                        needDeleted.Add(templateRenameChange);
+
+                        Log.Debug($"{IndexConfig.IndexName}: Template Change Found {templateRenameChange}, remove this and update {change} from Renamed to Changed");
+                    }
+                }
+            }
+
+            needDeleted.ForEach(u => orderedNeedProcessingChanges.Remove(u));
+            Log.Debug($"{IndexConfig.IndexName}: Pre Processing {prefix}Changes Finished");
         }
 
         void CreateIndex(ChangedSource changes)
         {
             if (IsFile(changes.FilePath))
             {
-                IndexBuilderLight.CreateIndex(new FileInfo(changes.FilePath));
+                if (IndexBuilder.CreateIndex(new FileInfo(changes.FilePath)) == IndexBuildResults.FailedWithIOException)
+                {
+                    EnqueueToFailedSource(changes);
+                }
             }
         }
 
@@ -154,19 +214,37 @@ namespace CodeIndex.MaintainIndex
             {
                 if (!IsExcludedFromIndex(changes.OldPath))
                 {
-                    IndexBuilderLight.DeleteIndex(changes.OldPath);
+                    IndexBuilder.DeleteIndex(changes.OldPath);
                 }
             }
             else
             {
                 if (IsFile(changes.FilePath))
                 {
-                    IndexBuilderLight.RenameFileIndex(changes.OldPath, changes.FilePath);
+                    if (IndexBuilder.RenameFileIndex(changes.OldPath, changes.FilePath) == IndexBuildResults.FailedWithIOException)
+                    {
+                        EnqueueToFailedSource(changes);
+                    }
                 }
                 else if (IsDirectory(changes.FilePath))
                 {
-                    IndexBuilderLight.RenameFolderIndexes(changes.OldPath, changes.FilePath, TokenSource.Token);
+                    IndexBuilder.RenameFolderIndexes(changes.OldPath, changes.FilePath, TokenSource.Token);
                 }
+            }
+        }
+
+        void EnqueueToFailedSource(ChangedSource changes)
+        {
+            if (changes is not PendingRetrySource)
+            {
+                Log.Warn($"Enqueue failed processing changed source {changes}"); PendingRetryCodeSources.Enqueue(new PendingRetrySource
+                {
+                    ChangesType = changes.ChangesType,
+                    FilePath = changes.FilePath,
+                    OldPath = changes.FilePath,
+                    ChangedUTCDate = changes.ChangedUTCDate,
+                    LastRetryUTCDate = DateTime.UtcNow
+                });
             }
         }
 
@@ -182,14 +260,17 @@ namespace CodeIndex.MaintainIndex
 
         void DeleteIndex(ChangedSource changes)
         {
-            IndexBuilderLight.DeleteIndex(changes.FilePath);
+            IndexBuilder.DeleteIndex(changes.FilePath);
         }
 
         void UpdateIndex(ChangedSource changes)
         {
             if (IsFile(changes.FilePath))
             {
-                IndexBuilderLight.UpdateIndex(new FileInfo(changes.FilePath), TokenSource.Token);
+                if (IndexBuilder.UpdateIndex(new FileInfo(changes.FilePath), TokenSource.Token) == IndexBuildResults.FailedWithIOException)
+                {
+                    EnqueueToFailedSource(changes);
+                }
             }
         }
 
@@ -197,13 +278,15 @@ namespace CodeIndex.MaintainIndex
         {
             var folders = IndexConfig.GetFolders(CodeIndexConfiguration.LuceneIndex);
 
-            IndexBuilderLight = new CodeIndexBuilderLight(
+            IndexBuilder = new CodeIndexBuilder(
                 IndexConfig.IndexName,
                 new LucenePoolLight(folders.CodeIndexFolder),
                 new LucenePoolLight(folders.HintIndexFolder),
                 Log);
 
-            IndexBuilderLight.InitIndexFolderIfNeeded();
+            IndexBuilder.InitIndexFolderIfNeeded();
+
+            Status = IndexStatus.Initializing_ComponentInitializeFinished;
 
             ChangedSources = new ConcurrentQueue<ChangedSource>();
             PendingRetryCodeSources = new ConcurrentQueue<PendingRetrySource>();
@@ -215,18 +298,21 @@ namespace CodeIndex.MaintainIndex
             List<FileInfo> needToBuildIndex = null;
             var failedUpdateOrDeleteFiles = new List<string>();
 
-            if (CodeIndexBuilder.IndexExists(IndexConfig.MonitorFolder))
+            if (IndexBuilderHelper.IndexExists(IndexBuilder.CodeIndexPool.LuceneIndex))
             {
                 if (forceRebuild)
                 {
                     Log.Info($"{IndexConfig.IndexName}: Force rebuild all indexes");
-                    IndexBuilderLight.DeleteAllIndex();
+                    IndexBuilder.DeleteAllIndex();
                 }
                 else
                 {
                     Log.Info($"{IndexConfig.IndexName}: Compare index difference");
 
-                    var allCodeSource = IndexBuilderLight.GetAllIndexedCodeSource();
+                    var allCodeSource = IndexBuilder.GetAllIndexedCodeSource();
+
+                    GC.Collect(); // Run GC after fetching massive documents from index
+
                     needToBuildIndex = new List<FileInfo>();
                     var allFilesDictionary = allFiles.ToDictionary(u => u.FullName);
 
@@ -239,7 +325,7 @@ namespace CodeIndex.MaintainIndex
                             if (fileInfo.LastWriteTimeUtc != codeSource.LastWriteTimeUtc)
                             {
                                 Log.Info($"{IndexConfig.IndexName}: File {fileInfo.FullName} modified");
-                                if (!IndexBuilderLight.UpdateIndex(fileInfo, TokenSource.Token))
+                                if (IndexBuilder.UpdateIndex(fileInfo, TokenSource.Token) != IndexBuildResults.Successful)
                                 {
                                     failedUpdateOrDeleteFiles.Add(codeSource.FilePath);
                                 }
@@ -250,7 +336,7 @@ namespace CodeIndex.MaintainIndex
                         else
                         {
                             Log.Info($"{IndexConfig.IndexName}: File {codeSource.FilePath} deleted");
-                            if (!IndexBuilderLight.DeleteIndex(codeSource.FilePath))
+                            if (!IndexBuilder.DeleteIndex(codeSource.FilePath))
                             {
                                 failedUpdateOrDeleteFiles.Add(codeSource.FilePath);
                             }
@@ -267,7 +353,7 @@ namespace CodeIndex.MaintainIndex
 
             AddNewIndexFiles(needToBuildIndex ?? allFiles, out var failedIndexFiles);
 
-            IndexBuilderLight.Commit();
+            IndexBuilder.Commit();
 
             if (failedIndexFiles.Count > 0 || failedUpdateOrDeleteFiles.Count > 0)
             {
@@ -281,12 +367,12 @@ namespace CodeIndex.MaintainIndex
 
         void AddNewIndexFiles(IEnumerable<FileInfo> needToBuildIndex, out ConcurrentBag<FileInfo> failedIndexFiles)
         {
-            failedIndexFiles = IndexBuilderLight.BuildIndexByBatch(needToBuildIndex, true, false, false, TokenSource.Token);
+            failedIndexFiles = IndexBuilder.BuildIndexByBatch(needToBuildIndex, true, false, false, TokenSource.Token);
 
             if (failedIndexFiles.Count > 0)
             {
                 Log.Info($"{IndexConfig.IndexName}: Retry failed build indexes files, files count {failedIndexFiles.Count}");
-                failedIndexFiles = IndexBuilderLight.BuildIndexByBatch(failedIndexFiles, true, false, false, TokenSource.Token);
+                failedIndexFiles = IndexBuilder.BuildIndexByBatch(failedIndexFiles, true, false, false, TokenSource.Token);
             }
         }
 
@@ -316,11 +402,11 @@ namespace CodeIndex.MaintainIndex
             ChangedSources.Enqueue(changeSource);
         }
 
-        public IndexConfig IndexConfig { get; }
+        IndexConfig IndexConfig { get; }
         public CodeIndexConfiguration CodeIndexConfiguration { get; }
         public ILog Log { get; }
         public IndexStatus Status { get; private set; }
-        public CodeIndexBuilderLight IndexBuilderLight { get; private set; }
+        public CodeIndexBuilder IndexBuilder { get; private set; }
         public string Description { get; set; }
         public bool IsDisposing { get; private set; }
         FileSystemWatcher FilesWatcher { get; set; }
@@ -336,10 +422,12 @@ namespace CodeIndex.MaintainIndex
             if (!IsDisposing)
             {
                 IsDisposing = true;
+                Status = IndexStatus.Disposing;
                 TokenSource.Cancel();
                 TokenSource.Dispose();
                 FilesWatcher?.Dispose();
-                IndexBuilderLight?.Dispose();
+                IndexBuilder?.Dispose();
+                Status = IndexStatus.Disposed;
             }
         }
 

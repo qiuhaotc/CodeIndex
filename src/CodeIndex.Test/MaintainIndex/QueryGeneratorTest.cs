@@ -1,6 +1,6 @@
 ﻿using CodeIndex.Common;
 using CodeIndex.IndexBuilder;
-using CodeIndex.Search;
+using CodeIndex.MaintainIndex;
 using NUnit.Framework;
 
 namespace CodeIndex.Test
@@ -21,12 +21,6 @@ namespace CodeIndex.Test
                 Assert.IsEmpty(QueryGenerator.GetSearchStr(" ", "   ", string.Empty, " "));
                 Assert.AreEqual(nameof(CodeSource.FilePath) + ":" + "\"C:\\\\WWWROOT\"", QueryGenerator.GetSearchStr(null, null, null, "\"C:\\WWWROOT\""));
             });
-        }
-
-        [Test]
-        public void TestAnalyzer()
-        {
-            Assert.IsTrue(new QueryGenerator().Analyzer is CodeAnalyzer);
         }
     }
 }

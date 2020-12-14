@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using Lucene.Net.Analysis;
 using Lucene.Net.Documents;
 using Lucene.Net.Index;
 using Lucene.Net.Search;
@@ -22,7 +21,5 @@ namespace CodeIndex.IndexBuilder
         void DeleteAllIndex();
 
         string LuceneIndex { get; }
-
-        Analyzer Analyzer { get; }
     }
 }

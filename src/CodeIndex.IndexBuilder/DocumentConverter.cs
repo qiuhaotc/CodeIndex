@@ -6,7 +6,7 @@ using System.Reflection;
 using CodeIndex.Common;
 using Lucene.Net.Documents;
 
-namespace CodeIndex.MaintainIndex
+namespace CodeIndex.IndexBuilder
 {
     public static class DocumentConverter
     {
@@ -47,7 +47,7 @@ namespace CodeIndex.MaintainIndex
             {
                 var genericType = propertyType.GetGenericArguments().First();
                 var instance = Activator.CreateInstance(typeof(List<>).MakeGenericType(genericType));
-                var collectionValues = document.Get(property.Name).Split(CodeIndexConfiguration.SplitChar).Where(u => !string.IsNullOrEmpty(u));
+                var collectionValues = document.Get(property.Name).Split(IndexConfig.SplitChar).Where(u => !string.IsNullOrEmpty(u));
                 var method = instance.GetType().GetMethod("Add");
 
                 foreach (var sub in collectionValues)

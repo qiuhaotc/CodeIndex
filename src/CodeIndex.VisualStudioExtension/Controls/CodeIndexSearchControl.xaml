@@ -24,14 +24,26 @@
                 <Button x:Name="SearchButton" Margin="10 0 0 0" Content="Search" Command="{Binding SearchIndexCommand}" Style="{StaticResource InfoButton}"/>
                 <Button Margin="10 0 0 0" Content="Stop Search" Command="{Binding StopSearchCommand}" Style="{StaticResource WarnButton}"/>
             </WrapPanel>
-            <WrapPanel DockPanel.Dock="Top">
-                <Label Content="Service Url:"/>
-                <TextBox Height="23" TextWrapping="NoWrap" Text="{Binding ServiceUrl}" Width="200"/>
-                <Label Content="Result Info:"/>
-                <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="60">
+            <Grid DockPanel.Dock="Top">
+                <Grid.ColumnDefinitions>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="Auto"/>
+                    <ColumnDefinition Width="*"/>
+                </Grid.ColumnDefinitions>
+                <Label Content="Service Url:" Grid.Column="0" VerticalAlignment="Center"/>
+                <TextBox Height="23" Grid.Column="1" TextWrapping="NoWrap" Text="{Binding ServiceUrl}" Width="200"/>
+                <Label Content="Index:" Grid.Column="2" VerticalAlignment="Center"/>
+                <ComboBox SelectedValue="{Binding IndexPk}" Grid.Column="3" ItemsSource="{Binding IndexInfos}" DisplayMemberPath="Name" SelectedValuePath="Value" Width="100" VerticalAlignment="Center"/>
+                <Button x:Name="RefreshButton" Grid.Column="4" Margin="10 0 0 0" Content="Refresh Index" Command="{Binding RefreshIndexCommand}" Style="{StaticResource InfoButton}" Height="26" Width="82"/>
+                <Label Content="Result Info:" VerticalAlignment="Center" Grid.Column="5"/>
+                <ScrollViewer VerticalScrollBarVisibility="Auto" MaxHeight="60" Grid.Column="6">
                     <Label Content="{Binding ResultInfo}" Foreground="Yellow"/>
                 </ScrollViewer>
-            </WrapPanel>
+            </Grid>
             <DockPanel DockPanel.Dock="Top">
                 <Label Content="Hind Words:" DockPanel.Dock="Left"/>
                 <ScrollViewer DockPanel.Dock="Right" VerticalScrollBarVisibility="Auto" MaxHeight="52">

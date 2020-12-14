@@ -99,7 +99,7 @@ namespace CodeIndex.IndexBuilder
             return ch == ' ' || ch == '\t' || ch == '\r' || ch == '\n' || ch == '　';
         }
 
-        static bool IsSpecialChar(int character) => (character >= 33 || character <= 126) && SpecialCharRange.Any(u => u.Start <= character && u.End >= character);
+        static bool IsSpecialChar(int character) => (character >= 33 && character <= 126) && SpecialCharRange.Any(u => u.Start <= character && u.End >= character);
 
         static readonly HashSet<(int Start, int End)> SpecialCharRange = new HashSet<(int, int)>()
         {

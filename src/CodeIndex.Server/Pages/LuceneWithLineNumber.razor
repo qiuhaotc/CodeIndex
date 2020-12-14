@@ -1,5 +1,4 @@
-﻿
-@page "/SearchWithLine"
+﻿@page "/SearchWithLine"
 @inject HttpClient Client
 @inject CodeIndex.Common.Storage Storage
 @inject CodeIndexConfiguration Config
@@ -46,15 +45,31 @@
     </div>
 </div>
 <div class="row">
-    <div class="col-sm-8">
+    <div class="col-sm">
         <div class="input-group mb-3">
             <button type="button" class="btn btn-primary" @onclick="SearchLuceneIndex">Search</button>
         </div>
     </div>
-    <div class="col-sm-4 form-inline">
+    <div class="col-sm">
+        <div class="input-group">
+            <div class="input-group-prepend">
+                <span class="input-group-text">Index Name</span>
+            </div>
+            <select class="form-control" @bind="IndexPk">
+                @if (IndexConfigs != null)
+                {
+                    foreach (var indexConfig in IndexConfigs)
+                    {
+                        <option value="@indexConfig.Pk">@indexConfig.IndexName</option>
+                    }
+                }
+            </select>
+        </div>
+    </div>
+    <div class="col-sm">
         <div class="input-group mb-3">
             <div class="input-group-prepend">
-                <span class="input-group-text" id="basic-addon4">Show Results</span>
+                <span class="input-group-text">Show Results</span>
             </div>
             <select class="form-control" @bind="ShowResults">
                 <option value="10">10</option>
@@ -142,11 +157,11 @@
                             <pre>@((MarkupString)item.MatchedContent)</pre>
                         </td>
                         <td>
-                            <a href="@Config.OpenIDEUriFormat.Replace("{FilePath}", GetPath(item.CodeSource.FilePath))">@item.CodeSource.FilePath?.SubStringSafeWithEllipsis(item.CodeSource.FilePath.Length - 50, 50)</a>
+                            <a href="@RazorPageUtils.GetOpenIDEUri(CurrentIndexConfig.OpenIDEUriFormat, item.CodeSource.FilePath, CurrentIndexConfig.MonitorFolderRealPath)">@item.CodeSource.FilePath?.SubStringSafeWithEllipsis(item.CodeSource.FilePath.Length - 50, 50)</a>
                         </td>
                         <td>@item.CodeSource.FileExtension</td>
                         <td>
-                            <a href="/Details/@item.CodeSource.CodePK/@System.Web.HttpUtility.UrlEncode(ContentQuery ?? string.Empty)">Details</a>
+                            <a href="/Details/@item.CodeSource.CodePK/@IndexPk.ToString()/@System.Web.HttpUtility.UrlEncode(ContentQuery ?? string.Empty)">Details</a>
                         </td>
                     </tr>
                 }
@@ -163,7 +178,9 @@
 
 @code {
 
-    public string SearchQuery => Search.QueryGenerator.GetSearchStr(FileNameQuery, ContentQuery, FileExtensionQuery, FilePathQuery);
+    public Guid IndexPk { get; set; }
+
+    public string SearchQuery => MaintainIndex.QueryGenerator.GetSearchStr(FileNameQuery, ContentQuery, FileExtensionQuery, FilePathQuery);
 
     public string ContentQuery { get; set; }
 
@@ -179,23 +196,58 @@
 
     public FetchResult<IEnumerable<string>> HintWords { get; set; }
 
+    public IndexConfigForView[] IndexConfigs { get; set; }
+
+    public IndexConfigForView CurrentIndexConfig => IndexConfigs?.FirstOrDefault(u => u.Pk == IndexPk) ?? (empty ??= new IndexConfigForView());
+
+    IndexConfigForView empty;
+
     bool IsSearching;
 
     protected override async Task OnInitializedAsync()
     {
         await base.OnInitializedAsync();
 
+        try
+        {
+            var listResult = await Client.GetJsonAsync<FetchResult<IndexConfigForView[]>>($"{Config.LocalUrl}/api/lucene/GetIndexViewList");
+            if (listResult.Status.Success)
+            {
+                IndexConfigs = listResult.Result;
+            }
+            else
+            {
+                IndexConfigs = Array.Empty<IndexConfigForView>();
+            }
+        }
+        catch
+        {
+            IndexConfigs = Array.Empty<IndexConfigForView>();
+        }
+
         ContentQuery = Storage.GetValue("ContentQuery")?.ToString();
         FileNameQuery = Storage.GetValue("FileNameQuery")?.ToString();
         FileExtensionQuery = Storage.GetValue("FileExtensionQuery")?.ToString();
         FilePathQuery = Storage.GetValue("FilePathQuery")?.ToString();
+
+        var indexPkStr = Storage.GetValue("IndexPk")?.ToString();
+        Guid? indexPk = indexPkStr == null ? null : new Guid(indexPkStr);
+
+        if (indexPk == null || IndexConfigs.All(u => u.Pk != indexPk))
+        {
+            IndexPk = IndexConfigs.FirstOrDefault()?.Pk ?? Guid.Empty;
+        }
+        else
+        {
+            IndexPk = indexPk.Value;
+        }
 
         if (int.TryParse(Storage.GetValue(nameof(ShowResults))?.ToString(), out var result))
         {
             ShowResults = result;
         }
 
-        if (!string.IsNullOrEmpty(SearchQuery))
+        if (!string.IsNullOrEmpty(SearchQuery) && IndexPk != Guid.Empty)
         {
             await SearchLuceneIndex();
         }
@@ -213,15 +265,16 @@
         Storage.SetOrUpdate("FileExtensionQuery", FileExtensionQuery);
         Storage.SetOrUpdate("FilePathQuery", FilePathQuery);
         Storage.SetOrUpdate(nameof(ShowResults), ShowResults);
+        Storage.SetOrUpdate("IndexPk", IndexPk);
 
         IsSearching = true;
         FetchResult = null;
 
         try
         {
-            if (!string.IsNullOrEmpty(SearchQuery))
+            if (!string.IsNullOrEmpty(SearchQuery) && IndexPk != Guid.Empty)
             {
-                FetchResult = await Client.GetJsonAsync<FetchResult<IEnumerable<CodeSourceWithMatchedLine>>>($"{Config.LocalUrl}api/lucene/GetCodeSourcesWithMatchedLine?searchQuery=" + System.Web.HttpUtility.UrlEncode(SearchQuery) + "&showResults=" + ShowResults + "&contentQuery=" + System.Web.HttpUtility.UrlEncode(ContentQuery ?? string.Empty));
+                FetchResult = await Client.GetJsonAsync<FetchResult<IEnumerable<CodeSourceWithMatchedLine>>>($"{Config.LocalUrl}api/lucene/GetCodeSourcesWithMatchedLine?searchQuery=" + System.Web.HttpUtility.UrlEncode(SearchQuery) + "&showResults=" + ShowResults + "&contentQuery=" + System.Web.HttpUtility.UrlEncode(ContentQuery ?? string.Empty) + "&indexPk=" + IndexPk);
             }
             else
             {
@@ -241,7 +294,7 @@
         }
     }
 
-    private async Task KeyPress(KeyboardEventArgs e)
+    async Task KeyPress(KeyboardEventArgs e)
     {
         if (e.Key == "Enter")
         {
@@ -249,31 +302,19 @@
         }
     }
 
-    private async Task KeyPressForContent(KeyboardEventArgs e)
+    async Task KeyPressForContent(KeyboardEventArgs e)
     {
-        if (e.Key != "Enter" && ContentQuery != null && !ContentQuery.EndsWith(" "))
+        if (e.Key != "Enter" && ContentQuery != null && !ContentQuery.EndsWith(" ") && IndexPk != Guid.Empty)
         {
             var inputWord = ContentQuery.Split(" ", StringSplitOptions.RemoveEmptyEntries).LastOrDefault();
             if (inputWord?.Length >= 3)
             {
-                HintWords = await Client.GetJsonAsync<FetchResult<IEnumerable<string>>>($"{Config.LocalUrl}api/lucene/GetHints?word=" + System.Web.HttpUtility.UrlEncode(inputWord));
+                HintWords = await Client.GetJsonAsync<FetchResult<IEnumerable<string>>>($"{Config.LocalUrl}api/lucene/GetHints?word=" + System.Web.HttpUtility.UrlEncode(inputWord) + "&indexPk=" + IndexPk);
             }
         }
         else
         {
             await KeyPress(e);
-        }
-    }
-
-    string GetPath(string path)
-    {
-        if (path != null && path.StartsWith("/monitorfolder") && !string.IsNullOrEmpty(Config.MonitorFolderRealPath))
-        {
-            return Config.MonitorFolderRealPath + path.SubStringSafe("/monitorfolder".Length, path.Length);
-        }
-        else
-        {
-            return path;
         }
     }
 }

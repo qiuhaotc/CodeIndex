@@ -10,9 +10,15 @@ namespace CodeIndex.IndexBuilder
     /// <summary>
     /// Reference the SmartCn Tokenizer
     /// </summary>
-    internal class CodeTokenizer : SegmentingTokenizerBase
+    internal sealed class CodeTokenizer : SegmentingTokenizerBase
     {
-        static readonly BreakIterator sentenceProto = BreakIterator.GetSentenceInstance(CultureInfo.InvariantCulture);
+        static CodeTokenizer()
+        {
+            CultureInfo.CurrentCulture = CultureInfo.InvariantCulture; // Workaround to fix the bug of ICN4N, refer https://github.com/NightOwl888/ICU4N/issues/29
+            sentenceProto = BreakIterator.GetSentenceInstance(CultureInfo.InvariantCulture);
+        }
+
+        static readonly BreakIterator sentenceProto;
         readonly WordSegmenter wordSegmenter = new WordSegmenter();
 
         readonly ICharTermAttribute termAtt;

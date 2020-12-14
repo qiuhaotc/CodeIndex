@@ -12,7 +12,7 @@
     <div class="col-sm">
         <div class="input-group mb-3">
             <div class="input-group-prepend">
-                <span class="input-group-text" id="basic-addon1">Content</span>
+                <span class="input-group-text">Content</span>
             </div>
             <input type="text" class="form-control" placeholder="Put Your Content Here" aria-label="Put Your Content Here" @bind-value="@ContentQuery" @bind-value:event="oninput" @onkeyup="@(async e => await KeyPressForContent(e))" />
         </div>
@@ -22,7 +22,7 @@
     <div class="col-sm">
         <div class="input-group mb-3">
             <div class="input-group-prepend">
-                <span class="input-group-text" id="basic-addon2">File Name</span>
+                <span class="input-group-text">File Name</span>
             </div>
             <input type="text" class="form-control" placeholder="Put Your File Name Here" aria-label="Put Your File Name Here" @bind-value="@FileNameQuery" @bind-value:event="oninput" @onkeydown="@(async e => await KeyPress(e))" />
         </div>
@@ -30,7 +30,7 @@
     <div class="col-sm">
         <div class="input-group mb-3">
             <div class="input-group-prepend">
-                <span class="input-group-text" id="basic-addon3">File Extension</span>
+                <span class="input-group-text">File Extension</span>
             </div>
             <input type="text" class="form-control" placeholder="Put Your File Extension Here" aria-label="Put Your File Extension Here" @bind-value="@FileExtensionQuery" @bind-value:event="oninput" @onkeydown="@(async e => await KeyPress(e))" />
         </div>
@@ -38,22 +38,38 @@
     <div class="col-sm">
         <div class="input-group mb-3">
             <div class="input-group-prepend">
-                <span class="input-group-text" id="basic-addon4">File Location</span>
+                <span class="input-group-text">File Location</span>
             </div>
             <input type="text" class="form-control" placeholder="Put Your File Path Here" aria-label="Put Your File Path Here" @bind-value="@FilePathQuery" @bind-value:event="oninput" @onkeydown="@(async e => await KeyPress(e))" />
         </div>
     </div>
 </div>
 <div class="row">
-    <div class="col-sm-8">
+    <div class="col-sm">
         <div class="input-group mb-3">
             <button type="button" class="btn btn-primary" @onclick="SearchLuceneIndex">Search</button>
         </div>
     </div>
-    <div class="col-sm-4 form-inline">
+    <div class="col-sm">
+        <div class="input-group">
+            <div class="input-group-prepend">
+                <span class="input-group-text">Index Name</span>
+            </div>
+            <select class="form-control" @bind="IndexPk">
+                @if (IndexConfigs != null)
+                {
+                    foreach (var indexConfig in IndexConfigs)
+                    {
+                        <option value="@indexConfig.Pk">@indexConfig.IndexName</option>
+                    }
+                }
+            </select>
+        </div>
+    </div>
+    <div class="col-sm">
         <div class="input-group mb-3">
             <div class="input-group-prepend">
-                <span class="input-group-text" id="basic-addon4">Show Results</span>
+                <span class="input-group-text">Show Results</span>
             </div>
             <select class="form-control" @bind="ShowResults">
                 <option value="10">10</option>
@@ -139,11 +155,12 @@
                             <pre>@((MarkupString)item.Content)</pre>
                         </td>
                         <td>
-                            <a href="@Config.OpenIDEUriFormat.Replace("{FilePath}", GetPath(item.FilePath))">@item.FilePath?.SubStringSafeWithEllipsis(item.FilePath.Length - 50, 50)</a>
+
+                            <a href=" @RazorPageUtils.GetOpenIDEUri(CurrentIndexConfig.OpenIDEUriFormat, item.FilePath, CurrentIndexConfig.MonitorFolderRealPath)">@item.FilePath?.SubStringSafeWithEllipsis(item.FilePath.Length - 50, 50)</a>
                         </td>
                         <td>@item.FileExtension</td>
                         <td>
-                            <a href="/Details/@item.CodePK/@System.Web.HttpUtility.UrlEncode(ContentQuery ?? string.Empty)">Details</a>
+                            <a href="/Details/@item.CodePK/@IndexPk.ToString()/@System.Web.HttpUtility.UrlEncode(ContentQuery ?? string.Empty)">Details</a>
                         </td>
                     </tr>
                 }
@@ -160,7 +177,7 @@
 
 @code {
 
-    public string SearchQuery => Search.QueryGenerator.GetSearchStr(FileNameQuery, ContentQuery, FileExtensionQuery, FilePathQuery);
+    public string SearchQuery => MaintainIndex.QueryGenerator.GetSearchStr(FileNameQuery, ContentQuery, FileExtensionQuery, FilePathQuery);
 
     public string ContentQuery { get; set; }
 
@@ -170,11 +187,19 @@
 
     public string FilePathQuery { get; set; }
 
+    public Guid IndexPk { get; set; }
+
     public int ShowResults { get; set; } = 20;
 
     public FetchResult<IEnumerable<CodeSource>> FetchResult { get; set; }
 
     public FetchResult<IEnumerable<string>> HintWords { get; set; }
+
+    public IndexConfigForView[] IndexConfigs { get; set; }
+
+    public IndexConfigForView CurrentIndexConfig => IndexConfigs?.FirstOrDefault(u => u.Pk == IndexPk) ?? (empty ??= new IndexConfigForView());
+
+    IndexConfigForView empty;
 
     bool IsSearching;
 
@@ -182,17 +207,46 @@
     {
         await base.OnInitializedAsync();
 
+        try
+        {
+            var listResult = await Client.GetJsonAsync<FetchResult<IndexConfigForView[]>>($"{Config.LocalUrl}/api/lucene/GetIndexViewList");
+            if (listResult.Status.Success)
+            {
+                IndexConfigs = listResult.Result;
+            }
+            else
+            {
+                IndexConfigs = Array.Empty<IndexConfigForView>();
+            }
+        }
+        catch
+        {
+            IndexConfigs = Array.Empty<IndexConfigForView>();
+        }
+
         ContentQuery = Storage.GetValue("ContentQuery")?.ToString();
         FileNameQuery = Storage.GetValue("FileNameQuery")?.ToString();
         FileExtensionQuery = Storage.GetValue("FileExtensionQuery")?.ToString();
         FilePathQuery = Storage.GetValue("FilePathQuery")?.ToString();
+
+        var indexPkStr = Storage.GetValue("IndexPk")?.ToString();
+        Guid? indexPk = indexPkStr == null ? null : new Guid(indexPkStr);
+
+        if (indexPk == null || IndexConfigs.All(u => u.Pk != indexPk))
+        {
+            IndexPk = IndexConfigs.FirstOrDefault()?.Pk ?? Guid.Empty;
+        }
+        else
+        {
+            IndexPk = indexPk.Value;
+        }
 
         if (int.TryParse(Storage.GetValue(nameof(ShowResults))?.ToString(), out var result))
         {
             ShowResults = result;
         }
 
-        if (!string.IsNullOrEmpty(SearchQuery))
+        if (!string.IsNullOrEmpty(SearchQuery) && IndexPk != Guid.Empty)
         {
             await SearchLuceneIndex();
         }
@@ -206,6 +260,7 @@
         }
 
         Storage.SetOrUpdate("ContentQuery", ContentQuery);
+        Storage.SetOrUpdate("IndexPk", IndexPk);
         Storage.SetOrUpdate("FileNameQuery", FileNameQuery);
         Storage.SetOrUpdate("FileExtensionQuery", FileExtensionQuery);
         Storage.SetOrUpdate("FilePathQuery", FilePathQuery);
@@ -216,9 +271,9 @@
 
         try
         {
-            if (!string.IsNullOrEmpty(SearchQuery))
+            if (!string.IsNullOrEmpty(SearchQuery) && IndexPk != Guid.Empty)
             {
-                FetchResult = await Client.GetJsonAsync<FetchResult<IEnumerable<CodeSource>>>($"{Config.LocalUrl}api/lucene/GetCodeSources?searchQuery=" + System.Web.HttpUtility.UrlEncode(SearchQuery) + "&showResults=" + ShowResults + "&preview=true" + "&contentQuery=" + System.Web.HttpUtility.UrlEncode(ContentQuery ?? string.Empty));
+                FetchResult = await Client.GetJsonAsync<FetchResult<IEnumerable<CodeSource>>>($"{Config.LocalUrl}api/lucene/GetCodeSources?searchQuery=" + System.Web.HttpUtility.UrlEncode(SearchQuery) + "&showResults=" + ShowResults + "&preview=true" + "&contentQuery=" + System.Web.HttpUtility.UrlEncode(ContentQuery ?? string.Empty) + "&indexPk=" + IndexPk);
             }
             else
             {
@@ -227,7 +282,7 @@
                     Status = new Status()
                     {
                         Success = false,
-                        StatusDesc = "Search query can't be empty"
+                        StatusDesc = "Search query or index name can't be empty"
                     }
                 };
             }
@@ -238,7 +293,7 @@
         }
     }
 
-    private async Task KeyPress(KeyboardEventArgs e)
+    async Task KeyPress(KeyboardEventArgs e)
     {
         if (e.Key == "Enter")
         {
@@ -246,31 +301,19 @@
         }
     }
 
-    private async Task KeyPressForContent(KeyboardEventArgs e)
+    async Task KeyPressForContent(KeyboardEventArgs e)
     {
-        if (e.Key != "Enter" && ContentQuery != null && !ContentQuery.EndsWith(" "))
+        if (e.Key != "Enter" && ContentQuery != null && !ContentQuery.EndsWith(" ") && IndexPk != Guid.Empty)
         {
             var inputWord = ContentQuery.Split(" ", StringSplitOptions.RemoveEmptyEntries).LastOrDefault();
             if (inputWord?.Length >= 3)
             {
-                HintWords = await Client.GetJsonAsync<FetchResult<IEnumerable<string>>>($"{Config.LocalUrl}api/lucene/GetHints?word=" + System.Web.HttpUtility.UrlEncode(inputWord));
+                HintWords = await Client.GetJsonAsync<FetchResult<IEnumerable<string>>>($"{Config.LocalUrl}api/lucene/GetHints?word=" + System.Web.HttpUtility.UrlEncode(inputWord) + "&indexPk=" + IndexPk);
             }
         }
         else
         {
             await KeyPress(e);
-        }
-    }
-
-    string GetPath(string path)
-    {
-        if (path != null && path.StartsWith("/monitorfolder") && !string.IsNullOrEmpty(Config.MonitorFolderRealPath))
-        {
-            return Config.MonitorFolderRealPath + path.SubStringSafe("/monitorfolder".Length, path.Length);
-        }
-        else
-        {
-            return path;
         }
     }
 }

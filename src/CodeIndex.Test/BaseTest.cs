@@ -1,6 +1,8 @@
-﻿using CodeIndex.Common;
+﻿using System.IO;
+using CodeIndex.Common;
 using CodeIndex.IndexBuilder;
-using CodeIndex.Search;
+using CodeIndex.MaintainIndex;
+using Lucene.Net.QueryParsers.Classic;
 using NUnit.Framework;
 
 namespace CodeIndex.Test
@@ -9,26 +11,23 @@ namespace CodeIndex.Test
     {
         public CodeIndexConfiguration Config => new CodeIndexConfiguration
         {
-            LuceneIndex = TempIndexDir,
-            MonitorFolder = MonitorFolder
+            LuceneIndex = TempIndexDir
         };
 
+        protected string TempConfigDir => Path.Combine(TempIndexDir, CodeIndexConfiguration.ConfigurationIndexFolder);
+
         QueryGenerator generator;
-        protected QueryGenerator Generator => generator ??= new QueryGenerator();
+        protected QueryGenerator Generator => generator ??= new QueryGenerator(new QueryParser(Constants.AppLuceneVersion, nameof(CodeSource.Content), new CodeAnalyzer(Constants.AppLuceneVersion, true)));
 
         [SetUp]
         protected override void SetUp()
         {
             base.SetUp();
-            WordsHintBuilder.Words.Clear();
         }
 
         [TearDown]
         protected override void TearDown()
         {
-            LucenePool.SaveResultsAndClearLucenePool(Config);
-            WordsHintBuilder.Words.Clear();
-
             base.TearDown();
         }
     }

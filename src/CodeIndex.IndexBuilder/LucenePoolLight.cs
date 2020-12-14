@@ -6,6 +6,7 @@ using CodeIndex.Common;
 using Lucene.Net.Analysis;
 using Lucene.Net.Documents;
 using Lucene.Net.Index;
+using Lucene.Net.QueryParsers.Classic;
 using Lucene.Net.Search;
 using Lucene.Net.Store;
 
@@ -95,7 +96,12 @@ namespace CodeIndex.IndexBuilder
             return documents;
         }
 
-        public Analyzer Analyzer => analyzer ??= new CodeAnalyzer(Constants.AppLuceneVersion, true);
+        public static Analyzer Analyzer => analyzer ??= new CodeAnalyzer(Constants.AppLuceneVersion, true);
+
+        public static QueryParser GetQueryParser()
+        {
+            return new QueryParser(Constants.AppLuceneVersion, nameof(CodeSource.Content), Analyzer);
+        }
 
         #endregion
 
@@ -104,7 +110,7 @@ namespace CodeIndex.IndexBuilder
         readonly ReaderWriterLockSlim readerWriteLock = new ReaderWriterLockSlim();
         int indexChangeCount;
         bool isDisposing;
-        CodeAnalyzer analyzer;
+        static CodeAnalyzer analyzer;
 
         #endregion
 
@@ -112,6 +118,7 @@ namespace CodeIndex.IndexBuilder
 
         readonly object syncLockForWriter = new object();
         IndexWriter indexWriter;
+
         IndexWriter IndexWriter
         {
             get
@@ -120,11 +127,14 @@ namespace CodeIndex.IndexBuilder
                 {
                     lock (syncLockForWriter)
                     {
-                        var dir = FSDirectory.Open(LuceneIndex);
-                        //create an analyzer to process the text
-                        //create an index writer
-                        var indexConfig = new IndexWriterConfig(Constants.AppLuceneVersion, Analyzer);
-                        indexWriter = new IndexWriter(dir, indexConfig);
+                        if (indexWriter == null)
+                        {
+                            var dir = FSDirectory.Open(LuceneIndex);
+                            //create an analyzer to process the text
+                            //create an index writer
+                            var indexConfig = new IndexWriterConfig(Constants.AppLuceneVersion, Analyzer);
+                            indexWriter = new IndexWriter(dir, indexConfig);
+                        }
                     }
                 }
 
@@ -138,6 +148,7 @@ namespace CodeIndex.IndexBuilder
 
         readonly object syncLockForSearcher = new object();
         IndexSearcher indexSearcher;
+
         IndexSearcher GetIndexSearcher()
         {
             if (indexSearcher == null || indexChangeCount > 0)
@@ -161,7 +172,7 @@ namespace CodeIndex.IndexBuilder
             using var readLock = new EnterReaderWriterLock(readerWriteLock);
 
             IndexWriter.DeleteAll();
-            indexWriter.Commit();
+            IndexWriter.Commit();
 
             indexChangeCount++;
         }
@@ -169,7 +180,7 @@ namespace CodeIndex.IndexBuilder
         public void Commit()
         {
             using var readLock = new EnterReaderWriterLock(readerWriteLock);
-            indexWriter.Commit();
+            IndexWriter.Commit();
         }
 
         public void UpdateIndex(Term term, Document document)
@@ -186,6 +197,7 @@ namespace CodeIndex.IndexBuilder
 
         readonly object syncLockForReader = new object();
         IndexReader indexReader;
+
         IndexReader IndexReader
         {
             get

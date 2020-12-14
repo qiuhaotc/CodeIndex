@@ -1,0 +1,843 @@
+﻿{
+  "x-generator": "NSwag v13.9.4.0 (NJsonSchema v10.3.1.0 (Newtonsoft.Json v11.0.0.0))",
+  "swagger": "2.0",
+  "info": {
+    "title": "CodeIndex Server API",
+    "version": "1.0.0"
+  },
+  "host": "localhost:5001",
+  "schemes": [
+    "https"
+  ],
+  "paths": {
+    "/api/Lucene/GetCodeSources": {
+      "get": {
+        "tags": [
+          "Lucene"
+        ],
+        "operationId": "Lucene_GetCodeSources",
+        "produces": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "parameters": [
+          {
+            "type": "string",
+            "name": "searchQuery",
+            "in": "query",
+            "x-nullable": true
+          },
+          {
+            "type": "boolean",
+            "name": "preview",
+            "in": "query",
+            "x-nullable": false
+          },
+          {
+            "type": "string",
+            "name": "indexPk",
+            "in": "query",
+            "format": "guid",
+            "x-nullable": false
+          },
+          {
+            "type": "string",
+            "name": "contentQuery",
+            "in": "query",
+            "default": "",
+            "x-nullable": true
+          },
+          {
+            "type": "integer",
+            "name": "showResults",
+            "in": "query",
+            "format": "int32",
+            "default": 0,
+            "x-nullable": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "x-nullable": false,
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/FetchResultOfIEnumerableOfCodeSource"
+            }
+          }
+        }
+      }
+    },
+    "/api/Lucene/GetCodeSourcesWithMatchedLine": {
+      "get": {
+        "tags": [
+          "Lucene"
+        ],
+        "operationId": "Lucene_GetCodeSourcesWithMatchedLine",
+        "produces": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "parameters": [
+          {
+            "type": "string",
+            "name": "searchQuery",
+            "in": "query",
+            "x-nullable": true
+          },
+          {
+            "type": "string",
+            "name": "indexPk",
+            "in": "query",
+            "format": "guid",
+            "x-nullable": false
+          },
+          {
+            "type": "string",
+            "name": "contentQuery",
+            "in": "query",
+            "default": "",
+            "x-nullable": true
+          },
+          {
+            "type": "integer",
+            "name": "showResults",
+            "in": "query",
+            "format": "int32",
+            "default": 0,
+            "x-nullable": true
+          },
+          {
+            "type": "boolean",
+            "name": "needReplaceSuffixAndPrefix",
+            "in": "query",
+            "default": true,
+            "x-nullable": false
+          },
+          {
+            "type": "boolean",
+            "name": "forWeb",
+            "in": "query",
+            "default": true,
+            "x-nullable": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "x-nullable": false,
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/FetchResultOfIEnumerableOfCodeSourceWithMatchedLine"
+            }
+          }
+        }
+      }
+    },
+    "/api/Lucene/GetHints": {
+      "get": {
+        "tags": [
+          "Lucene"
+        ],
+        "operationId": "Lucene_GetHints",
+        "produces": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "parameters": [
+          {
+            "type": "string",
+            "name": "word",
+            "in": "query",
+            "x-nullable": true
+          },
+          {
+            "type": "string",
+            "name": "indexPk",
+            "in": "query",
+            "format": "guid",
+            "x-nullable": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "x-nullable": false,
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/FetchResultOfIEnumerableOfString"
+            }
+          }
+        }
+      }
+    },
+    "/api/Lucene/GetTokenizeStr": {
+      "get": {
+        "tags": [
+          "Lucene"
+        ],
+        "operationId": "Lucene_GetTokenizeStr",
+        "produces": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "parameters": [
+          {
+            "type": "string",
+            "name": "searchStr",
+            "in": "query",
+            "x-nullable": true
+          }
+        ],
+        "responses": {
+          "200": {
+            "x-nullable": false,
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/FetchResultOfString"
+            }
+          }
+        }
+      }
+    },
+    "/api/Lucene/GetLogs": {
+      "get": {
+        "tags": [
+          "Lucene"
+        ],
+        "operationId": "Lucene_GetLogs",
+        "produces": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "responses": {
+          "200": {
+            "x-nullable": false,
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/FetchResultOfString"
+            }
+          }
+        }
+      }
+    },
+    "/api/Lucene/GetIndexViewList": {
+      "get": {
+        "tags": [
+          "Lucene"
+        ],
+        "operationId": "Lucene_GetIndexViewList",
+        "produces": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "responses": {
+          "200": {
+            "x-nullable": false,
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/FetchResultOfIndexConfigForViewOf"
+            }
+          }
+        }
+      }
+    },
+    "/api/Management/Login": {
+      "post": {
+        "tags": [
+          "Management"
+        ],
+        "operationId": "Management_Login",
+        "consumes": [
+          "application/json",
+          "text/json",
+          "application/*+json"
+        ],
+        "produces": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "parameters": [
+          {
+            "name": "loginModel",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/ClientLoginModel"
+            },
+            "x-nullable": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "x-nullable": false,
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/ClientLoginModel"
+            }
+          }
+        }
+      }
+    },
+    "/api/Management/Logout": {
+      "get": {
+        "tags": [
+          "Management"
+        ],
+        "operationId": "Management_Logout",
+        "responses": {
+          "200": {
+            "description": ""
+          }
+        }
+      }
+    },
+    "/api/Management/GenerateCaptcha": {
+      "get": {
+        "tags": [
+          "Management"
+        ],
+        "operationId": "Management_GenerateCaptcha",
+        "responses": {
+          "200": {
+            "x-nullable": true,
+            "description": "",
+            "schema": {
+              "type": "file"
+            }
+          }
+        }
+      }
+    },
+    "/api/Management/GetIndexLists": {
+      "get": {
+        "tags": [
+          "Management"
+        ],
+        "operationId": "Management_GetIndexLists",
+        "produces": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "responses": {
+          "200": {
+            "x-nullable": false,
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/FetchResultOfIndexStatusInfoOf"
+            }
+          }
+        }
+      }
+    },
+    "/api/Management/AddIndex": {
+      "post": {
+        "tags": [
+          "Management"
+        ],
+        "operationId": "Management_AddIndex",
+        "consumes": [
+          "application/json",
+          "text/json",
+          "application/*+json"
+        ],
+        "produces": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "parameters": [
+          {
+            "name": "indexConfig",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/IndexConfig"
+            },
+            "x-nullable": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "x-nullable": false,
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/FetchResultOfBoolean"
+            }
+          }
+        }
+      }
+    },
+    "/api/Management/EditIndex": {
+      "post": {
+        "tags": [
+          "Management"
+        ],
+        "operationId": "Management_EditIndex",
+        "consumes": [
+          "application/json",
+          "text/json",
+          "application/*+json"
+        ],
+        "produces": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "parameters": [
+          {
+            "name": "indexConfig",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/IndexConfig"
+            },
+            "x-nullable": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "x-nullable": false,
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/FetchResultOfBoolean"
+            }
+          }
+        }
+      }
+    },
+    "/api/Management/DeleteIndex": {
+      "get": {
+        "tags": [
+          "Management"
+        ],
+        "operationId": "Management_DeleteIndex",
+        "produces": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "parameters": [
+          {
+            "type": "string",
+            "name": "indexPk",
+            "in": "query",
+            "format": "guid",
+            "x-nullable": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "x-nullable": false,
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/FetchResultOfBoolean"
+            }
+          }
+        }
+      }
+    },
+    "/api/Management/StopIndex": {
+      "get": {
+        "tags": [
+          "Management"
+        ],
+        "operationId": "Management_StopIndex",
+        "produces": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "parameters": [
+          {
+            "type": "string",
+            "name": "indexPk",
+            "in": "query",
+            "format": "guid",
+            "x-nullable": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "x-nullable": false,
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/FetchResultOfBoolean"
+            }
+          }
+        }
+      }
+    },
+    "/api/Management/StartIndex": {
+      "get": {
+        "tags": [
+          "Management"
+        ],
+        "operationId": "Management_StartIndex",
+        "produces": [
+          "text/plain",
+          "application/json",
+          "text/json"
+        ],
+        "parameters": [
+          {
+            "type": "string",
+            "name": "indexPk",
+            "in": "query",
+            "format": "guid",
+            "x-nullable": false
+          }
+        ],
+        "responses": {
+          "200": {
+            "x-nullable": false,
+            "description": "",
+            "schema": {
+              "$ref": "#/definitions/FetchResultOfBoolean"
+            }
+          }
+        }
+      }
+    }
+  },
+  "definitions": {
+    "FetchResultOfIEnumerableOfCodeSource": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "$ref": "#/definitions/Status"
+        },
+        "result": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/CodeSource"
+          }
+        }
+      }
+    },
+    "Status": {
+      "type": "object",
+      "required": [
+        "success"
+      ],
+      "properties": {
+        "success": {
+          "type": "boolean"
+        },
+        "statusDesc": {
+          "type": "string"
+        }
+      }
+    },
+    "CodeSource": {
+      "type": "object",
+      "required": [
+        "indexDate",
+        "lastWriteTimeUtc"
+      ],
+      "properties": {
+        "fileName": {
+          "type": "string"
+        },
+        "fileExtension": {
+          "type": "string"
+        },
+        "filePath": {
+          "type": "string"
+        },
+        "content": {
+          "type": "string"
+        },
+        "indexDate": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "lastWriteTimeUtc": {
+          "type": "string",
+          "format": "date-time"
+        },
+        "codePK": {
+          "type": "string"
+        },
+        "info": {
+          "type": "string"
+        }
+      }
+    },
+    "FetchResultOfIEnumerableOfCodeSourceWithMatchedLine": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "$ref": "#/definitions/Status"
+        },
+        "result": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/CodeSourceWithMatchedLine"
+          }
+        }
+      }
+    },
+    "CodeSourceWithMatchedLine": {
+      "type": "object",
+      "required": [
+        "matchedLine"
+      ],
+      "properties": {
+        "codeSource": {
+          "$ref": "#/definitions/CodeSource"
+        },
+        "matchedLine": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "matchedContent": {
+          "type": "string"
+        }
+      }
+    },
+    "FetchResultOfIEnumerableOfString": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "$ref": "#/definitions/Status"
+        },
+        "result": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "FetchResultOfString": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "$ref": "#/definitions/Status"
+        },
+        "result": {
+          "type": "string"
+        }
+      }
+    },
+    "FetchResultOfIndexConfigForViewOf": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "$ref": "#/definitions/Status"
+        },
+        "result": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/IndexConfigForView"
+          }
+        }
+      }
+    },
+    "IndexConfigForView": {
+      "type": "object",
+      "required": [
+        "maxContentHighlightLength",
+        "saveIntervalSeconds",
+        "pk"
+      ],
+      "properties": {
+        "indexName": {
+          "type": "string"
+        },
+        "maxContentHighlightLength": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "saveIntervalSeconds": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "openIDEUriFormat": {
+          "type": "string"
+        },
+        "monitorFolderRealPath": {
+          "type": "string"
+        },
+        "pk": {
+          "type": "string",
+          "format": "guid"
+        }
+      }
+    },
+    "ClientLoginModel": {
+      "type": "object",
+      "required": [
+        "persist",
+        "status"
+      ],
+      "properties": {
+        "userName": {
+          "type": "string"
+        },
+        "password": {
+          "type": "string"
+        },
+        "persist": {
+          "type": "boolean"
+        },
+        "captcha": {
+          "type": "string"
+        },
+        "status": {
+          "$ref": "#/definitions/LoginStatus"
+        },
+        "message": {
+          "type": "string"
+        }
+      }
+    },
+    "LoginStatus": {
+      "type": "integer",
+      "description": "",
+      "x-enumNames": [
+        "Succesful",
+        "Failed",
+        "Exception"
+      ],
+      "enum": [
+        0,
+        1,
+        2
+      ]
+    },
+    "FetchResultOfIndexStatusInfoOf": {
+      "type": "object",
+      "properties": {
+        "status": {
+          "$ref": "#/definitions/Status"
+        },
+        "result": {
+          "type": "array",
+          "items": {
+            "$ref": "#/definitions/IndexStatusInfo"
+          }
+        }
+      }
+    },
+    "IndexStatusInfo": {
+      "type": "object",
+      "required": [
+        "indexStatus"
+      ],
+      "properties": {
+        "indexStatus": {
+          "$ref": "#/definitions/IndexStatus"
+        },
+        "indexConfig": {
+          "$ref": "#/definitions/IndexConfig"
+        }
+      }
+    },
+    "IndexStatus": {
+      "type": "integer",
+      "description": "",
+      "x-enumNames": [
+        "Idle",
+        "Initializing",
+        "Initializing_ComponentInitializeFinished",
+        "Initialized",
+        "Monitoring",
+        "Error",
+        "Disposing",
+        "Disposed"
+      ],
+      "enum": [
+        0,
+        1,
+        2,
+        3,
+        4,
+        5,
+        6,
+        7
+      ]
+    },
+    "IndexConfig": {
+      "type": "object",
+      "required": [
+        "pk",
+        "maxContentHighlightLength",
+        "saveIntervalSeconds"
+      ],
+      "properties": {
+        "pk": {
+          "type": "string",
+          "format": "guid"
+        },
+        "indexName": {
+          "type": "string"
+        },
+        "monitorFolder": {
+          "type": "string"
+        },
+        "maxContentHighlightLength": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "saveIntervalSeconds": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "openIDEUriFormat": {
+          "type": "string"
+        },
+        "monitorFolderRealPath": {
+          "type": "string"
+        },
+        "excludedPaths": {
+          "type": "string"
+        },
+        "includedExtensions": {
+          "type": "string"
+        },
+        "excludedExtensions": {
+          "type": "string"
+        },
+        "excludedPathsArray": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "includedExtensionsArray": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        },
+        "excludedExtensionsArray": {
+          "type": "array",
+          "items": {
+            "type": "string"
+          }
+        }
+      }
+    },
+    "FetchResultOfBoolean": {
+      "type": "object",
+      "required": [
+        "result"
+      ],
+      "properties": {
+        "status": {
+          "$ref": "#/definitions/Status"
+        },
+        "result": {
+          "type": "boolean"
+        }
+      }
+    }
+  }
+}

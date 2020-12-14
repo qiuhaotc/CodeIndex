@@ -1,200 +1,400 @@
 ﻿using System;
+using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
+using System.Threading;
+using System.Threading.Tasks;
 using CodeIndex.Common;
 using CodeIndex.Files;
 using Lucene.Net.Documents;
 using Lucene.Net.Index;
 using Lucene.Net.Search;
-using Lucene.Net.Store;
 
 namespace CodeIndex.IndexBuilder
 {
-    public static class CodeIndexBuilder
+    public class CodeIndexBuilder : IDisposable
     {
-        public static void BuildIndexByBatch(CodeIndexConfiguration config, bool triggerMerge, bool applyAllDeletes, bool needFlush, IEnumerable<FileInfo> fileInfos, bool deleteExistIndex, ILog log, out List<FileInfo> failedIndexFiles, int batchSize = 1000, bool needHint = true)
+        public CodeIndexBuilder(string name, LucenePoolLight codeIndexPool, LucenePoolLight hintIndexPool, ILog log)
         {
-            config.RequireNotNull(nameof(config));
+            name.RequireNotNullOrEmpty(nameof(name));
+            codeIndexPool.RequireNotNull(nameof(codeIndexPool));
+            hintIndexPool.RequireNotNull(nameof(hintIndexPool));
+            log.RequireNotNull(nameof(log));
+
+            Name = name;
+            CodeIndexPool = codeIndexPool;
+            HintIndexPool = hintIndexPool;
+            Log = log;
+        }
+
+        public string Name { get; }
+        public LucenePoolLight CodeIndexPool { get; }
+        public LucenePoolLight HintIndexPool { get; }
+        public ILog Log { get; }
+
+        public void InitIndexFolderIfNeeded()
+        {
+            if (!Directory.Exists(CodeIndexPool.LuceneIndex))
+            {
+                Log.Info($"Create {Name} index folder {CodeIndexPool.LuceneIndex}");
+                Directory.CreateDirectory(CodeIndexPool.LuceneIndex);
+            }
+
+            if (!Directory.Exists(HintIndexPool.LuceneIndex))
+            {
+                Log.Info($"Create {Name} index folder {HintIndexPool.LuceneIndex}");
+                Directory.CreateDirectory(HintIndexPool.LuceneIndex);
+            }
+        }
+
+        public ConcurrentBag<FileInfo> BuildIndexByBatch(IEnumerable<FileInfo> fileInfos, bool needCommit, bool triggerMerge, bool applyAllDeletes, CancellationToken cancellationToken, int batchSize = 10000)
+        {
+            cancellationToken.ThrowIfCancellationRequested();
             fileInfos.RequireNotNull(nameof(fileInfos));
             batchSize.RequireRange(nameof(batchSize), int.MaxValue, 50);
 
-            var needDeleteExistIndex = deleteExistIndex && IndexExists(config.LuceneIndexForCode);
-            var documents = new List<Document>();
-            failedIndexFiles = new List<FileInfo>();
+            var codeDocuments = new ConcurrentBag<Document>();
+            var wholeWords = new ConcurrentDictionary<string, int>();
+            var hintWords = new ConcurrentDictionary<string, int>();
+            var failedIndexFiles = new ConcurrentBag<FileInfo>();
+            using var readWriteSlimLock = new ReaderWriterLockSlim();
 
-            foreach (var fileInfo in fileInfos)
+            Parallel.ForEach(fileInfos, new ParallelOptions { CancellationToken = cancellationToken }, fileInfo =>
             {
+                cancellationToken.ThrowIfCancellationRequested();
+                readWriteSlimLock.EnterReadLock();
                 try
                 {
                     if (fileInfo.Exists)
                     {
                         var source = CodeSource.GetCodeSource(fileInfo, FilesContentHelper.ReadAllText(fileInfo.FullName));
 
-                        if (needDeleteExistIndex)
-                        {
-                            DeleteIndex(config.LuceneIndexForCode, new Term(nameof(CodeSource.FilePath) + Constants.NoneTokenizeFieldSuffix, source.FilePath));
-                        }
+                        AddHintWords(hintWords, wholeWords, source.Content);
 
-                        if (needHint)
-                        {
-                            WordsHintBuilder.AddWords(WordSegmenter.GetWords(source.Content));
-                        }
+                        var doc = IndexBuilderHelper.GetDocumentFromSource(source);
+                        codeDocuments.Add(doc);
 
-                        var doc = GetDocumentFromSource(source);
-                        documents.Add(doc);
-
-                        log?.Info($"Add index For {source.FilePath}");
+                        Log.Info($"{Name}: Add index For {source.FilePath}");
                     }
                 }
                 catch (Exception ex)
                 {
                     failedIndexFiles.Add(fileInfo);
-                    log?.Error($"Add index for {fileInfo.FullName} failed, exception: " + ex.ToString());
+                    Log.Error($"{Name}: Add index for {fileInfo.FullName} failed, exception: " + ex);
                 }
-
-                if (documents.Count >= batchSize)
+                finally
                 {
-                    BuildIndex(config, triggerMerge, applyAllDeletes, documents, needFlush, log);
-                    documents.Clear();
+                    readWriteSlimLock.ExitReadLock();
                 }
-            }
 
-            if (documents.Count > 0)
-            {
-                BuildIndex(config, triggerMerge, applyAllDeletes, documents, needFlush, log);
-            }
-        }
-
-        public static void BuildIndex(CodeIndexConfiguration config, bool triggerMerge, bool applyAllDeletes, bool needFlush, IEnumerable<CodeSource> codeSources, bool deleteExistIndex = true, ILog log = null)
-        {
-            config.RequireNotNull(nameof(config));
-            codeSources.RequireNotNull(nameof(codeSources));
-
-            var needDeleteExistIndex = deleteExistIndex && IndexExists(config.LuceneIndexForCode);
-            var documents = new List<Document>();
-
-            foreach (var source in codeSources)
-            {
-                if (needDeleteExistIndex)
+                if (codeDocuments.Count >= batchSize)
                 {
-                    DeleteIndex(config.LuceneIndexForCode, new Term(nameof(CodeSource.FilePath) + Constants.NoneTokenizeFieldSuffix, source.FilePath));
+                    readWriteSlimLock.EnterWriteLock();
+                    try
+                    {
+                        if (codeDocuments.Count >= batchSize)
+                        {
+                            BuildIndex(needCommit, triggerMerge, applyAllDeletes, codeDocuments, hintWords, cancellationToken);
+                            codeDocuments.Clear();
+                            hintWords.Clear();
+                        }
+                    }
+                    finally
+                    {
+                        readWriteSlimLock.ExitWriteLock();
+                    }
+                }
+            });
+
+            if (codeDocuments.Count > 0)
+            {
+                BuildIndex(needCommit, triggerMerge, applyAllDeletes, codeDocuments, hintWords, cancellationToken);
+            }
+
+            wholeWords.Clear();
+
+            return failedIndexFiles;
+        }
+
+        void AddHintWords(HashSet<string> hintWords, string content)
+        {
+            var words = WordSegmenter.GetWords(content).Where(word => word.Length > 3 && word.Length < 200);
+            foreach (var word in words)
+            {
+                hintWords.Add(word);
+            }
+        }
+
+        void AddHintWords(ConcurrentDictionary<string, int> hintWords, ConcurrentDictionary<string, int> wholeWords, string content)
+        {
+            var words = WordSegmenter.GetWords(content).Where(word => word.Length > 3 && word.Length < 200);
+            foreach (var word in words)
+            {
+                if (wholeWords.TryAdd(word, 0)) // Avoid Distinct Value
+                {
+                    hintWords.TryAdd(word, 0);
+                }
+            }
+        }
+
+        public void DeleteAllIndex()
+        {
+            Log.Info($"{Name}: Delete All Index start");
+            CodeIndexPool.DeleteAllIndex();
+            HintIndexPool.DeleteAllIndex();
+            Log.Info($"{Name}: Delete All Index finished");
+        }
+
+        public IEnumerable<(string FilePath, DateTime LastWriteTimeUtc)> GetAllIndexedCodeSource()
+        {
+            return CodeIndexPool.Search(new MatchAllDocsQuery(), int.MaxValue).Select(u => (u.Get(nameof(CodeSource.FilePath)), new DateTime(long.Parse(u.Get(nameof(CodeSource.LastWriteTimeUtc)))))).ToList();
+        }
+
+        public IndexBuildResults CreateIndex(FileInfo fileInfo)
+        {
+            try
+            {
+                if (fileInfo.Exists)
+                {
+                    var source = CodeSource.GetCodeSource(fileInfo, FilesContentHelper.ReadAllText(fileInfo.FullName));
+
+                    var words = new HashSet<string>();
+                    AddHintWords(words, source.Content);
+
+                    var doc = IndexBuilderHelper.GetDocumentFromSource(source);
+                    CodeIndexPool.BuildIndex(new[] { doc }, false);
+
+                    foreach (var word in words)
+                    {
+                        HintIndexPool.UpdateIndex(new Term(nameof(CodeWord.Word), word), new Document
+                        {
+                            new StringField(nameof(CodeWord.Word), word, Field.Store.YES),
+                            new StringField(nameof(CodeWord.WordLower), word.ToLowerInvariant(), Field.Store.YES)
+                        });
+                    }
+
+                    Log.Info($"{Name}: Create index For {source.FilePath} finished");
                 }
 
-                var doc = GetDocumentFromSource(source);
-                documents.Add(doc);
-
-                log?.Info($"Add index For {source.FilePath}");
+                return IndexBuildResults.Successful;
             }
-
-            BuildIndex(config, triggerMerge, applyAllDeletes, documents, needFlush, log);
-        }
-
-        static void BuildIndex(CodeIndexConfiguration config, bool triggerMerge, bool applyAllDeletes, List<Document> documents, bool needFlush, ILog log)
-        {
-            log?.Info($"Build index start, documents count {documents.Count}");
-            LucenePool.BuildIndex(config.LuceneIndexForCode, triggerMerge, applyAllDeletes, documents, needFlush);
-            log?.Info($"Build index finished");
-        }
-
-        public static void InitIndexFolderIfNeeded(CodeIndexConfiguration config, ILog log)
-        {
-            if (!System.IO.Directory.Exists(config.LuceneIndexForCode))
+            catch (Exception ex)
             {
-                log?.Info($"Create index folder {config.LuceneIndexForCode}");
-                System.IO.Directory.CreateDirectory(config.LuceneIndexForCode);
-            }
+                Log.Error($"{Name}: Create index for {fileInfo.FullName} failed, exception: " + ex);
 
-            if (!System.IO.Directory.Exists(config.LuceneIndexForHint))
-            {
-                log?.Info($"Create index folder {config.LuceneIndexForHint}");
-                System.IO.Directory.CreateDirectory(config.LuceneIndexForHint);
+                if (ex is IOException)
+                {
+                    return IndexBuildResults.FailedWithIOException;
+                }
+                else if (ex is OperationCanceledException)
+                {
+                    throw;
+                }
+
+                return IndexBuildResults.FailedWithError;
             }
         }
 
-        public static List<(string FilePath, DateTime LastWriteTimeUtc)> GetAllIndexedCodeSource(string luceneIndex)
+        void BuildIndex(bool needCommit, bool triggerMerge, bool applyAllDeletes, ConcurrentBag<Document> codeDocuments, ConcurrentDictionary<string, int> words, CancellationToken cancellationToken)
         {
-            luceneIndex.RequireNotNullOrEmpty(nameof(luceneIndex));
-            return LucenePool.GetAllIndexedCodeSource(luceneIndex);
-        }
+            cancellationToken.ThrowIfCancellationRequested();
 
-        public static void DeleteIndex(string luceneIndex, params Query[] searchQueries)
-        {
-            luceneIndex.RequireNotNullOrEmpty(nameof(luceneIndex));
-            searchQueries.RequireContainsElement(nameof(searchQueries));
+            Log.Info($"{Name}: Build code index start, documents count {codeDocuments.Count}");
 
-            LucenePool.DeleteIndex(luceneIndex, searchQueries);
-        }
+            Parallel.ForEach(
+                codeDocuments,
+                () => new List<Document>(),
+                (codeDocument, status, documentLists) =>
+                {
+                    documentLists.Add(codeDocument);
+                    return documentLists;
+                },
+                documentLists =>
+                {
+                    CodeIndexPool.BuildIndex(documentLists, needCommit, triggerMerge, applyAllDeletes);
+                });
 
-        public static void DeleteIndex(string luceneIndex, params Term[] terms)
-        {
-            luceneIndex.RequireNotNullOrEmpty(nameof(luceneIndex));
-            terms.RequireContainsElement(nameof(terms));
+            Log.Info($"{Name}: Build code index finished");
 
-            LucenePool.DeleteIndex(luceneIndex, terms);
-        }
+            Log.Info($"{Name}: Build hint index start, documents count {words.Count}");
 
-        public static void UpdateIndex(string luceneIndex, Term term, Document document)
-        {
-            luceneIndex.RequireNotNullOrEmpty(nameof(luceneIndex));
-            term.RequireNotNull(nameof(term));
-            document.RequireNotNull(nameof(document));
-
-            LucenePool.UpdateIndex(luceneIndex, term, document);
-        }
-
-        public static bool IndexExists(string luceneIndex)
-        {
-            luceneIndex.RequireNotNullOrEmpty(nameof(luceneIndex));
-
-            using var dir = FSDirectory.Open(luceneIndex);
-            var indexExist = DirectoryReader.IndexExists(dir);
-
-            return indexExist;
-        }
-
-        public static void DeleteAllIndex(CodeIndexConfiguration config)
-        {
-            config.RequireNotNull(nameof(config));
-
-            if (IndexExists(config.LuceneIndexForCode))
+            Parallel.ForEach(words, word =>
             {
-                LucenePool.DeleteAllIndex(config.LuceneIndexForCode);
+                HintIndexPool.UpdateIndex(new Term(nameof(CodeWord.Word), word.Key), new Document
+                {
+                    new StringField(nameof(CodeWord.Word), word.Key, Field.Store.YES),
+                    new StringField(nameof(CodeWord.WordLower), word.Key.ToLowerInvariant(), Field.Store.YES)
+                });
+            });
+
+            if (needCommit || triggerMerge || applyAllDeletes)
+            {
+                HintIndexPool.Commit();
             }
 
-            if (IndexExists(config.LuceneIndexForHint))
+            Log.Info($"{Name}: Build hint index finished");
+        }
+
+        public bool RenameFolderIndexes(string oldFolderPath, string nowFolderPath, CancellationToken cancellationToken)
+        {
+            try
             {
-                LucenePool.DeleteAllIndex(config.LuceneIndexForHint);
+                var documents = CodeIndexPool.Search(new PrefixQuery(GetNoneTokenizeFieldTerm(nameof(CodeSource.FilePath), oldFolderPath)), 1);
+
+                foreach (var document in documents)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+                    RenameIndex(document, oldFolderPath, nowFolderPath);
+                }
+
+                Log.Info($"{Name}: Rename folder index from {oldFolderPath} to {nowFolderPath} successful");
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"{Name}: Rename folder index from {oldFolderPath} to {nowFolderPath} failed, exception: " + ex);
+                return false;
             }
         }
 
-        static string ToStringSafe(this string value)
+        public IndexBuildResults RenameFileIndex(string oldFilePath, string nowFilePath)
         {
-            return value ?? string.Empty;
-        }
-
-        public static Document GetDocumentFromSource(CodeSource source)
-        {
-            return new Document
+            try
             {
-                new TextField(nameof(source.FileName), source.FileName.ToStringSafe(), Field.Store.YES),
-                // StringField indexes but doesn't tokenize
-                new StringField(nameof(source.FileExtension), source.FileExtension.ToStringSafe(), Field.Store.YES),
-                new StringField(nameof(source.FilePath) + Constants.NoneTokenizeFieldSuffix, source.FilePath.ToStringSafe(), Field.Store.YES),
-                new TextField(nameof(source.FilePath), source.FilePath.ToStringSafe(), Field.Store.YES),
-                new TextField(nameof(source.Content), source.Content.ToStringSafe(), Field.Store.YES),
-                new Int64Field(nameof(source.IndexDate), source.IndexDate.Ticks, Field.Store.YES),
-                new Int64Field(nameof(source.LastWriteTimeUtc), source.LastWriteTimeUtc.Ticks, Field.Store.YES),
-                new StringField(nameof(source.CodePK), source.CodePK.ToString(), Field.Store.YES)
-            };
+                var documents = CodeIndexPool.Search(new TermQuery(GetNoneTokenizeFieldTerm(nameof(CodeSource.FilePath), oldFilePath)), 1);
+
+                if (documents.Length == 1)
+                {
+                    RenameIndex(documents[0], oldFilePath, nowFilePath);
+
+                    Log.Info($"{Name}: Rename file index from {oldFilePath} to {nowFilePath} successful");
+
+                    return IndexBuildResults.Successful;
+                }
+
+                if (documents.Length == 0)
+                {
+                    Log.Info($"{Name}: Rename file index failed, unable to find any document from {oldFilePath}, possible template file renamed, fallback to create index.");
+                    return CreateIndex(new FileInfo(nowFilePath));
+                }
+
+                Log.Warn($"{Name}: Rename file index from {oldFilePath} to {nowFilePath} failed, unable to find one document, there are {documents.Length} document(s) founded");
+                return IndexBuildResults.FailedWithError;
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"{Name}: Rename file index from {oldFilePath} to {nowFilePath} failed, exception: " + ex);
+
+                if(ex is IOException)
+                {
+                    return IndexBuildResults.FailedWithIOException;
+                }
+
+                return IndexBuildResults.FailedWithError;
+            }
         }
 
-        public static void UpdateCodeFilePath(Document codeSourceDocumnet, string oldFullPath, string nowFullPath)
+        void RenameIndex(Document document, string oldFilePath, string nowFilePath)
         {
-            var pathField = codeSourceDocumnet.Get(nameof(CodeSource.FilePath));
-            codeSourceDocumnet.RemoveField(nameof(CodeSource.FilePath));
-            codeSourceDocumnet.RemoveField(nameof(CodeSource.FilePath) + Constants.NoneTokenizeFieldSuffix);
-            codeSourceDocumnet.Add(new TextField(nameof(CodeSource.FilePath), pathField.Replace(oldFullPath, nowFullPath), Field.Store.YES));
-            codeSourceDocumnet.Add(new StringField(nameof(CodeSource.FilePath) + Constants.NoneTokenizeFieldSuffix, pathField.Replace(oldFullPath, nowFullPath), Field.Store.YES));
+            var pathField = document.Get(nameof(CodeSource.FilePath));
+            var nowPath = pathField.Replace(oldFilePath, nowFilePath);
+            document.RemoveField(nameof(CodeSource.FilePath));
+            document.RemoveField(nameof(CodeSource.FilePath) + Constants.NoneTokenizeFieldSuffix);
+            document.Add(new TextField(nameof(CodeSource.FilePath), nowPath, Field.Store.YES));
+            document.Add(new StringField(nameof(CodeSource.FilePath) + Constants.NoneTokenizeFieldSuffix, nowPath, Field.Store.YES));
+            CodeIndexPool.UpdateIndex(new Term(nameof(CodeSource.CodePK), document.Get(nameof(CodeSource.CodePK))), document);
+        }
+
+        public bool IsDisposing { get; private set; }
+
+        public void Dispose()
+        {
+            if (!IsDisposing)
+            {
+                IsDisposing = true;
+                CodeIndexPool.Dispose();
+                HintIndexPool.Dispose();
+            }
+        }
+
+        public IndexBuildResults UpdateIndex(FileInfo fileInfo, CancellationToken cancellationToken)
+        {
+            try
+            {
+                if (fileInfo.Exists)
+                {
+                    cancellationToken.ThrowIfCancellationRequested();
+
+                    var source = CodeSource.GetCodeSource(fileInfo, FilesContentHelper.ReadAllText(fileInfo.FullName));
+
+                    var words = new HashSet<string>();
+                    AddHintWords(words, source.Content);
+
+                    var doc = IndexBuilderHelper.GetDocumentFromSource(source);
+                    CodeIndexPool.UpdateIndex(GetNoneTokenizeFieldTerm(nameof(CodeSource.FilePath), source.FilePath), doc);
+
+                    foreach (var word in words)
+                    {
+                        // TODO: Delete And Add Hint Words
+
+                        HintIndexPool.UpdateIndex(new Term(nameof(CodeWord.Word), word), new Document
+                        {
+                            new StringField(nameof(CodeWord.Word), word, Field.Store.YES),
+                            new StringField(nameof(CodeWord.WordLower), word.ToLowerInvariant(), Field.Store.YES)
+                        });
+                    }
+
+                    Log.Info($"{Name}: Update index For {source.FilePath} finished");
+                }
+
+                return IndexBuildResults.Successful;
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"{Name}: Update index for {fileInfo.FullName} failed, exception: " + ex);
+
+
+                if (ex is IOException)
+                {
+                    return IndexBuildResults.FailedWithIOException;
+                }
+                else if (ex is OperationCanceledException)
+                {
+                    throw;
+                }
+
+                return IndexBuildResults.FailedWithError;
+            }
+        }
+
+        public bool DeleteIndex(string filePath)
+        {
+            try
+            {
+                CodeIndexPool.DeleteIndex(GetNoneTokenizeFieldTerm(nameof(CodeSource.FilePath), filePath));
+                Log.Info($"{Name}: Delete index For {filePath} finished");
+
+                // TODO: Delete Hint Words
+
+                return true;
+            }
+            catch (Exception ex)
+            {
+                Log.Error($"{Name}: Delete index for {filePath} failed, exception: " + ex);
+                return false;
+            }
+        }
+
+        public void Commit()
+        {
+            CodeIndexPool.Commit();
+            HintIndexPool.Commit();
+        }
+
+        public Term GetNoneTokenizeFieldTerm(string fieldName, string termValue)
+        {
+            return new Term($"{fieldName}{Constants.NoneTokenizeFieldSuffix}", termValue);
         }
     }
 }

@@ -4,9 +4,11 @@
     {
         Idle,
         Initializing,
+        Initializing_ComponentInitializeFinished,
+        Initialized,
         Monitoring,
         Error,
-        Deleting,
-        Initialized
+        Disposing,
+        Disposed
     }
 }

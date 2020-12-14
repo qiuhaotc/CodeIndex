@@ -1,8 +1,6 @@
 ﻿using System.IO;
-using System.Windows;
 using System.Windows.Controls;
 using System.Windows.Input;
-using CodeIndex.Common;
 using EnvDTE;
 using Microsoft.VisualStudio.Shell;
 
@@ -30,7 +28,7 @@ namespace CodeIndex.VisualStudioExtension
             }
             else
             {
-                (DataContext as CodeIndexSearchViewModel)?.GetHintWords();
+                (DataContext as CodeIndexSearchViewModel)?.GetHintWordsAsync();
             }
         }
 

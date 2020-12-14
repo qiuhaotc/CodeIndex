@@ -1,14 +1,20 @@
 ﻿using System.Collections.Generic;
 using CodeIndex.Common;
-using CodeIndex.IndexBuilder;
-using Lucene.Net.Analysis;
 using Lucene.Net.QueryParsers.Classic;
 using Lucene.Net.Search;
 
-namespace CodeIndex.Search
+namespace CodeIndex.MaintainIndex
 {
     public class QueryGenerator
     {
+        QueryParser QueryParser { get; }
+
+        public QueryGenerator(QueryParser queryParser)
+        {
+            queryParser.RequireNotNull(nameof(queryParser));
+            QueryParser = queryParser;
+        }
+
         public static string GetSearchStr(string fileName, string content, string fileExtension, string filePath)
         {
             var searchQueries = new List<string>();
@@ -45,16 +51,12 @@ namespace CodeIndex.Search
         {
             searchStr.RequireNotNullOrEmpty(nameof(searchStr));
 
-            return parser.Parse(searchStr);
+            return QueryParser.Parse(searchStr);
         }
 
         static bool SurroundWithQuotation(string content)
         {
             return !string.IsNullOrWhiteSpace(content) && content.StartsWith("\"") && content.EndsWith("\"");
         }
-
-        public Analyzer Analyzer => parser.Analyzer;
-
-        readonly QueryParser parser = LucenePool.GetQueryParser();
     }
 }

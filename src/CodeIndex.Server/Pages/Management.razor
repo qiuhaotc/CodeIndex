@@ -1,0 +1,278 @@
+﻿@page "/Management"
+@inject NavigationManager NavigationManager
+@inject IJSRuntime JSRuntime
+@inject CodeIndexConfiguration Configuration
+
+<div class="row">
+    <div class="col-sm">
+        <h3>Index Management</h3>
+    </div>
+</div>
+
+<hr />
+
+<h4>
+    Stored Indexes
+    <button class="btn btn-success btn-sm" @onclick="() => GetLists()">Refresh</button>
+</h4>
+
+<div class="row">
+    @if (!string.IsNullOrEmpty(StatusMessage))
+    {
+        <div class="alert alert-danger" role="alert">
+            @StatusMessage
+        </div>
+    }
+</div>
+
+<div class="row">
+
+    @if (IndexStatusInfos != null)
+    {
+        foreach (var indexStatus in IndexStatusInfos)
+        {
+            <div class="col-md-4 p-1">
+                <div class="card">
+                    <div class="card-body">
+                        <p>Name: @indexStatus.IndexConfig.IndexName</p>
+                        <p>Status: @indexStatus.IndexStatus</p>
+                        <p>Monitor Folder: @indexStatus.IndexConfig.MonitorFolder</p>
+                        <p>Indexed File Path: @indexStatus.IndexConfig.GetRootFolder(Configuration.LuceneIndex)</p>
+                        <button class="btn btn-primary btn-sm" @onclick="() => Edit(indexStatus)" disabled="@(!IndexManagement.ValidToEdit(indexStatus.IndexStatus))" title="@(IndexManagement.ValidToEdit(indexStatus.IndexStatus) ? string.Empty: "Only Idle or Disposed Index Can Be Edit")">Edit</button>
+                        <button class="btn btn-info btn-sm" @onclick="() => StopOrStartIndex(indexStatus)">@(IndexManagement.ValidToStart(indexStatus.IndexStatus) ? "Start" : "Stop")</button>
+                        <button class="btn btn-danger btn-sm" @onclick="() => Delete(indexStatus)">Delete</button>
+                    </div>
+                </div>
+            </div>
+        }
+    }
+</div>
+
+<hr />
+
+<h4>
+    Add or Edit Index Info
+    <button type="button" class="btn btn-primary btn-sm" @onclick="SaveIndexInfo">Save @EditType Info</button>
+</h4>
+
+<div class="row">
+    <div class="form-group col-md-4">
+        <label for="IndexName">Index Name</label>
+        <input type="text" class="form-control" id="IndexName" autocomplete="off" @bind-value="@IndexStatusInfoForEditOrAdd.IndexConfig.IndexName">
+    </div>
+    <div class="form-group col-md-4">
+        <label for="MonitorFolder">Monitor Folder</label>
+        <input type="text" class="form-control" id="MonitorFolder" autocomplete="off" @bind-value="@IndexStatusInfoForEditOrAdd.IndexConfig.MonitorFolder">
+    </div>
+    <div class="form-group col-md-4">
+        <label for="MonitorFolderRealPath">Monitor Folder Real Path</label>
+        <input type="text" class="form-control" id="MonitorFolderRealPath" autocomplete="off" @bind-value="@IndexStatusInfoForEditOrAdd.IndexConfig.MonitorFolderRealPath">
+    </div>
+    <div class="form-group col-md-4">
+        <label for="OpenIDEUriFormat">Open IDE Uri Format</label>
+        <input type="text" class="form-control" id="OpenIDEUriFormat" autocomplete="off" @bind-value="@IndexStatusInfoForEditOrAdd.IndexConfig.OpenIDEUriFormat">
+    </div>
+    <div class="form-group col-md-4">
+        <label for="IncludedExtensions">Included Extensions</label>
+        <input type="text" class="form-control" id="IncludedExtensions" autocomplete="off" @bind-value="@IndexStatusInfoForEditOrAdd.IndexConfig.IncludedExtensions">
+    </div>
+    <div class="form-group col-md-4">
+        <label for="ExcludedExtensions">Excluded Extensions</label>
+        <input type="text" class="form-control" id="ExcludedExtensions" autocomplete="off" @bind-value="@IndexStatusInfoForEditOrAdd.IndexConfig.ExcludedExtensions">
+    </div>
+    <div class="form-group col-md-4">
+        <label for="ExcludedPaths">Excluded Paths</label>
+        <input type="text" class="form-control" id="ExcludedPaths" autocomplete="off" @bind-value="@IndexStatusInfoForEditOrAdd.IndexConfig.ExcludedPaths">
+    </div>
+    <div class="form-group col-md-4">
+        <label for="MaxContentHighlightLength">Max Content Highlight Length</label>
+        <input type="number" class="form-control" id="MaxContentHighlightLength" autocomplete="off" @bind-value="@IndexStatusInfoForEditOrAdd.IndexConfig.MaxContentHighlightLength">
+    </div>
+    <div class="form-group col-md-4">
+        <label for="SaveIntervalSeconds">Save Interval Seconds</label>
+        <input type="number" class="form-control" id="SaveIntervalSeconds" autocomplete="off" @bind-value="@IndexStatusInfoForEditOrAdd.IndexConfig.SaveIntervalSeconds">
+    </div>
+</div>
+
+@code {
+
+    public List<IndexStatusInfo> IndexStatusInfos { get; set; } = new List<IndexStatusInfo>();
+
+    public string StatusMessage { get; set; }
+
+    public string EditModel { get; set; }
+
+    public string EditType => IndexStatusInfos.Contains(IndexStatusInfoForEditOrAdd) ? "Edit Config" : "New Config";
+
+    public IndexStatusInfo IndexStatusInfoForEditOrAdd { get; set; } = new IndexStatusInfo(IndexStatus.Idle, new IndexConfig());
+
+    protected override async Task OnInitializedAsync()
+    {
+        await base.OnInitializedAsync();
+
+        await GetLists();
+    }
+
+    void Edit(IndexStatusInfo indexStatusInfo)
+    {
+        IndexStatusInfoForEditOrAdd = indexStatusInfo;
+    }
+
+    async Task SaveEdit(IndexStatusInfo indexStatusInfo)
+    {
+        try
+        {
+            var result = (await JSRuntime.InvokeAsync<FetchResult<bool>>("DoAjaxPost", "api/management/editindex", indexStatusInfo.IndexConfig));
+            if (result.Status.Success)
+            {
+                await GetLists();
+            }
+            else
+            {
+                StatusMessage = result.Status.StatusDesc;
+                if (StatusMessage == "401")
+                {
+                    Navigate();
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = ex.ToString();
+            NavigateIfNotLogin(ex);
+        }
+    }
+
+    async Task Delete(IndexStatusInfo indexStatusInfo)
+    {
+        try
+        {
+            if (await JSRuntime.InvokeAsync<bool>("ShowConfirm", "Are you sure you want to delete this index? This operation can't cancel."))
+            {
+                var result = (await JSRuntime.InvokeAsync<FetchResult<bool>>("DoAjaxGet", "api/management/deleteindex", new { indexPk = indexStatusInfo.IndexConfig.Pk }));
+                if (result.Status.Success)
+                {
+                    await GetLists();
+                }
+                else
+                {
+                    StatusMessage = result.Status.StatusDesc;
+                    if (StatusMessage == "401")
+                    {
+                        Navigate();
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = ex.ToString();
+            NavigateIfNotLogin(ex);
+        }
+    }
+
+    async Task StopOrStartIndex(IndexStatusInfo indexStatusInfo)
+    {
+        try
+        {
+            var validToStart = IndexManagement.ValidToStart(indexStatusInfo.IndexStatus);
+            var message = validToStart ? "start" : "stop";
+
+            if (await JSRuntime.InvokeAsync<bool>("ShowConfirm", $"Are you sure you want to {message} indexing and searching for this one?"))
+            {
+                var callEndpoint = validToStart ? "StartIndex" : "StopIndex";
+
+                var result = (await JSRuntime.InvokeAsync<FetchResult<bool>>("DoAjaxGet", $"api/management/{callEndpoint}", new { indexPk = indexStatusInfo.IndexConfig.Pk }));
+                if (result.Status.Success)
+                {
+                    await GetLists();
+                }
+                else
+                {
+                    StatusMessage = result.Status.StatusDesc;
+                    if (StatusMessage == "401")
+                    {
+                        Navigate();
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = ex.ToString();
+            NavigateIfNotLogin(ex);
+        }
+    }
+
+    async Task SaveIndexInfo()
+    {
+        if (!IndexStatusInfos.Contains(IndexStatusInfoForEditOrAdd))
+        {
+            try
+            {
+                var result = (await JSRuntime.InvokeAsync<FetchResult<bool>>("DoAjaxPost", "api/management/addindex", IndexStatusInfoForEditOrAdd.IndexConfig));
+                if (result.Status.Success)
+                {
+                    await GetLists();
+                }
+                else
+                {
+                    StatusMessage = result.Status.StatusDesc;
+                    if (StatusMessage == "401")
+                    {
+                        Navigate();
+                    }
+                }
+            }
+            catch (Exception ex)
+            {
+                StatusMessage = ex.ToString();
+                NavigateIfNotLogin(ex);
+            }
+        }
+        else
+        {
+            await SaveEdit(IndexStatusInfoForEditOrAdd);
+        }
+    }
+
+    async Task GetLists()
+    {
+        try
+        {
+            var result = (await JSRuntime.InvokeAsync<FetchResult<IndexStatusInfo[]>>("DoAjaxGet", "api/management/GetIndexLists"));
+            if (result.Status.Success)
+            {
+                IndexStatusInfos = result.Result.ToList();
+                StatusMessage = string.Empty;
+                IndexStatusInfoForEditOrAdd = new IndexStatusInfo(IndexStatus.Idle, new IndexConfig());
+            }
+            else
+            {
+                StatusMessage = result.Status.StatusDesc;
+                if (StatusMessage == "401")
+                {
+                    Navigate();
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            StatusMessage = ex.ToString();
+
+            NavigateIfNotLogin(ex);
+        }
+    }
+
+    void NavigateIfNotLogin(Exception ex)
+    {
+        if (ex is HttpRequestException exHttp)
+        {
+            if (exHttp.StatusCode == System.Net.HttpStatusCode.Unauthorized)
+            {
+                Navigate();
+            }
+        }
+    }
+    void Navigate() => NavigationManager.NavigateTo("/Login");
+}

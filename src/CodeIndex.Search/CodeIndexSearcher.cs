@@ -1,36 +1,72 @@
-﻿using System.Collections.Generic;
+﻿using System;
+using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Web;
 using CodeIndex.Common;
 using CodeIndex.IndexBuilder;
-using Lucene.Net.Analysis;
+using CodeIndex.MaintainIndex;
 using Lucene.Net.Documents;
+using Lucene.Net.Index;
 using Lucene.Net.Search;
 using Lucene.Net.Search.Highlight;
 using static CodeIndex.IndexBuilder.CodeContentProcessing;
 
 namespace CodeIndex.Search
 {
-    public static class CodeIndexSearcher
+    public class CodeIndexSearcher
     {
-        public static CodeSource[] SearchCode(string luceneIndex, Query query, int maxResults)
+        public CodeIndexSearcher(IndexManagement indexManagement, ILog log)
         {
-            luceneIndex.RequireNotNullOrEmpty(nameof(luceneIndex));
-            query.RequireNotNull(nameof(query));
-            maxResults.RequireRange(nameof(maxResults), int.MaxValue, 1);
-
-            return LucenePool.SearchCode(luceneIndex, query, maxResults);
+            IndexManagement = indexManagement;
+            Log = log;
         }
 
-        public static string GenerateHtmlPreviewText(Query query, string text, int length, Analyzer analyzer, string prefix = "<label class='highlight'>", string suffix = "</label>", bool returnRawContentWhenResultIsEmpty = false, int maxContentHighlightLength = Constants.DefaultMaxContentHighlightLength)
+        public IndexManagement IndexManagement { get; }
+        public ILog Log { get; }
+
+        public CodeSource[] SearchCode(string searchStr, out Query query, int maxResults, Guid pk)
         {
+            searchStr.RequireNotNullOrEmpty(nameof(searchStr));
+            maxResults.RequireRange(nameof(maxResults), int.MaxValue, 1);
+
+            var maintainer = GetIndexMaintainerWrapper(pk);
+
+            if (maintainer == null)
+            {
+                query = null;
+                return Array.Empty<CodeSource>();
+            }
+
+            query = maintainer.QueryGenerator.GetQueryFromStr(searchStr);
+            return StatusValid(maintainer) ? maintainer.Maintainer.IndexBuilder.CodeIndexPool.Search(query, maxResults).Select(GetCodeSourceFromDocument).ToArray() : Array.Empty<CodeSource>();
+        }
+
+        public string GenerateHtmlPreviewText(string contentQuery, string text, int length, Guid pk, string prefix = "<label class='highlight'>", string suffix = "</label>", bool returnRawContentWhenResultIsEmpty = false)
+        {
+            var maintainer = GetIndexMaintainerWrapper(pk);
+
+            if (maintainer == null)
+            {
+                return string.Empty;
+            }
+
+            var queryForContent = string.IsNullOrWhiteSpace(contentQuery) ? null : maintainer.QueryGenerator.GetQueryFromStr(contentQuery);
+
             string result = null;
+
+            var maxContentHighlightLength = maintainer.IndexConfig.MaxContentHighlightLength;
+
+            if (maxContentHighlightLength <= 0)
+            {
+                maxContentHighlightLength = Constants.DefaultMaxContentHighlightLength;
+            }
 
             if (text.Length <= maxContentHighlightLength) // For performance
             {
-                if (query != null)
+                if (queryForContent != null)
                 {
-                    var scorer = new QueryScorer(query);
+                    var scorer = new QueryScorer(queryForContent);
                     var formatter = new SimpleHTMLFormatter(HighLightPrefix, HighLightSuffix);
 
                     var highlighter = new Highlighter(formatter, scorer)
@@ -39,7 +75,7 @@ namespace CodeIndex.Search
                         MaxDocCharsToAnalyze = maxContentHighlightLength
                     };
 
-                    var stream = analyzer.GetTokenStream(nameof(CodeSource.Content), new StringReader(text));
+                    using var stream = LucenePoolLight.Analyzer.GetTokenStream(nameof(CodeSource.Content), new StringReader(text));
 
                     result = highlighter.GetBestFragments(stream, text, 3, "...");
                 }
@@ -56,24 +92,56 @@ namespace CodeIndex.Search
             return result;
         }
 
-        public static Document[] Search(string luceneIndex, Query query, int maxResults)
+        public string[] GetHints(string word, Guid pk, int maxResults = 20, bool caseSensitive = false)
         {
-            luceneIndex.RequireNotNullOrEmpty(nameof(luceneIndex));
-            query.RequireNotNull(nameof(query));
-            maxResults.RequireRange(nameof(maxResults), int.MaxValue, 1);
+            if (string.IsNullOrWhiteSpace(word))
+            {
+                return Array.Empty<string>();
+            }
 
-            return LucenePool.Search(luceneIndex, query, maxResults);
+            var searchQuery = new BooleanQuery();
+
+            if (caseSensitive)
+            {
+                var query1 = new TermQuery(new Term(nameof(CodeWord.Word), word));
+                var query2 = new PrefixQuery(new Term(nameof(CodeWord.Word), word));
+                searchQuery.Add(query1, Occur.SHOULD);
+                searchQuery.Add(query2, Occur.SHOULD);
+            }
+            else
+            {
+                var query1 = new TermQuery(new Term(nameof(CodeWord.WordLower), word.ToLower()));
+                var query2 = new PrefixQuery(new Term(nameof(CodeWord.WordLower), word.ToLower()));
+                searchQuery.Add(query1, Occur.SHOULD);
+                searchQuery.Add(query2, Occur.SHOULD);
+            }
+
+            var maintainer = GetIndexMaintainerWrapper(pk);
+            return StatusValid(maintainer) ? maintainer.Maintainer.IndexBuilder.HintIndexPool.Search(searchQuery, maxResults).Select(u => u.Get(nameof(CodeWord.Word))).ToArray() : Array.Empty<string>();
         }
 
-        public static string[] GetHints(string luceneIndex, string word, int maxResults = 20, bool caseSensitive = false)
+        public Query GetQueryFromStr(string contentQuery, Guid pk)
         {
-            return LucenePool.GetHints(luceneIndex, word, maxResults, caseSensitive);
+            return GetIndexMaintainerWrapper(pk)?.QueryGenerator.GetQueryFromStr(contentQuery);
         }
 
-        public static (string MatchedLineContent, int LineNumber)[] GeneratePreviewTextWithLineNumber(Query query, string text, int length, Analyzer analyzer, int maxResults, int maxContentHighlightLength = Constants.DefaultMaxContentHighlightLength, bool forWeb = true, bool needReplaceSuffixAndPrefix = true, string prefix = "<label class='highlight'>", string suffix = "</label>")
+        public (string MatchedLineContent, int LineNumber)[] GeneratePreviewTextWithLineNumber(Query query, string text, int length, int maxResults, Guid pk, bool forWeb = true, bool needReplaceSuffixAndPrefix = true, string prefix = "<label class='highlight'>", string suffix = "</label>")
         {
+            (string, int)[] results;
+
+            var maintainer = GetIndexMaintainerWrapper(pk);
+            if (maintainer == null)
+            {
+                return Array.Empty<(string, int)>();
+            }
+
             string highLightResult = null;
-            (string, int)[] results = null;
+            var maxContentHighlightLength = maintainer.IndexConfig.MaxContentHighlightLength;
+
+            if (maxContentHighlightLength <= 0)
+            {
+                maxContentHighlightLength = Constants.DefaultMaxContentHighlightLength;
+            }
 
             if (text.Length <= maxContentHighlightLength) // For performance
             {
@@ -88,7 +156,7 @@ namespace CodeIndex.Search
                         MaxDocCharsToAnalyze = maxContentHighlightLength
                     };
 
-                    var stream = analyzer.GetTokenStream(nameof(CodeSource.Content), new StringReader(text));
+                    using var stream = LucenePoolLight.Analyzer.GetTokenStream(nameof(CodeSource.Content), new StringReader(text));
 
                     highLightResult = highlighter.GetBestFragments(stream, text, 3, "...");
                 }
@@ -139,5 +207,33 @@ namespace CodeIndex.Search
 
             return results;
         }
+
+        public static CodeSource GetCodeSourceFromDocument(Document document)
+        {
+            return new CodeSource
+            {
+                CodePK = document.Get(nameof(CodeSource.CodePK)),
+                Content = document.Get(nameof(CodeSource.Content)),
+                FileExtension = document.Get(nameof(CodeSource.FileExtension)),
+                FileName = document.Get(nameof(CodeSource.FileName)),
+                FilePath = document.Get(nameof(CodeSource.FilePath)),
+                IndexDate = new DateTime(long.Parse(document.Get(nameof(CodeSource.IndexDate)))),
+                LastWriteTimeUtc = new DateTime(long.Parse(document.Get(nameof(CodeSource.LastWriteTimeUtc))))
+            };
+        }
+
+        IndexMaintainerWrapper GetIndexMaintainerWrapper(Guid pk)
+        {
+            var result = IndexManagement.GetIndexMaintainerWrapperAndInitializeIfNeeded(pk);
+            if (result.Status.Success)
+            {
+                return result.Result;
+            }
+
+            Log.Info($"Index {pk} not exist in Index Management: {result.Status.StatusDesc}");
+            return null;
+        }
+
+        bool StatusValid(IndexMaintainerWrapper indexMaintainer) => indexMaintainer != null && (indexMaintainer.Status == IndexStatus.Initialized || indexMaintainer.Status == IndexStatus.Initializing_ComponentInitializeFinished || indexMaintainer.Status == IndexStatus.Monitoring);
     }
 }

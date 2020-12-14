@@ -6,7 +6,6 @@ using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
 using System.Windows.Input;
-using CodeIndex.Common;
 using CodeIndex.VisualStudioExtension.Models;
 
 namespace CodeIndex.VisualStudioExtension
@@ -16,6 +15,17 @@ namespace CodeIndex.VisualStudioExtension
         public CodeIndexSearchViewModel()
         {
             serviceUrl = ConfigHelper.Configuration.AppSettings.Settings[nameof(ServiceUrl)].Value;
+            LoadIndexInfos();
+        }
+
+        public Guid IndexPk
+        {
+            get => indexPk;
+            set
+            {
+                indexPk = value;
+                NotifyPropertyChange();
+            }
         }
 
         public string FileName { get; set; }
@@ -38,12 +48,37 @@ namespace CodeIndex.VisualStudioExtension
                     ConfigHelper.SetConfiguration(nameof(ServiceUrl), value);
                     serviceUrl = value;
                 }
+
+                LoadIndexInfos();
+            }
+        }
+
+        CancellationTokenSource tokenToLoadIndexInfos;
+
+        async Task LoadIndexInfos()
+        {
+            try
+            {
+                tokenToLoadIndexInfos?.Cancel();
+                tokenToLoadIndexInfos?.Dispose();
+                tokenToLoadIndexInfos = new CancellationTokenSource();
+
+                var client = new CodeIndexClient(new HttpClient(), ServiceUrl);
+                var result = await client.ApiLuceneGetindexviewlistAsync(tokenToLoadIndexInfos.Token);
+
+                IndexInfos = result.Status.Success ? result.Result.Select(u => new Item<Guid>(u.IndexName, u.Pk)).ToList() : IndexInfos;
+                IndexPk = IndexInfos.FirstOrDefault()?.Value ?? Guid.Empty;
+                ResultInfo = string.Empty;
+            }
+            catch (Exception ex)
+            {
+                ResultInfo = "Exception Occur: " + ex;
             }
         }
 
         CancellationTokenSource tokenSourceToGetHintWord;
 
-        public async void GetHintWords()
+        public async Task GetHintWordsAsync()
         {
             if (string.IsNullOrEmpty(Content))
             {
@@ -61,19 +96,20 @@ namespace CodeIndex.VisualStudioExtension
                 {
                     try
                     {
-                        var client = new HttpClient();
-                        var url = $"{ServiceUrl}/api/lucene/GetHints?word=" + System.Web.HttpUtility.UrlEncode(inputWord);
-                        var response = await client.GetAsync(url, tokenSourceToGetHintWord.Token);
-                        var result = await response.Content.ReadAsAsync<FetchResult<List<string>>>();
+                        var client = new CodeIndexClient(new HttpClient(), ServiceUrl);
+                        var result = await client.ApiLuceneGethintsAsync(inputWord, IndexPk);
 
                         if (result.Status.Success)
                         {
+                            ResultInfo = string.Empty;
                             return result.Result.Select(u => new HintWord { Word = u }).ToList();
                         }
+
+                        ResultInfo = result.Status.StatusDesc;
                     }
                     catch (Exception ex)
                     {
-                        // ignored
+                        ResultInfo = "Exception Occur: " + ex;
                     }
 
                     return new List<HintWord>();
@@ -115,6 +151,16 @@ namespace CodeIndex.VisualStudioExtension
             }
         }
 
+        public List<Item<Guid>> IndexInfos
+        {
+            get => indexInfos;
+            set
+            {
+                indexInfos = value;
+                NotifyPropertyChange();
+            }
+        }
+
         public class Item<T>
         {
             public Item(string name, T value)
@@ -130,10 +176,13 @@ namespace CodeIndex.VisualStudioExtension
 
         ICommand searchIndexCommand;
         ICommand stopSearchCommand;
+        ICommand refreshIndexCommand;
         string serviceUrl;
         List<CodeSourceWithMatchedLine> searchResults = new List<CodeSourceWithMatchedLine>();
         string resultInfo;
         CancellationTokenSource tokenSource;
+        List<Item<Guid>> indexInfos = new List<Item<Guid>>();
+        Guid indexPk;
 
         public ICommand SearchIndexCommand
         {
@@ -163,6 +212,22 @@ namespace CodeIndex.VisualStudioExtension
                     );
                 }
                 return stopSearchCommand;
+            }
+        }
+
+        public ICommand RefreshIndexCommand
+        {
+            get
+            {
+                if (refreshIndexCommand == null)
+                {
+                    refreshIndexCommand = new CommonCommand(
+                        param => LoadIndexInfos(),
+                        param => true
+                    );
+                }
+
+                return refreshIndexCommand;
             }
         }
 
@@ -202,15 +267,12 @@ namespace CodeIndex.VisualStudioExtension
         {
             if (IsValidate())
             {
-                var url = $"{ServiceUrl}/api/lucene/GetCodeSourcesWithMatchedLine?searchQuery=" + System.Web.HttpUtility.UrlEncode(GetSearchStr()) + "&showResults=" + ShowResultsNumber + "&contentQuery=" + System.Web.HttpUtility.UrlEncode(Content ?? string.Empty) + "&needReplaceSuffixAndPrefix=false&forWeb=false";
-
-                var client = new HttpClient();
-                var response = await client.GetAsync(url, tokenSource.Token);
-                var result = await response.Content.ReadAsAsync<FetchResult<List<CodeSourceWithMatchedLine>>>();
+                var client = new CodeIndexClient(new HttpClient(), ServiceUrl);
+                var result = await client.ApiLuceneGetcodesourceswithmatchedlineAsync(GetSearchStr(), IndexPk, Content, ShowResultsNumber, false, false);
 
                 if (result.Status.Success)
                 {
-                    SearchResults = result.Result;
+                    SearchResults = result.Result.ToList();
                 }
                 else
                 {
