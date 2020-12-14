@@ -106,14 +106,11 @@
 
     public IndexStatusInfo IndexStatusInfoForEditOrAdd { get; set; } = new IndexStatusInfo(IndexStatus.Idle, new IndexConfig());
 
-    protected override async Task OnAfterRenderAsync(bool firstRender)
+    protected override async Task OnInitializedAsync()
     {
-        await base.OnAfterRenderAsync(firstRender);
+        await base.OnInitializedAsync();
 
-        if (firstRender)
-        {
-            await GetLists();
-        }
+        await GetLists();
     }
 
     void Edit(IndexStatusInfo indexStatusInfo)
