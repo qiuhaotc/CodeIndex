@@ -20,16 +20,16 @@ ManagerUsers => Config the users name, id, password that can management the inde
 
 ```json
 "CodeIndex": {
-    "LuceneIndex": "D:\\TestFolder\\Index",
-    "IsInLinux": "false",
-    "MaximumResults": 10000,
-    "ManagerUsers": [
-        {
-        "Id": 1,
-        "UserName": "Admin",
-        "Password": "CodeIndex"
-        }
-    ]
+  "LuceneIndex": "D:\\TestFolder\\Index",
+  "IsInLinux": "false",
+  "MaximumResults": 10000,
+  "ManagerUsers": [
+    {
+      "Id": 1,
+      "UserName": "Admin",
+      "Password": "CodeIndex"
+    }
+  ]
 }
 ```
 
