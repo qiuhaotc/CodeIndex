@@ -11,7 +11,10 @@
 
 <hr />
 
-<h4>Stored Indexes</h4>
+<h4>
+    Stored Indexes
+    <button class="btn btn-success btn-sm" @onclick="() => GetLists()">Refresh</button>
+</h4>
 
 <div class="row">
     @if (!string.IsNullOrEmpty(StatusMessage))

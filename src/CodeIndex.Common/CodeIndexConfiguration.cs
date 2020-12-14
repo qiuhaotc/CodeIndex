@@ -2,7 +2,6 @@
 {
     public class CodeIndexConfiguration
     {
-        public const char SplitChar = '|';
         public const string CodeIndexesFolder = "CodeIndexes";
         public const string ConfigurationIndexFolder = "Configuration";
         public const string CodeIndexFolder = "CodeIndex";
