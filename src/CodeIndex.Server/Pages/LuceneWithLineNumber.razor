@@ -210,7 +210,7 @@
 
         try
         {
-            var listResult = await Client.GetJsonAsync<FetchResult<IndexConfigForView[]>>($"{Config.LocalUrl}/api/lucene/GetIndexViewList");
+            var listResult = await Client.GetJsonAsync<FetchResult<IndexConfigForView[]>>($"{Config.LocalUrl}api/lucene/GetIndexViewList");
             if (listResult.Status.Success)
             {
                 IndexConfigs = listResult.Result;
