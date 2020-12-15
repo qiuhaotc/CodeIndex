@@ -1,16 +1,20 @@
 ﻿<?xml version="1.0" encoding="utf-8"?>
 <PackageManifest Version="2.0.0" xmlns="http://schemas.microsoft.com/developer/vsx-schema/2011" xmlns:d="http://schemas.microsoft.com/developer/vsx-schema-design/2011">
     <Metadata>
-        <Identity Id="CodeIndex.VisualStudioExtension.3fee47f7-831c-4577-8b21-f6505d9699f5" Version="0.90" Language="en-US" Publisher="qiuhaotc" />
+        <Identity Id="CodeIndex.VisualStudioExtension.3fee47f7-831c-4577-8b21-f6505d9699f5" Version="0.91" Language="en-US" Publisher="qiuhaotc" />
         <DisplayName>Code Index Search</DisplayName>
         <Description xml:space="preserve">Code index search extension for visual studio
 CodeIndex: a fast code searching tools based on Lucene.Net
 More details see: https://github.com/qiuhaotc/CodeIndex</Description>
         <MoreInfo>https://github.com/qiuhaotc/CodeIndex</MoreInfo>
+        <Icon>Resources\Extension-Icon.png</Icon>
+        <PreviewImage>Resources\Extension-Icon.png</PreviewImage>
         <Tags>Code full-text search</Tags>
     </Metadata>
     <Installation>
         <InstallationTarget Id="Microsoft.VisualStudio.Community" Version="[16.0, 17.0)" />
+        <InstallationTarget Version="[16.0,17.0)" Id="Microsoft.VisualStudio.Pro" />
+        <InstallationTarget Version="[16.0,17.0)" Id="Microsoft.VisualStudio.Enterprise" />
     </Installation>
     <Dependencies>
         <Dependency Id="Microsoft.Framework.NDP" DisplayName="Microsoft .NET Framework" d:Source="Manual" Version="[4.5,)" />

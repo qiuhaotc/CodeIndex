@@ -78,6 +78,10 @@
     <Compile Include="ProvideToolboxControlAttribute.cs" />
   </ItemGroup>
   <ItemGroup>
+    <Content Include="..\..\doc\Extension-Icon.png">
+      <Link>Resources\Extension-Icon.png</Link>
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
     <Content Include="CodeIndex.Settings.config">
       <IncludeInVSIX>true</IncludeInVSIX>
     </Content>
@@ -131,7 +135,9 @@
     </VSCTCompile>
   </ItemGroup>
   <ItemGroup>
-    <Content Include="Resources\CodeIndexSearchWindowCommand.png" />
+    <Content Include="Resources\CodeIndexSearchWindowCommand.png">
+      <IncludeInVSIX>true</IncludeInVSIX>
+    </Content>
   </ItemGroup>
   <ItemGroup>
     <Page Include="Controls\CodeIndexSearchControl.xaml">

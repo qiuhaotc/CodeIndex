@@ -89,19 +89,16 @@ namespace CodeIndex.VisualStudioExtension
             return CanExecute();
         }
 
-        public void Execute(object parameter)
+        public async void Execute(object parameter)
         {
-            Microsoft.VisualStudio.Shell.ThreadHelper.JoinableTaskFactory.Run(async () =>
+            try
             {
-                try
-                {
-                    await ExecuteAsync();
-                }
-                catch (Exception ex)
-                {
-                    errorHandler?.Invoke(ex);
-                }
-            });
+                await ExecuteAsync();
+            }
+            catch (Exception ex)
+            {
+                errorHandler?.Invoke(ex);
+            }
         }
     }
 }
