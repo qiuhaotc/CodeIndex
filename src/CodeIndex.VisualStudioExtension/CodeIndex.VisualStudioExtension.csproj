@@ -70,6 +70,7 @@
     <Compile Include="Converts\StringToXamlConverter.cs" />
     <Compile Include="Models\BaseViewModel.cs" />
     <Compile Include="Models\CodeIndexSearchViewModel.cs" />
+    <Compile Include="Models\Commands.cs" />
     <Compile Include="Models\ConfigHelper.cs" />
     <Compile Include="Models\HintWord.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />

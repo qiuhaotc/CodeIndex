@@ -51,7 +51,7 @@
         </div>
     </div>
     <div class="col-sm">
-        <div class="input-group">
+        <div class="input-group mb-3">
             <div class="input-group-prepend">
                 <span class="input-group-text">Index Name</span>
             </div>
@@ -116,11 +116,11 @@
                 <div class="alert alert-success" role="alert">
                     @if (HintWords.Result.Any())
                     {
-                        <text>Find Hint: @string.Join(", ", HintWords.Result)</text>
+                        <text>Find Hints: @string.Join(", ", HintWords.Result)</text>
                     }
                     else
                     {
-                        <text>No hint</text>
+                        <text>No Hint</text>
                     }
                 </div>
             }

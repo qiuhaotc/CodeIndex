@@ -15,7 +15,7 @@ namespace CodeIndex.VisualStudioExtension
         public CodeIndexSearchViewModel()
         {
             serviceUrl = ConfigHelper.Configuration.AppSettings.Settings[nameof(ServiceUrl)].Value;
-            LoadIndexInfos();
+            _ = LoadIndexInfosAsync();
         }
 
         public Guid IndexPk
@@ -49,13 +49,13 @@ namespace CodeIndex.VisualStudioExtension
                     serviceUrl = value;
                 }
 
-                LoadIndexInfos();
+                _ = LoadIndexInfosAsync();
             }
         }
 
         CancellationTokenSource tokenToLoadIndexInfos;
 
-        async Task LoadIndexInfos()
+        async Task LoadIndexInfosAsync()
         {
             try
             {
@@ -67,7 +67,16 @@ namespace CodeIndex.VisualStudioExtension
                 var result = await client.ApiLuceneGetindexviewlistAsync(tokenToLoadIndexInfos.Token);
 
                 IndexInfos = result.Status.Success ? result.Result.Select(u => new Item<Guid>(u.IndexName, u.Pk)).ToList() : IndexInfos;
-                IndexPk = IndexInfos.FirstOrDefault()?.Value ?? Guid.Empty;
+
+                if (IndexPk == Guid.Empty || IndexInfos.All(u => u.Value != IndexPk))
+                {
+                    IndexPk = IndexInfos.FirstOrDefault()?.Value ?? Guid.Empty;
+                }
+                else
+                {
+                    IndexPk = IndexPk;
+                }
+
                 ResultInfo = string.Empty;
             }
             catch (Exception ex)
@@ -190,10 +199,10 @@ namespace CodeIndex.VisualStudioExtension
             {
                 if (searchIndexCommand == null)
                 {
-                    searchIndexCommand = new CommonCommand(
-                        param => SearchCodeIndexAsync(),
-                        param => true
-                    );
+                    searchIndexCommand = new AsyncCommand(
+                        SearchCodeIndexAsync,
+                        () => !IsSearching,
+                        null);
                 }
                 return searchIndexCommand;
             }
@@ -221,10 +230,10 @@ namespace CodeIndex.VisualStudioExtension
             {
                 if (refreshIndexCommand == null)
                 {
-                    refreshIndexCommand = new CommonCommand(
-                        param => LoadIndexInfos(),
-                        param => true
-                    );
+                    refreshIndexCommand = new AsyncCommand(
+                        LoadIndexInfosAsync,
+                        () => true,
+                        null);
                 }
 
                 return refreshIndexCommand;
@@ -330,41 +339,5 @@ namespace CodeIndex.VisualStudioExtension
         }
 
         #endregion
-
-        public class CommonCommand : ICommand
-        {
-            readonly Action<object> execute;
-            readonly Predicate<object> canExecute;
-
-            public CommonCommand(Action<object> execute) : this(execute, null)
-            {
-            }
-
-            public CommonCommand(Action<object> execute, Predicate<object> canExecute)
-            {
-                if (execute == null)
-                    throw new ArgumentNullException("execute");
-
-                this.execute = execute;
-                this.canExecute = canExecute;
-            }
-
-            [DebuggerStepThrough]
-            public bool CanExecute(object parameters)
-            {
-                return canExecute == null ? true : canExecute(parameters);
-            }
-
-            public event EventHandler CanExecuteChanged
-            {
-                add { CommandManager.RequerySuggested += value; }
-                remove { CommandManager.RequerySuggested -= value; }
-            }
-
-            public void Execute(object parameters)
-            {
-                execute(parameters);
-            }
-        }
     }
 }
