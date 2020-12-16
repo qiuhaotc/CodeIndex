@@ -96,7 +96,7 @@ namespace CodeIndex.IndexBuilder
             return documents;
         }
 
-        public static Analyzer Analyzer => analyzer ??= new CodeAnalyzer(Constants.AppLuceneVersion, true);
+        public static Analyzer Analyzer => analyzer ??= CodeAnalyzer.GetCaseSensitiveAndInsesitiveCodeAnalyzer(CodeIndexBuilder.GetCaseSensitiveField(nameof(CodeSource.Content)));
 
         public static QueryParser GetQueryParser()
         {
@@ -110,7 +110,7 @@ namespace CodeIndex.IndexBuilder
         readonly ReaderWriterLockSlim readerWriteLock = new ReaderWriterLockSlim();
         int indexChangeCount;
         bool isDisposing;
-        static CodeAnalyzer analyzer;
+        static Analyzer analyzer;
 
         #endregion
 

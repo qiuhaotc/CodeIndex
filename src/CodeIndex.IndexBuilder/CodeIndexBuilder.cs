@@ -396,5 +396,10 @@ namespace CodeIndex.IndexBuilder
         {
             return new Term($"{fieldName}{Constants.NoneTokenizeFieldSuffix}", termValue);
         }
+
+        public static string GetCaseSensitiveField(string fieldName)
+        {
+            return $"{fieldName}{Constants.CaseSensitive}";
+        }
     }
 }

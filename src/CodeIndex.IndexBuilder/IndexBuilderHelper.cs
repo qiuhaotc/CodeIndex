@@ -22,6 +22,7 @@ namespace CodeIndex.IndexBuilder
                 new StringField(nameof(source.FilePath) + Constants.NoneTokenizeFieldSuffix, source.FilePath.ToStringSafe(), Field.Store.YES),
                 new TextField(nameof(source.FilePath), source.FilePath.ToStringSafe(), Field.Store.YES),
                 new TextField(nameof(source.Content), source.Content.ToStringSafe(), Field.Store.YES),
+                new TextField(CodeIndexBuilder.GetCaseSensitiveField(nameof(source.Content)), source.Content.ToStringSafe(), Field.Store.YES),
                 new Int64Field(nameof(source.IndexDate), source.IndexDate.Ticks, Field.Store.YES),
                 new Int64Field(nameof(source.LastWriteTimeUtc), source.LastWriteTimeUtc.Ticks, Field.Store.YES),
                 new StringField(nameof(source.CodePK), source.CodePK, Field.Store.YES)

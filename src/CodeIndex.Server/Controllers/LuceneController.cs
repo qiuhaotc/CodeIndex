@@ -34,7 +34,7 @@ namespace CodeIndex.Server.Controllers
         private readonly CodeIndexSearcher codeIndexSearcher;
 
         [HttpGet]
-        public FetchResult<IEnumerable<CodeSource>> GetCodeSources(string searchQuery, bool preview, Guid indexPk, string contentQuery = "", int? showResults = 0)
+        public FetchResult<IEnumerable<CodeSource>> GetCodeSources(string searchQuery, bool preview, Guid indexPk, string contentQuery = "", int? showResults = 0, bool caseSensitive = false)
         {
             FetchResult<IEnumerable<CodeSource>> result;
 
@@ -57,14 +57,14 @@ namespace CodeIndex.Server.Controllers
                 {
                     foreach (var item in result.Result)
                     {
-                        item.Content = codeIndexSearcher.GenerateHtmlPreviewText(contentQuery, item.Content, 30, indexPk);
+                        item.Content = codeIndexSearcher.GenerateHtmlPreviewText(contentQuery, item.Content, 30, indexPk, caseSensitive: caseSensitive);
                     }
                 }
                 else if (!preview)
                 {
                     foreach (var item in result.Result)
                     {
-                        item.Content = codeIndexSearcher.GenerateHtmlPreviewText(contentQuery, item.Content, int.MaxValue, indexPk, returnRawContentWhenResultIsEmpty: true);
+                        item.Content = codeIndexSearcher.GenerateHtmlPreviewText(contentQuery, item.Content, int.MaxValue, indexPk, returnRawContentWhenResultIsEmpty: true, caseSensitive: caseSensitive);
                     }
                 }
 
@@ -88,7 +88,7 @@ namespace CodeIndex.Server.Controllers
         }
 
         [HttpGet]
-        public FetchResult<IEnumerable<CodeSourceWithMatchedLine>> GetCodeSourcesWithMatchedLine(string searchQuery, Guid indexPk, string contentQuery = "", int? showResults = 0, bool needReplaceSuffixAndPrefix = true, bool forWeb = true)
+        public FetchResult<IEnumerable<CodeSourceWithMatchedLine>> GetCodeSourcesWithMatchedLine(string searchQuery, Guid indexPk, string contentQuery = "", int? showResults = 0, bool needReplaceSuffixAndPrefix = true, bool forWeb = true, bool caseSensitive = false)
         {
             FetchResult<IEnumerable<CodeSourceWithMatchedLine>> result;
 
@@ -100,7 +100,7 @@ namespace CodeIndex.Server.Controllers
 
                 var codeSources = SearchCodeSource(searchQuery, out var query, indexPk, showResultsValue);
 
-                var queryForContent = string.IsNullOrWhiteSpace(contentQuery) ? null : codeIndexSearcher.GetQueryFromStr(contentQuery, indexPk);
+                var queryForContent = codeIndexSearcher.GetContentQueryFromStr(contentQuery, indexPk, caseSensitive);
 
                 var codeSourceWithMatchedLineList = new List<CodeSourceWithMatchedLine>();
 
@@ -119,7 +119,7 @@ namespace CodeIndex.Server.Controllers
 
                     foreach (var codeSource in codeSources)
                     {
-                        var matchedLines = codeIndexSearcher.GeneratePreviewTextWithLineNumber(queryForContent, codeSource.Content, int.MaxValue, showResultsValue - totalResult, indexPk, forWeb: forWeb, needReplaceSuffixAndPrefix: needReplaceSuffixAndPrefix);
+                        var matchedLines = codeIndexSearcher.GeneratePreviewTextWithLineNumber(queryForContent, codeSource.Content, int.MaxValue, showResultsValue - totalResult, indexPk, forWeb: forWeb, needReplaceSuffixAndPrefix: needReplaceSuffixAndPrefix, caseSensitive: caseSensitive);
                         codeSource.Content = string.Empty; // Empty content to reduce response size
 
                         foreach (var matchedLine in matchedLines)
