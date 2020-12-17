@@ -83,6 +83,27 @@ namespace CodeIndex.Test
         }
 
         [Test]
+        public void TestGetIndexMaintainerWrapperAndInitializeIfNeeded()
+        {
+            var indexConfig = new IndexConfig
+            {
+                IndexName = "ABC",
+                MonitorFolder = MonitorFolder
+            };
+
+            using var wrapper = new IndexManagement(Config, Log);
+            CollectionAssert.IsEmpty(wrapper.GetIndexList().Result);
+
+            Assert.IsTrue(wrapper.AddIndex(indexConfig).Status.Success);
+            Assert.AreEqual(IndexStatus.Idle, wrapper.GetIndexList().Result.Select(u => u.IndexStatus).First());
+
+            var maintainer = wrapper.GetIndexMaintainerWrapperAndInitializeIfNeeded(indexConfig.Pk);
+            Assert.IsTrue(maintainer.Status.Success);
+            Assert.AreNotEqual(IndexStatus.Idle, maintainer.Result.Status);
+            Assert.IsFalse(wrapper.GetIndexMaintainerWrapperAndInitializeIfNeeded(Guid.NewGuid()).Status.Success);
+        }
+
+        [Test]
         public void TestDeleteIndex()
         {
             var indexConfig = new IndexConfig
