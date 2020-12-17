@@ -4,6 +4,7 @@ using System.Linq;
 using System.Threading.Tasks;
 using CodeIndex.Common;
 using CodeIndex.IndexBuilder;
+using Lucene.Net.Analysis.Miscellaneous;
 using Lucene.Net.Documents;
 using Lucene.Net.Index;
 using Lucene.Net.Search;
@@ -216,7 +217,7 @@ namespace CodeIndex.Test
             var parserB = LucenePoolLight.GetQueryParser();
             Assert.AreNotEqual(parserA, parserB);
             Assert.AreEqual(parserA.Analyzer, parserB.Analyzer);
-            Assert.IsTrue(parserA.Analyzer is CodeAnalyzer);
+            Assert.IsTrue(parserA.Analyzer is PerFieldAnalyzerWrapper);
         }
 
         Document GetDocument(CodeSource codeSource)

@@ -28,8 +28,9 @@ namespace CodeIndex.Test
             };
 
             var document = IndexBuilderHelper.GetDocumentFromSource(codeSource);
-            Assert.AreEqual(8, document.Fields.Count);
+            Assert.AreEqual(9, document.Fields.Count);
             Assert.NotNull(document.Get(nameof(CodeSource.FilePath) + Constants.NoneTokenizeFieldSuffix));
+            Assert.NotNull(document.Get(nameof(CodeSource.Content) + Constants.CaseSensitive));
 
             var convertBack = document.GetObject<CodeSource>();
             Assert.AreEqual(codeSource.FilePath, convertBack.FilePath);

@@ -6,7 +6,7 @@ using CodeIndex.Common;
 namespace CodeIndex.Test
 {
     [ExcludeFromCodeCoverage]
-    class DummyLog : ILog
+    public class DummyLog : ILog
     {
         readonly StringBuilder logs = new StringBuilder();
 

@@ -12,8 +12,8 @@ namespace CodeIndex.Test
         public string MonitorFolder => Path.Combine(TempDir, "CodeFolder");
         protected string TempCodeIndexDir => Path.Combine(TempIndexDir, CodeIndexConfiguration.CodeIndexesFolder, CodeIndexConfiguration.CodeIndexFolder);
         protected string TempHintIndexDir => Path.Combine(TempIndexDir, CodeIndexConfiguration.CodeIndexesFolder, CodeIndexConfiguration.HintIndexFolder);
-        protected ILog Log => log ??= new DummyLog();
-        ILog log;
+        protected DummyLog Log => log ??= new DummyLog();
+        DummyLog log;
 
         [SetUp]
         protected virtual void SetUp()

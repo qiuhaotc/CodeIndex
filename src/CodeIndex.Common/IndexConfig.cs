@@ -10,7 +10,7 @@ namespace CodeIndex.Common
         public string IndexName { get; set; } = string.Empty;
         public string MonitorFolder { get; set; } = string.Empty;
         public int MaxContentHighlightLength { get; set; } = 3000000;
-        public int SaveIntervalSeconds { get; set; } = 300;
+        public int SaveIntervalSeconds { get; set; } = 3;
         public string OpenIDEUriFormat { get; set; } = "vscode://file/{FilePath}";
         public string MonitorFolderRealPath { get; set; } = string.Empty;
 

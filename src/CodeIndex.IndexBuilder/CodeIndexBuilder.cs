@@ -75,7 +75,7 @@ namespace CodeIndex.IndexBuilder
                         var doc = IndexBuilderHelper.GetDocumentFromSource(source);
                         codeDocuments.Add(doc);
 
-                        Log.Info($"{Name}: Add index For {source.FilePath}");
+                        Log.Info($"{Name}: Add index for {source.FilePath}");
                     }
                 }
                 catch (Exception ex)

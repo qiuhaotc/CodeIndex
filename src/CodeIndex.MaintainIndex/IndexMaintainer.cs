@@ -82,12 +82,14 @@ namespace CodeIndex.MaintainIndex
 
         async Task MaintainIndexesCore()
         {
+            FetchIntervalSeconds.RequireRange(nameof(FetchIntervalSeconds), 3, 1);
+
             while (!TokenSource.Token.IsCancellationRequested)
             {
                 TokenSource.Token.ThrowIfCancellationRequested();
 
-                var fetchEndDate = DateTime.UtcNow.AddSeconds(-6);
-                var notChangedDuring = fetchEndDate.AddSeconds(3);
+                var fetchEndDate = DateTime.UtcNow.AddSeconds(-FetchIntervalSeconds * 2);
+                var notChangedDuring = fetchEndDate.AddSeconds(FetchIntervalSeconds);
                 if (ChangedSources.Count(u => u.ChangedUTCDate > fetchEndDate && u.ChangedUTCDate <= notChangedDuring) == 0)
                 {
                     var orderedNeedProcessingChanges = ChangedSources.Where(u => u.ChangedUTCDate <= fetchEndDate).ToList();
@@ -101,6 +103,8 @@ namespace CodeIndex.MaintainIndex
                         ProcessingChanges(orderedNeedProcessingChanges);
 
                         IndexBuilder.Commit();
+
+                        TriggerCommitFinished();
                     }
                 }
 
@@ -124,8 +128,12 @@ namespace CodeIndex.MaintainIndex
                     IndexBuilder.Commit();
                 }
 
-                await Task.Delay(3000, TokenSource.Token);
+                await Task.Delay(FetchIntervalSeconds * 1000, TokenSource.Token);
             }
+        }
+
+        protected virtual void TriggerCommitFinished()
+        {
         }
 
         void ProcessingChanges(List<ChangedSource> orderedNeedProcessingChanges, bool isFailedChangedSource = false)
@@ -444,5 +452,7 @@ namespace CodeIndex.MaintainIndex
 
             return excluded;
         }
+
+        protected virtual int FetchIntervalSeconds => 3;
     }
 }
