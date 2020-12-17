@@ -8,29 +8,36 @@ namespace CodeIndex.ConsoleApp
     {
         static void Main(string[] args)
         {
-            //var config = new CodeIndexConfiguration
-            //{
-            //    MonitorFolder = @"D:\TestFolder\CodeFolder",
-            //    LuceneIndex = @"D:\TestFolder\Index",
-            //    ExcludedExtensions = ".DLL|.PBD",
-            //    ExcludedPaths = "\\DEBUG\\|\\RELEASE\\|\\RELEASES\\|\\BIN\\|\\OBJ\\|\\DEBUGPUBLIC\\",
-            //    IncludedExtensions = ".CS|.XML|.XAML|.JS|.TXT",
-            //    SaveIntervalSeconds = 300
-            //};
+            var logger = new NLogger();
+            using var management = new IndexManagement(new CodeIndexConfiguration { LuceneIndex = @"D:\\TestFolder\\Index" }, logger);
 
-            //var logger = new NLogger();
-            //var initializer = new IndexInitializer(logger);
-            //var maintainer = new CodeFilesIndexMaintainer(config, logger);
-            //maintainer.StartWatch();
-            //initializer.InitializeIndex(config, out var failedIndexFiles);
-            //maintainer.SetInitializeFinishedToTrue(failedIndexFiles);
+            var indexLists = management.GetIndexList();
 
-            Console.WriteLine("Initialize complete");
+            if (indexLists.Status.Success)
+            {
+                if (indexLists.Result.Length == 0)
+                {
+                    var indexConfig = new IndexConfig
+                    {
+                        IndexName = "Test",
+                        MonitorFolder = @"D:\TestFolder\CodeFolder",
+                        ExcludedExtensions = ".DLL|.PBD",
+                        ExcludedPaths = "\\DEBUG\\|\\RELEASE\\|\\RELEASES\\|\\BIN\\|\\OBJ\\|\\DEBUGPUBLIC\\",
+                        IncludedExtensions = ".CS|.XML|.XAML|.JS|.TXT"
+                    };
 
-            Console.WriteLine("Start monitoring, press any key to stop");
+                    management.AddIndex(indexConfig);
+                    management.StartIndex(indexConfig.Pk);
+                }
+                else
+                {
+                    management.StartIndex(indexLists.Result[0].IndexConfig.Pk);
+                }
+            }
+
+            Console.WriteLine("Press any key to stop");
             Console.ReadLine();
             Console.WriteLine("Stop");
-            //maintainer.Dispose();
         }
     }
 }
