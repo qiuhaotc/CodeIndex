@@ -48,7 +48,7 @@ namespace CodeIndex.Test
                 Pk = Guid.NewGuid()
             };
 
-            document = ConfigIndexBuilder.GetDocumet(config);
+            document = ConfigIndexBuilder.GetDocument(config);
             Assert.AreEqual(config.ToString(), document.GetObject<IndexConfig>().ToString());
         }
 

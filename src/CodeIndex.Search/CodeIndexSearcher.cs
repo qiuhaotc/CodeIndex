@@ -40,7 +40,7 @@ namespace CodeIndex.Search
             }
 
             query = maintainer.QueryGenerator.GetQueryFromStr(searchStr);
-            return StatusValid(maintainer) ? maintainer.Maintainer.IndexBuilder.CodeIndexPool.Search(query, maxResults).Select(GetCodeSourceFromDocument).ToArray() : Array.Empty<CodeSource>();
+            return StatusValid(maintainer) ? maintainer.Maintainer.IndexBuilder.CodeIndexPool.Search(query, maxResults).Select(CodeIndexBuilder.GetCodeSourceFromDocument).ToArray() : Array.Empty<CodeSource>();
         }
 
         public string GenerateHtmlPreviewText(string contentQuery, string text, int length, Guid pk, string prefix = "<label class='highlight'>", string suffix = "</label>", bool returnRawContentWhenResultIsEmpty = false, bool caseSensitive = false)
@@ -226,20 +226,6 @@ namespace CodeIndex.Search
         TokenStream GetTokenStream(string text, bool caseSensitive)
         {
             return LucenePoolLight.Analyzer.GetTokenStream(caseSensitive ? CodeIndexBuilder.GetCaseSensitiveField(nameof(CodeSource.Content)) : nameof(CodeSource.Content), new StringReader(text));
-        }
-
-        public static CodeSource GetCodeSourceFromDocument(Document document)
-        {
-            return new CodeSource
-            {
-                CodePK = document.Get(nameof(CodeSource.CodePK)),
-                Content = document.Get(nameof(CodeSource.Content)),
-                FileExtension = document.Get(nameof(CodeSource.FileExtension)),
-                FileName = document.Get(nameof(CodeSource.FileName)),
-                FilePath = document.Get(nameof(CodeSource.FilePath)),
-                IndexDate = new DateTime(long.Parse(document.Get(nameof(CodeSource.IndexDate)))),
-                LastWriteTimeUtc = new DateTime(long.Parse(document.Get(nameof(CodeSource.LastWriteTimeUtc))))
-            };
         }
 
         IndexMaintainerWrapper GetIndexMaintainerWrapper(Guid pk)

@@ -58,6 +58,16 @@ namespace CodeIndex.IndexBuilder
             indexChangeCount++;
         }
 
+        public void DeleteIndex(Term term, out Document[] documentsBeenDeleted)
+        {
+            using var readLock = new EnterReaderWriterLock(readerWriteLock);
+            using var searcher = GetUseIndexSearcher();
+            documentsBeenDeleted = searcher.IndexSearcher.Search(new TermQuery(term), int.MaxValue).ScoreDocs.Select(hit => searcher.IndexSearcher.Doc(hit.Doc)).ToArray();
+            IndexWriter.DeleteDocuments(term);
+
+            indexChangeCount++;
+        }
+
         public void Dispose()
         {
             using var readLock = new EnterReaderWriterLock(readerWriteLock, false);
@@ -75,22 +85,15 @@ namespace CodeIndex.IndexBuilder
         {
             using var readLock = new EnterReaderWriterLock(readerWriteLock);
             Document[] documents;
-            var searcher = GetIndexSearcher();
+            using var searcher = GetUseIndexSearcher();
 
-            try
+            if (filter != null)
             {
-                if (filter != null)
-                {
-                    documents = searcher.Search(query, filter, maxResults).ScoreDocs.Select(hit => searcher.Doc(hit.Doc)).ToArray();
-                }
-                else
-                {
-                    documents = searcher.Search(query, maxResults).ScoreDocs.Select(hit => searcher.Doc(hit.Doc)).ToArray();
-                }
+                documents = searcher.IndexSearcher.Search(query, filter, maxResults).ScoreDocs.Select(hit => searcher.IndexSearcher.Doc(hit.Doc)).ToArray();
             }
-            finally
+            else
             {
-                searcher.IndexReader.DecRef(); // Dispose Safe
+                documents = searcher.IndexSearcher.Search(query, maxResults).ScoreDocs.Select(hit => searcher.IndexSearcher.Doc(hit.Doc)).ToArray();
             }
 
             return documents;
@@ -146,10 +149,10 @@ namespace CodeIndex.IndexBuilder
 
         #region IndexSearcher
 
-        readonly object syncLockForSearcher = new object();
+        readonly object syncLockForSearcher = new();
         IndexSearcher indexSearcher;
 
-        IndexSearcher GetIndexSearcher()
+        UseIndexSearching GetUseIndexSearcher()
         {
             if (indexSearcher == null || indexChangeCount > 0)
             {
@@ -161,10 +164,10 @@ namespace CodeIndex.IndexBuilder
 
             if (!indexSearcher.IndexReader.TryIncRef())
             {
-                return GetIndexSearcher(); // try get the IndexSearcher again
+                return GetUseIndexSearcher(); // try get the IndexSearcher again
             }
 
-            return indexSearcher;
+            return new UseIndexSearching(indexSearcher);
         }
 
         public void DeleteAllIndex()
@@ -189,6 +192,23 @@ namespace CodeIndex.IndexBuilder
 
             IndexWriter.UpdateDocument(term, document);
             indexChangeCount++;
+        }
+
+        public void UpdateIndex(Term term, Document document, out Document[] rawDocuments)
+        {
+            using var readLock = new EnterReaderWriterLock(readerWriteLock);
+            using var searcher = GetUseIndexSearcher();
+
+            rawDocuments = searcher.IndexSearcher.Search(new TermQuery(term), int.MaxValue).ScoreDocs.Select(hit => searcher.IndexSearcher.Doc(hit.Doc)).ToArray();
+            IndexWriter.UpdateDocument(term, document);
+            indexChangeCount++;
+        }
+
+        public bool Exists(Query query)
+        {
+            using var readLock = new EnterReaderWriterLock(readerWriteLock);
+            using var searcher = GetUseIndexSearcher();
+            return searcher.IndexSearcher.Search(query, 1).TotalHits == 1;
         }
 
         #endregion
@@ -258,6 +278,21 @@ namespace CodeIndex.IndexBuilder
             {
                 ReaderWriterLock.ExitWriteLock();
             }
+        }
+    }
+
+    class UseIndexSearching : IDisposable
+    {
+        public UseIndexSearching(IndexSearcher indexSearcher)
+        {
+            IndexSearcher = indexSearcher;
+        }
+
+        public IndexSearcher IndexSearcher { get; }
+
+        public void Dispose()
+        {
+            IndexSearcher.IndexReader.DecRef(); // Dispose Safe
         }
     }
 }

@@ -110,7 +110,7 @@ namespace CodeIndex.Test
                 Pk = Guid.NewGuid()
             };
 
-            var document = ConfigIndexBuilder.GetDocumet(config);
+            var document = ConfigIndexBuilder.GetDocument(config);
             Assert.AreEqual(10, document.Fields.Count);
 
             var configConvertBack = document.GetObject<IndexConfig>();

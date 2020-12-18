@@ -101,7 +101,7 @@ namespace CodeIndex.IndexBuilder
 
         static bool IsSpecialChar(int character) => (character >= 33 && character <= 126) && SpecialCharRange.Any(u => u.Start <= character && u.End >= character);
 
-        static readonly HashSet<(int Start, int End)> SpecialCharRange = new HashSet<(int, int)>()
+        static readonly HashSet<(int Start, int End)> SpecialCharRange = new()
         {
             (33, 47),
             (58, 64),
