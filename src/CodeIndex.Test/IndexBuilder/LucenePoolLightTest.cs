@@ -1,9 +1,11 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Threading;
 using System.Threading.Tasks;
 using CodeIndex.Common;
 using CodeIndex.IndexBuilder;
+using Lucene.Net.Analysis.Miscellaneous;
 using Lucene.Net.Documents;
 using Lucene.Net.Index;
 using Lucene.Net.Search;
@@ -71,6 +73,48 @@ namespace CodeIndex.Test
 
             light.DeleteIndex(new Term(nameof(CodeSource.FileName), "1"));
             documents = light.Search(new MatchAllDocsQuery(), int.MaxValue);
+            Assert.AreEqual(0, documents.Length);
+        }
+
+        [Test]
+        public void TestDeleteIndexWithDocumentsBeenDeleted()
+        {
+            using var light = new LucenePoolLight(TempIndexDir);
+
+            light.BuildIndex(new[] {
+                GetDocument(new CodeSource
+                {
+                    FileName = "Dummy File 1",
+                    FileExtension = "cs",
+                    FilePath = @"C:\Dummy File 1.cs",
+                    Content = "Test Content" + Environment.NewLine + "A New Line For Test"
+                }),
+                GetDocument(new CodeSource
+                {
+                    FileName = "Dummy File 2",
+                    FileExtension = "cs",
+                    FilePath = @"C:\Dummy File 2.cs",
+                    Content = "Test Content" + Environment.NewLine + "A New Line For Test"
+                })}, true, true, true);
+
+            var documents = light.Search(new MatchAllDocsQuery(), int.MaxValue);
+            Assert.AreEqual(2, documents.Length);
+
+            light.DeleteIndex(new Term(nameof(CodeSource.FileName), "2"), out documents);
+            Assert.AreEqual(1, documents.Length);
+            Assert.AreEqual("Dummy File 2", documents[0].Get(nameof(CodeSource.FileName)));
+
+            documents = light.Search(new MatchAllDocsQuery(), int.MaxValue);
+            Assert.AreEqual(1, documents.Length);
+
+            light.DeleteIndex(new Term(nameof(CodeSource.FileName), "1"), out documents);
+            Assert.AreEqual(1, documents.Length);
+            Assert.AreEqual("Dummy File 1", documents[0].Get(nameof(CodeSource.FileName)));
+
+            documents = light.Search(new MatchAllDocsQuery(), int.MaxValue);
+            Assert.AreEqual(0, documents.Length);
+
+            light.DeleteIndex(new Term(nameof(CodeSource.FileName), "1"), out documents);
             Assert.AreEqual(0, documents.Length);
         }
 
@@ -146,6 +190,44 @@ namespace CodeIndex.Test
         }
 
         [Test]
+        public void TestUpdateIndexWithRawDocuments()
+        {
+            using var light = new LucenePoolLight(TempIndexDir);
+
+            light.BuildIndex(new[] {
+                GetDocument(new CodeSource
+                {
+                    FileName = "Dummy File 1",
+                    FileExtension = "cs",
+                    FilePath = @"C:\Dummy File 1.cs",
+                    Content = "Test Content" + Environment.NewLine + "A New Line For Test"
+                }),
+                GetDocument(new CodeSource
+                {
+                    FileName = "Dummy File 2",
+                    FileExtension = "cs",
+                    FilePath = @"C:\Dummy File 2.cs",
+                    Content = "Test Content" + Environment.NewLine + "A New Line For Test"
+                })}, true, true, true);
+
+            light.UpdateIndex(new Term(nameof(CodeSource.FileName), "1"), 
+                GetDocument(new CodeSource
+                {
+                    FileName = "Dummy File New 1",
+                    FileExtension = "cs",
+                    FilePath = @"C:\Dummy File 2.cs",
+                    Content = "New Content"
+                }), out var rawDocuments);
+
+            Assert.AreEqual(1, rawDocuments.Length);
+            Assert.AreEqual("Test Content" + Environment.NewLine + "A New Line For Test", rawDocuments[0].Get(nameof(CodeSource.Content)), "Still old value");
+
+            var documents = light.Search(new TermQuery(new Term(nameof(CodeSource.FileName), "1")), 10);
+            Assert.AreEqual(1, documents.Length);
+            Assert.AreEqual("New Content", documents[0].Get(nameof(CodeSource.Content)), "Content updated");
+        }
+
+        [Test]
         [Timeout(60000)]
         public void TestThreadSafeForIndexReader()
         {
@@ -216,7 +298,7 @@ namespace CodeIndex.Test
             var parserB = LucenePoolLight.GetQueryParser();
             Assert.AreNotEqual(parserA, parserB);
             Assert.AreEqual(parserA.Analyzer, parserB.Analyzer);
-            Assert.IsTrue(parserA.Analyzer is CodeAnalyzer);
+            Assert.IsTrue(parserA.Analyzer is PerFieldAnalyzerWrapper);
         }
 
         Document GetDocument(CodeSource codeSource)

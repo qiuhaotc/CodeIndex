@@ -1,7 +1,6 @@
 ﻿using System.Linq;
 using CodeIndex.Common;
 using CodeIndex.IndexBuilder;
-using CodeIndex.Search;
 using Lucene.Net.Search;
 
 namespace CodeIndex.Test
@@ -10,7 +9,7 @@ namespace CodeIndex.Test
     {
         public static CodeSource[] SearchCode(this LucenePoolLight lucenePool, Query searchQuery, int maxResults = int.MaxValue)
         {
-            return lucenePool.Search(searchQuery, maxResults).Select(CodeIndexSearcher.GetCodeSourceFromDocument).ToArray();
+            return lucenePool.Search(searchQuery, maxResults).Select(CodeIndexBuilder.GetCodeSourceFromDocument).ToArray();
         }
 
         public static CodeWord[] SearchWord(this LucenePoolLight lucenePool, Query searchQuery, int maxResults = int.MaxValue)

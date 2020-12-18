@@ -1,6 +1,9 @@
-﻿using System.IO;
+﻿using System.Collections.Generic;
+using System.IO;
+using CodeIndex.Common;
 using Lucene.Net.Analysis;
 using Lucene.Net.Analysis.Core;
+using Lucene.Net.Analysis.Miscellaneous;
 using Lucene.Net.Util;
 
 namespace CodeIndex.IndexBuilder
@@ -26,6 +29,22 @@ namespace CodeIndex.IndexBuilder
             }
 
             return new TokenStreamComponents(tokenizer);
+        }
+
+        public static Analyzer GetCaseSensitiveAndInsesitiveCodeAnalyzer(params string[] fieldNamesNeedCaseSensitive)
+        {
+            fieldNamesNeedCaseSensitive.RequireContainsElement(nameof(fieldNamesNeedCaseSensitive));
+
+            Dictionary<string, Analyzer> analyzerPerField = new();
+            var caseSensitiveAnalyzer = new CodeAnalyzer(Constants.AppLuceneVersion, false);
+
+            foreach (var fieldNameNeedCaseSensitive in fieldNamesNeedCaseSensitive)
+            {
+                analyzerPerField.Add(fieldNameNeedCaseSensitive, caseSensitiveAnalyzer);
+            }
+
+            var analyzer = new PerFieldAnalyzerWrapper(new CodeAnalyzer(Constants.AppLuceneVersion, true), analyzerPerField);
+            return analyzer;
         }
     }
 }

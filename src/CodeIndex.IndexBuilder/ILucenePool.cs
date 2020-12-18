@@ -16,9 +16,13 @@ namespace CodeIndex.IndexBuilder
 
         void DeleteIndex(params Term[] terms);
 
+        void DeleteIndex(Term term, out Document[] documentsBeenDeleted);
+
         void UpdateIndex(Term term, Document document);
 
         void DeleteAllIndex();
+
+        bool Exists(Query query);
 
         string LuceneIndex { get; }
     }

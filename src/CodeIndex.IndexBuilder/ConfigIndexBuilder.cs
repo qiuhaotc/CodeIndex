@@ -24,7 +24,7 @@ namespace CodeIndex.IndexBuilder
 
         public void AddIndexConfig(IndexConfig indexConfig)
         {
-            ConfigPool.BuildIndex(new[] { GetDocumet(indexConfig) }, true);
+            ConfigPool.BuildIndex(new[] { GetDocument(indexConfig) }, true);
         }
 
         public void DeleteIndexConfig(Guid pk)
@@ -35,7 +35,7 @@ namespace CodeIndex.IndexBuilder
 
         public void EditIndexConfig(IndexConfig indexConfig)
         {
-            ConfigPool.UpdateIndex(new Term(nameof(IndexConfig.Pk), indexConfig.Pk.ToString()), GetDocumet(indexConfig));
+            ConfigPool.UpdateIndex(new Term(nameof(IndexConfig.Pk), indexConfig.Pk.ToString()), GetDocument(indexConfig));
             ConfigPool.Commit();
         }
 
@@ -51,7 +51,7 @@ namespace CodeIndex.IndexBuilder
             }
         }
 
-        public static Document GetDocumet(IndexConfig indexConfig)
+        public static Document GetDocument(IndexConfig indexConfig)
         {
             return new Document
             {

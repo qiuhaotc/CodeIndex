@@ -55,6 +55,13 @@
             "format": "int32",
             "default": 0,
             "x-nullable": true
+          },
+          {
+            "type": "boolean",
+            "name": "caseSensitive",
+            "in": "query",
+            "default": false,
+            "x-nullable": false
           }
         ],
         "responses": {
@@ -120,6 +127,13 @@
             "name": "forWeb",
             "in": "query",
             "default": true,
+            "x-nullable": false
+          },
+          {
+            "type": "boolean",
+            "name": "caseSensitive",
+            "in": "query",
+            "default": false,
             "x-nullable": false
           }
         ],

@@ -10,6 +10,8 @@ namespace CodeIndex
 
         public const string NoneTokenizeFieldSuffix = "NoneTokenize";
 
+        public const string CaseSensitive = "CaseSensitive";
+
         public const int DefaultMaxContentHighlightLength = 3000000;
     }
 }

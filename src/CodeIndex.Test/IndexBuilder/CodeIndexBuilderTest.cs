@@ -145,13 +145,25 @@ namespace CodeIndex.Test
             using var indexBuilder = new CodeIndexBuilder("ABC", new LucenePoolLight(TempCodeIndexDir), new LucenePoolLight(TempHintIndexDir), Log);
 
             var fileName = Path.Combine(MonitorFolder, "A.txt");
-            File.AppendAllText(fileName, "ABCD EEEE");
+            File.AppendAllText(fileName, "ABCD Eeee EEEE");
             Assert.AreEqual(IndexBuildResults.Successful, indexBuilder.CreateIndex(new FileInfo(fileName)));
-            Assert.AreEqual("ABCD EEEE", indexBuilder.CodeIndexPool.SearchCode(new MatchAllDocsQuery()).First().Content);
+            Assert.AreEqual("ABCD Eeee EEEE", indexBuilder.CodeIndexPool.SearchCode(new MatchAllDocsQuery()).First().Content);
+            CollectionAssert.AreEquivalent(new[] { "ABCD", "Eeee", "EEEE" }, indexBuilder.HintIndexPool.SearchWord(new MatchAllDocsQuery()).Select(u => u.Word));
 
-            File.AppendAllText(fileName, " NEW");
+            File.Delete(fileName);
+            File.AppendAllText(fileName, "WOWO IT IS NEW CONTENT APPLY ABCD EEEE");
             Assert.AreEqual(IndexBuildResults.Successful, indexBuilder.UpdateIndex(new FileInfo(fileName), CancellationToken.None));
-            Assert.AreEqual("ABCD EEEE NEW", indexBuilder.CodeIndexPool.SearchCode(new MatchAllDocsQuery()).First().Content);
+            Assert.AreEqual("WOWO IT IS NEW CONTENT APPLY ABCD EEEE", indexBuilder.CodeIndexPool.SearchCode(new MatchAllDocsQuery()).First().Content);
+            CollectionAssert.AreEquivalent(new[] { "WOWO", "ABCD", "CONTENT", "APPLY", "EEEE" }, indexBuilder.HintIndexPool.SearchWord(new MatchAllDocsQuery()).Select(u => u.Word), "Words Been Added And Removed If Needed");
+
+            var fileName2 = Path.Combine(MonitorFolder, "B.txt");
+            File.AppendAllText(fileName2, "ABCD Eeee");
+            Assert.AreEqual(IndexBuildResults.Successful, indexBuilder.CreateIndex(new FileInfo(fileName2)));
+            CollectionAssert.AreEquivalent(new[] { "WOWO", "ABCD", "CONTENT", "APPLY", "Eeee", "EEEE" }, indexBuilder.HintIndexPool.SearchWord(new MatchAllDocsQuery()).Select(u => u.Word), "Words Been Added And Removed If Needed");
+
+            File.Delete(fileName2);
+            File.AppendAllText(fileName2, "Eeee");
+            CollectionAssert.AreEquivalent(new[] { "WOWO", "ABCD", "CONTENT", "APPLY", "Eeee", "EEEE" }, indexBuilder.HintIndexPool.SearchWord(new MatchAllDocsQuery()).Select(u => u.Word), "Words Been Added And Removed If Needed");
         }
 
         [Test]
@@ -159,14 +171,16 @@ namespace CodeIndex.Test
         {
             using var indexBuilder = new CodeIndexBuilder("ABC", new LucenePoolLight(TempCodeIndexDir), new LucenePoolLight(TempHintIndexDir), Log);
 
-            File.AppendAllText(Path.Combine(MonitorFolder, "A.txt"), "ABCD EEEE");
-            File.AppendAllText(Path.Combine(MonitorFolder, "B.txt"), "ABCD DDDD");
+            File.AppendAllText(Path.Combine(MonitorFolder, "A.txt"), "ABCD EEEE dddd");
+            File.AppendAllText(Path.Combine(MonitorFolder, "B.txt"), "ABCD DDDD eeEE");
             Assert.AreEqual(IndexBuildResults.Successful, indexBuilder.CreateIndex(new FileInfo(Path.Combine(MonitorFolder, "A.txt"))));
             Assert.AreEqual(IndexBuildResults.Successful, indexBuilder.CreateIndex(new FileInfo(Path.Combine(MonitorFolder, "B.txt"))));
             Assert.AreEqual(2, indexBuilder.CodeIndexPool.SearchCode(new MatchAllDocsQuery()).Length);
+            CollectionAssert.AreEquivalent(new[] { "ABCD", "EEEE", "DDDD", "dddd", "eeEE" }, indexBuilder.HintIndexPool.SearchWord(new MatchAllDocsQuery()).Select(u => u.Word));
 
             Assert.IsTrue(indexBuilder.DeleteIndex(Path.Combine(MonitorFolder, "A.txt")));
             Assert.AreEqual(1, indexBuilder.CodeIndexPool.SearchCode(new MatchAllDocsQuery()).Length);
+            CollectionAssert.AreEquivalent(new[] { "ABCD", "DDDD", "eeEE" }, indexBuilder.HintIndexPool.SearchWord(new MatchAllDocsQuery()).Select(u => u.Word), "Words Been Removed If Needed");
         }
 
         [Test]

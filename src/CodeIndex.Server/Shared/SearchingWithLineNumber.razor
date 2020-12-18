@@ -1,0 +1,56 @@
+﻿<div class="table-responsive">
+    <table class="table">
+        <thead>
+            <tr>
+                <th scope="col">File Name</th>
+                <th scope="col">Match Line</th>
+                <th scope="col">Match Info</th>
+                <th scope="col">File Path</th>
+                <th scope="col">File Extension</th>
+                <th scope="col">Details</th>
+            </tr>
+        </thead>
+        <tbody>
+            @if (FetchResult?.Result != null && FetchResult.Result.Any())
+            {
+                foreach (var item in FetchResult.Result)
+                {
+                    <tr>
+                        <td title="@item.CodeSource.Info">@item.CodeSource.FileName</td>
+                        <td>@item.MatchedLine</td>
+                        <td>
+                            <pre>@((MarkupString)item.MatchedContent)</pre>
+                        </td>
+                        <td>
+                            <a href="@RazorPageUtils.GetOpenIDEUri(CurrentIndexConfig.OpenIDEUriFormat, item.CodeSource.FilePath, CurrentIndexConfig.MonitorFolderRealPath)">@item.CodeSource.FilePath?.SubStringSafeWithEllipsis(item.CodeSource.FilePath.Length - 50, 50)</a>
+                        </td>
+                        <td>@item.CodeSource.FileExtension</td>
+                        <td>
+                            <a href="/Details/@item.CodeSource.CodePK/@IndexPk.ToString()/@System.Web.HttpUtility.UrlEncode(ContentQuery ?? string.Empty)">Details</a>
+                        </td>
+                    </tr>
+                }
+            }
+            else
+            {
+                <tr>
+                    <td colspan="6" class="text-center">Empty</td>
+                </tr>
+            }
+        </tbody>
+    </table>
+</div>
+
+@code{
+    [Parameter]
+    public FetchResult<IEnumerable<CodeSourceWithMatchedLine>> FetchResult { get; set; }
+
+    [Parameter]
+    public Guid IndexPk { get; set; }
+
+    [Parameter]
+    public IndexConfigForView CurrentIndexConfig { get; set; }
+
+    [Parameter]
+    public string ContentQuery { get; set; }
+}

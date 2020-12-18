@@ -75,7 +75,7 @@ namespace CodeIndex.IndexBuilder
                         var doc = IndexBuilderHelper.GetDocumentFromSource(source);
                         codeDocuments.Add(doc);
 
-                        Log.Info($"{Name}: Add index For {source.FilePath}");
+                        Log.Info($"{Name}: Add index for {source.FilePath}");
                     }
                 }
                 catch (Exception ex)
@@ -286,7 +286,7 @@ namespace CodeIndex.IndexBuilder
             {
                 Log.Error($"{Name}: Rename file index from {oldFilePath} to {nowFilePath} failed, exception: " + ex);
 
-                if(ex is IOException)
+                if (ex is IOException)
                 {
                     return IndexBuildResults.FailedWithIOException;
                 }
@@ -332,12 +332,39 @@ namespace CodeIndex.IndexBuilder
                     AddHintWords(words, source.Content);
 
                     var doc = IndexBuilderHelper.GetDocumentFromSource(source);
-                    CodeIndexPool.UpdateIndex(GetNoneTokenizeFieldTerm(nameof(CodeSource.FilePath), source.FilePath), doc);
+                    CodeIndexPool.UpdateIndex(GetNoneTokenizeFieldTerm(nameof(CodeSource.FilePath), source.FilePath), doc, out var rawDocuments);
+
+                    if (rawDocuments.Length >= 1)
+                    {
+                        var rawWords = new HashSet<string>();
+                        AddHintWords(rawWords, GetCodeSourceFromDocument(rawDocuments[0]).Content);
+
+                        var wordsNeedToRemove = rawWords.Except(words).ToArray();
+                        var wordsNeedToAdd = words.Except(rawWords);
+                        words = wordsNeedToAdd.ToHashSet();
+
+                        Log.Info($"{Name}: Find {wordsNeedToRemove.Length} Delete Candidates Words, {words.Count} Update Candidates Words With Path {source.FilePath}");
+
+                        if (rawDocuments.Length > 1)
+                        {
+                            Log.Warn($"{Name}: Find {rawDocuments.Length} Documents With Path {source.FilePath} To Update");
+                        }
+
+                        foreach (var needToDeleteWord in wordsNeedToRemove)
+                        {
+                            if (!CodeIndexPool.Exists(new TermQuery(new Term(GetCaseSensitiveField(nameof(CodeSource.Content)), needToDeleteWord))))
+                            {
+                                HintIndexPool.DeleteIndex(new Term(nameof(CodeWord.Word), needToDeleteWord));
+                            }
+                        }
+                    }
+                    else
+                    {
+                        Log.Warn($"{Name}: Find 0 Document To Update With Path {source.FilePath}");
+                    }
 
                     foreach (var word in words)
                     {
-                        // TODO: Delete And Add Hint Words
-
                         HintIndexPool.UpdateIndex(new Term(nameof(CodeWord.Word), word), new Document
                         {
                             new StringField(nameof(CodeWord.Word), word, Field.Store.YES),
@@ -372,10 +399,38 @@ namespace CodeIndex.IndexBuilder
         {
             try
             {
-                CodeIndexPool.DeleteIndex(GetNoneTokenizeFieldTerm(nameof(CodeSource.FilePath), filePath));
-                Log.Info($"{Name}: Delete index For {filePath} finished");
+                CodeIndexPool.DeleteIndex(GetNoneTokenizeFieldTerm(nameof(CodeSource.FilePath), filePath), out var documentsBeenDeleted);
 
-                // TODO: Delete Hint Words
+                if (documentsBeenDeleted.Length >= 1)
+                {
+                    var wordsNeedToRemove = new HashSet<string>();
+
+                    foreach (var document in documentsBeenDeleted)
+                    {
+                        AddHintWords(wordsNeedToRemove, GetCodeSourceFromDocument(document).Content);
+                    }
+
+                    Log.Info($"{Name}: Find {wordsNeedToRemove.Count} Delete Candidates Words With Path {filePath}");
+
+                    if (documentsBeenDeleted.Length > 1)
+                    {
+                        Log.Warn($"{Name}: Find {documentsBeenDeleted.Length} Documents With Path {filePath} To Delete");
+                    }
+
+                    foreach (var needToDeleteWord in wordsNeedToRemove)
+                    {
+                        if (!CodeIndexPool.Exists(new TermQuery(new Term(GetCaseSensitiveField(nameof(CodeSource.Content)), needToDeleteWord))))
+                        {
+                            HintIndexPool.DeleteIndex(new Term(nameof(CodeWord.Word), needToDeleteWord));
+                        }
+                    }
+                }
+                else
+                {
+                    Log.Warn($"{Name}: Find No Documents To Delete For {filePath}");
+                }
+
+                Log.Info($"{Name}: Delete index For {filePath} finished");
 
                 return true;
             }
@@ -395,6 +450,25 @@ namespace CodeIndex.IndexBuilder
         public Term GetNoneTokenizeFieldTerm(string fieldName, string termValue)
         {
             return new Term($"{fieldName}{Constants.NoneTokenizeFieldSuffix}", termValue);
+        }
+
+        public static string GetCaseSensitiveField(string fieldName)
+        {
+            return $"{fieldName}{Constants.CaseSensitive}";
+        }
+
+        public static CodeSource GetCodeSourceFromDocument(Document document)
+        {
+            return new CodeSource
+            {
+                CodePK = document.Get(nameof(CodeSource.CodePK)),
+                Content = document.Get(nameof(CodeSource.Content)),
+                FileExtension = document.Get(nameof(CodeSource.FileExtension)),
+                FileName = document.Get(nameof(CodeSource.FileName)),
+                FilePath = document.Get(nameof(CodeSource.FilePath)),
+                IndexDate = new DateTime(long.Parse(document.Get(nameof(CodeSource.IndexDate)))),
+                LastWriteTimeUtc = new DateTime(long.Parse(document.Get(nameof(CodeSource.LastWriteTimeUtc))))
+            };
         }
     }
 }

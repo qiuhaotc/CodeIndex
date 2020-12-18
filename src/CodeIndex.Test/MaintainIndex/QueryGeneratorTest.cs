@@ -1,5 +1,4 @@
 ﻿using CodeIndex.Common;
-using CodeIndex.IndexBuilder;
 using CodeIndex.MaintainIndex;
 using NUnit.Framework;
 

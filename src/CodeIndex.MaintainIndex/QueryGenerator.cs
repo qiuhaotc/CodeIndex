@@ -1,5 +1,6 @@
 ﻿using System.Collections.Generic;
 using CodeIndex.Common;
+using CodeIndex.IndexBuilder;
 using Lucene.Net.QueryParsers.Classic;
 using Lucene.Net.Search;
 
@@ -15,7 +16,7 @@ namespace CodeIndex.MaintainIndex
             QueryParser = queryParser;
         }
 
-        public static string GetSearchStr(string fileName, string content, string fileExtension, string filePath)
+        public static string GetSearchStr(string fileName, string content, string fileExtension, string filePath, bool caseSensitive = false)
         {
             var searchQueries = new List<string>();
 
@@ -24,9 +25,10 @@ namespace CodeIndex.MaintainIndex
                 searchQueries.Add($"{nameof(CodeSource.FileName)}:{fileName}");
             }
 
-            if (!string.IsNullOrWhiteSpace(content))
+            var contentPart = GetSearchStr(content, caseSensitive);
+            if (contentPart != null)
             {
-                searchQueries.Add($"{nameof(CodeSource.Content)}:{content}");
+                searchQueries.Add(contentPart);
             }
 
             if (!string.IsNullOrWhiteSpace(fileExtension))
@@ -45,6 +47,21 @@ namespace CodeIndex.MaintainIndex
             }
 
             return string.Join(" AND ", searchQueries);
+        }
+
+        public static string GetSearchStr(string content, bool caseSensitive)
+        {
+            if (!string.IsNullOrWhiteSpace(content))
+            {
+                if (caseSensitive)
+                {
+                    return $"{CodeIndexBuilder.GetCaseSensitiveField(nameof(CodeSource.Content))}:{content}";
+                }
+
+                return $"{nameof(CodeSource.Content)}:{content}";
+            }
+
+            return null;
         }
 
         public Query GetQueryFromStr(string searchStr)
