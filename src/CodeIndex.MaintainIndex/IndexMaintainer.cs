@@ -359,7 +359,13 @@ namespace CodeIndex.MaintainIndex
                 }
             }
 
-            AddNewIndexFiles(needToBuildIndex ?? allFiles, out var failedIndexFiles);
+            var wholeWords = IndexBuilder.GetAllHintWords();
+            GC.Collect(); // Run GC after fetching massive documents from index
+
+            AddNewIndexFiles(needToBuildIndex ?? allFiles, out var failedIndexFiles, wholeWords);
+
+            wholeWords.Clear();
+            GC.Collect(); // Run GC to save the memory
 
             IndexBuilder.Commit();
 
@@ -373,14 +379,14 @@ namespace CodeIndex.MaintainIndex
             }
         }
 
-        void AddNewIndexFiles(IEnumerable<FileInfo> needToBuildIndex, out ConcurrentBag<FileInfo> failedIndexFiles)
+        void AddNewIndexFiles(IEnumerable<FileInfo> needToBuildIndex, out List<FileInfo> failedIndexFiles, HashSet<string> wholeWords)
         {
-            failedIndexFiles = IndexBuilder.BuildIndexByBatch(needToBuildIndex, true, false, false, TokenSource.Token);
+            failedIndexFiles = IndexBuilder.BuildIndexByBatch(needToBuildIndex, true, false, false, TokenSource.Token, wholeWords);
 
             if (failedIndexFiles.Count > 0)
             {
                 Log.Info($"{IndexConfig.IndexName}: Retry failed build indexes files, files count {failedIndexFiles.Count}");
-                failedIndexFiles = IndexBuilder.BuildIndexByBatch(failedIndexFiles, true, false, false, TokenSource.Token);
+                failedIndexFiles = IndexBuilder.BuildIndexByBatch(failedIndexFiles, true, false, false, TokenSource.Token, wholeWords);
             }
         }
 

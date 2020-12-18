@@ -48,29 +48,27 @@ namespace CodeIndex.IndexBuilder
             }
         }
 
-        public ConcurrentBag<FileInfo> BuildIndexByBatch(IEnumerable<FileInfo> fileInfos, bool needCommit, bool triggerMerge, bool applyAllDeletes, CancellationToken cancellationToken, int batchSize = 10000)
+        public List<FileInfo> BuildIndexByBatch(IEnumerable<FileInfo> fileInfos, bool needCommit, bool triggerMerge, bool applyAllDeletes, CancellationToken cancellationToken, HashSet<string> wholeWords, int batchSize = 10000)
         {
             cancellationToken.ThrowIfCancellationRequested();
             fileInfos.RequireNotNull(nameof(fileInfos));
             batchSize.RequireRange(nameof(batchSize), int.MaxValue, 50);
 
-            var codeDocuments = new ConcurrentBag<Document>();
-            var wholeWords = new ConcurrentDictionary<string, int>();
-            var hintWords = new ConcurrentDictionary<string, int>();
-            var failedIndexFiles = new ConcurrentBag<FileInfo>();
-            using var readWriteSlimLock = new ReaderWriterLockSlim();
+            var codeDocuments = new List<Document>();
+            var newHintWords = new HashSet<string>();
+            var failedIndexFiles = new List<FileInfo>();
 
-            Parallel.ForEach(fileInfos, new ParallelOptions { CancellationToken = cancellationToken }, fileInfo =>
+            foreach (var fileInfo in fileInfos)
             {
                 cancellationToken.ThrowIfCancellationRequested();
-                readWriteSlimLock.EnterReadLock();
+
                 try
                 {
                     if (fileInfo.Exists)
                     {
                         var source = CodeSource.GetCodeSource(fileInfo, FilesContentHelper.ReadAllText(fileInfo.FullName));
 
-                        AddHintWords(hintWords, wholeWords, source.Content);
+                        AddHintWords(newHintWords, wholeWords, source.Content);
 
                         var doc = IndexBuilderHelper.GetDocumentFromSource(source);
                         codeDocuments.Add(doc);
@@ -83,57 +81,40 @@ namespace CodeIndex.IndexBuilder
                     failedIndexFiles.Add(fileInfo);
                     Log.Error($"{Name}: Add index for {fileInfo.FullName} failed, exception: " + ex);
                 }
-                finally
-                {
-                    readWriteSlimLock.ExitReadLock();
-                }
 
                 if (codeDocuments.Count >= batchSize)
                 {
-                    readWriteSlimLock.EnterWriteLock();
-                    try
-                    {
-                        if (codeDocuments.Count >= batchSize)
-                        {
-                            BuildIndex(needCommit, triggerMerge, applyAllDeletes, codeDocuments, hintWords, cancellationToken);
-                            codeDocuments.Clear();
-                            hintWords.Clear();
-                        }
-                    }
-                    finally
-                    {
-                        readWriteSlimLock.ExitWriteLock();
-                    }
+                    BuildIndex(needCommit, triggerMerge, applyAllDeletes, codeDocuments, newHintWords, cancellationToken);
+                    codeDocuments.Clear();
+                    newHintWords.Clear();
                 }
-            });
+            }
 
             if (codeDocuments.Count > 0)
             {
-                BuildIndex(needCommit, triggerMerge, applyAllDeletes, codeDocuments, hintWords, cancellationToken);
+                BuildIndex(needCommit, triggerMerge, applyAllDeletes, codeDocuments, newHintWords, cancellationToken);
             }
-
-            wholeWords.Clear();
 
             return failedIndexFiles;
         }
 
         void AddHintWords(HashSet<string> hintWords, string content)
         {
-            var words = WordSegmenter.GetWords(content).Where(word => word.Length > 3 && word.Length < 200);
+            var words = WordSegmenter.GetWords(content).Where(word => word.Length > 3 && word.Length < 200); // TODO: Optimize the length of hint words and the GetWords logic
             foreach (var word in words)
             {
                 hintWords.Add(word);
             }
         }
 
-        void AddHintWords(ConcurrentDictionary<string, int> hintWords, ConcurrentDictionary<string, int> wholeWords, string content)
+        void AddHintWords(HashSet<string> hintWords, HashSet<string> wholeWords, string content)
         {
-            var words = WordSegmenter.GetWords(content).Where(word => word.Length > 3 && word.Length < 200);
+            var words = WordSegmenter.GetWords(content).Where(word => word.Length > 3 && word.Length < 200);  // TODO: Optimize the length of hint words and the GetWords logic
             foreach (var word in words)
             {
-                if (wholeWords.TryAdd(word, 0)) // Avoid Distinct Value
+                if (wholeWords.Add(word)) // Avoid Distinct Value
                 {
-                    hintWords.TryAdd(word, 0);
+                    hintWords.Add(word);
                 }
             }
         }
@@ -196,7 +177,7 @@ namespace CodeIndex.IndexBuilder
             }
         }
 
-        void BuildIndex(bool needCommit, bool triggerMerge, bool applyAllDeletes, ConcurrentBag<Document> codeDocuments, ConcurrentDictionary<string, int> words, CancellationToken cancellationToken)
+        void BuildIndex(bool needCommit, bool triggerMerge, bool applyAllDeletes, List<Document> codeDocuments, HashSet<string> newHintWords, CancellationToken cancellationToken)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
@@ -212,26 +193,36 @@ namespace CodeIndex.IndexBuilder
                 },
                 documentLists =>
                 {
-                    CodeIndexPool.BuildIndex(documentLists, needCommit, triggerMerge, applyAllDeletes);
+                    if (documentLists.Count > 0)
+                    {
+                        CodeIndexPool.BuildIndex(documentLists, needCommit, triggerMerge, applyAllDeletes);
+                    }
                 });
 
             Log.Info($"{Name}: Build code index finished");
 
-            Log.Info($"{Name}: Build hint index start, documents count {words.Count}");
+            Log.Info($"{Name}: Build hint index start, documents count {newHintWords.Count}");
 
-            Parallel.ForEach(words, word =>
-            {
-                HintIndexPool.UpdateIndex(new Term(nameof(CodeWord.Word), word.Key), new Document
+            Parallel.ForEach(
+                newHintWords,
+                () => new List<Document>(),
+                (word, status, documentLists) =>
                 {
-                    new StringField(nameof(CodeWord.Word), word.Key, Field.Store.YES),
-                    new StringField(nameof(CodeWord.WordLower), word.Key.ToLowerInvariant(), Field.Store.YES)
-                });
-            });
+                    documentLists.Add(new Document
+                    {
+                        new StringField(nameof(CodeWord.Word), word, Field.Store.YES),
+                        new StringField(nameof(CodeWord.WordLower), word.ToLowerInvariant(), Field.Store.YES)
+                    });
 
-            if (needCommit || triggerMerge || applyAllDeletes)
-            {
-                HintIndexPool.Commit();
-            }
+                    return documentLists;
+                },
+                documentLists =>
+                {
+                    if (documentLists.Count > 0)
+                    {
+                        HintIndexPool.BuildIndex(documentLists, needCommit, triggerMerge, applyAllDeletes);
+                    }
+                });
 
             Log.Info($"{Name}: Build hint index finished");
         }
@@ -381,7 +372,6 @@ namespace CodeIndex.IndexBuilder
             {
                 Log.Error($"{Name}: Update index for {fileInfo.FullName} failed, exception: " + ex);
 
-
                 if (ex is IOException)
                 {
                     return IndexBuildResults.FailedWithIOException;
@@ -393,6 +383,11 @@ namespace CodeIndex.IndexBuilder
 
                 return IndexBuildResults.FailedWithError;
             }
+        }
+
+        public HashSet<string> GetAllHintWords()
+        {
+            return HintIndexPool.Search(new MatchAllDocsQuery(), int.MaxValue).Select(u => u.Get(nameof(CodeWord.Word))).ToHashSet();
         }
 
         public bool DeleteIndex(string filePath)

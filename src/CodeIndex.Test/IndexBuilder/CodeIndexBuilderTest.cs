@@ -1,4 +1,5 @@
 using System;
+using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
@@ -33,7 +34,7 @@ namespace CodeIndex.Test
             File.AppendAllText(fileName1, "ABCD ABCD" + Environment.NewLine + "ABCD");
             File.AppendAllText(fileName2, "ABCD EFGH");
 
-            var failedFiles = indexBuilder.BuildIndexByBatch(new[] { new FileInfo(fileName1), new FileInfo(fileName2) }, true, true, true, CancellationToken.None);
+            var failedFiles = indexBuilder.BuildIndexByBatch(new[] { new FileInfo(fileName1), new FileInfo(fileName2) }, true, true, true, CancellationToken.None, new HashSet<string>());
             CollectionAssert.IsEmpty(failedFiles);
 
             var results = indexBuilder.CodeIndexPool.SearchCode(Generator.GetQueryFromStr("ABCD"));
@@ -64,7 +65,7 @@ namespace CodeIndex.Test
             File.AppendAllText(fileName2, "ABCD ABCD");
             try
             {
-                var failedFiles = indexBuilder.BuildIndexByBatch(new[] { new FileInfo(fileName1), new FileInfo(fileName2) }, true, true, true, CancellationToken.None);
+                var failedFiles = indexBuilder.BuildIndexByBatch(new[] { new FileInfo(fileName1), new FileInfo(fileName2) }, true, true, true, CancellationToken.None, new HashSet<string>());
                 CollectionAssert.AreEquivalent(new[] { fileName1 }, failedFiles.Select(u => u.FullName));
             }
             finally
@@ -211,6 +212,17 @@ namespace CodeIndex.Test
         }
 
         [Test]
+        public void TestGetAllHintWords()
+        {
+            using var indexBuilder = new CodeIndexBuilder("ABC", new LucenePoolLight(TempCodeIndexDir), new LucenePoolLight(TempHintIndexDir), Log);
+            File.AppendAllText(Path.Combine(MonitorFolder, "A.txt"), "ABCD EEEE WoWo Eeee Abcd");
+            File.AppendAllText(Path.Combine(MonitorFolder, "B.txt"), "Neww Content WoWo skrskrskr");
+            Assert.AreEqual(IndexBuildResults.Successful, indexBuilder.CreateIndex(new FileInfo(Path.Combine(MonitorFolder, "A.txt"))));
+            Assert.AreEqual(IndexBuildResults.Successful, indexBuilder.CreateIndex(new FileInfo(Path.Combine(MonitorFolder, "B.txt"))));
+            CollectionAssert.AreEquivalent(new[] { "ABCD", "EEEE", "WoWo", "Eeee", "Abcd", "Neww", "Content", "skrskrskr" }, indexBuilder.GetAllHintWords());
+        }
+
+        [Test]
         public void TestDeleteAllIndex()
         {
             using var indexBuilder = new CodeIndexBuilder("ABC", new LucenePoolLight(TempCodeIndexDir), new LucenePoolLight(TempHintIndexDir), Log);
@@ -222,7 +234,7 @@ namespace CodeIndex.Test
             File.AppendAllText(fileName1, "ABCD ABCD");
             File.AppendAllText(fileName2, "ABCD EFGH");
 
-            var failedFiles = indexBuilder.BuildIndexByBatch(new[] { new FileInfo(fileName1), new FileInfo(fileName2) }, true, true, true, CancellationToken.None);
+            var failedFiles = indexBuilder.BuildIndexByBatch(new[] { new FileInfo(fileName1), new FileInfo(fileName2) }, true, true, true, CancellationToken.None, new HashSet<string>());
             CollectionAssert.IsEmpty(failedFiles);
             Assert.AreEqual(2, indexBuilder.CodeIndexPool.SearchCode(new MatchAllDocsQuery()).Length);
             Assert.AreEqual(2, indexBuilder.HintIndexPool.SearchWord(new MatchAllDocsQuery()).Length);

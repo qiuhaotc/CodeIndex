@@ -210,7 +210,7 @@ namespace CodeIndex.Test
                     Content = "Test Content" + Environment.NewLine + "A New Line For Test"
                 })}, true, true, true);
 
-            light.UpdateIndex(new Term(nameof(CodeSource.FileName), "1"), 
+            light.UpdateIndex(new Term(nameof(CodeSource.FileName), "1"),
                 GetDocument(new CodeSource
                 {
                     FileName = "Dummy File New 1",
@@ -299,6 +299,32 @@ namespace CodeIndex.Test
             Assert.AreNotEqual(parserA, parserB);
             Assert.AreEqual(parserA.Analyzer, parserB.Analyzer);
             Assert.IsTrue(parserA.Analyzer is PerFieldAnalyzerWrapper);
+        }
+
+        [Test]
+        public void TestExists()
+        {
+            using var light = new LucenePoolLight(TempIndexDir);
+
+            light.BuildIndex(new[] {
+                GetDocument(new CodeSource
+                {
+                    FileName = "Dummy File 1",
+                    FileExtension = "cs",
+                    FilePath = @"C:\Dummy File 1.cs",
+                    Content = "Test Content" + Environment.NewLine + "A New Line For Test"
+                }),
+                GetDocument(new CodeSource
+                {
+                    FileName = "Dummy File 2",
+                    FileExtension = "cs",
+                    FilePath = @"C:\Dummy File 2.cs",
+                    Content = "Test Content" + Environment.NewLine + "A New Line For Test"
+                })}, true, true, true);
+
+            Assert.IsTrue(light.Exists(new TermQuery(new Term(nameof(CodeSource.FileName), "1"))));
+            Assert.IsTrue(light.Exists(new TermQuery(new Term(nameof(CodeSource.FileName), "2"))));
+            Assert.IsFalse(light.Exists(new TermQuery(new Term(nameof(CodeSource.FileName), "3"))));
         }
 
         Document GetDocument(CodeSource codeSource)
