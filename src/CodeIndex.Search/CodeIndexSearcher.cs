@@ -236,7 +236,7 @@ namespace CodeIndex.Search
                 return result.Result;
             }
 
-            Log.Info($"Index {pk} not exist in Index Management: {result.Status.StatusDesc}");
+            Log.Warn($"Index {pk} not exist in Index Management: {result.Status.StatusDesc}");
             return null;
         }
 

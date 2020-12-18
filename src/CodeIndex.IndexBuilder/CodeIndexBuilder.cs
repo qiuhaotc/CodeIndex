@@ -355,8 +355,6 @@ namespace CodeIndex.IndexBuilder
                             if (!CodeIndexPool.Exists(new TermQuery(new Term(GetCaseSensitiveField(nameof(CodeSource.Content)), needToDeleteWord))))
                             {
                                 HintIndexPool.DeleteIndex(new Term(nameof(CodeWord.Word), needToDeleteWord));
-
-                                Log.Info($"{Name}: Delete word {needToDeleteWord} as it was not exist");
                             }
                         }
                     }
@@ -424,8 +422,6 @@ namespace CodeIndex.IndexBuilder
                         if (!CodeIndexPool.Exists(new TermQuery(new Term(GetCaseSensitiveField(nameof(CodeSource.Content)), needToDeleteWord))))
                         {
                             HintIndexPool.DeleteIndex(new Term(nameof(CodeWord.Word), needToDeleteWord));
-
-                            Log.Info($"{Name}: Delete word {needToDeleteWord} as it was not exist");
                         }
                     }
                 }
