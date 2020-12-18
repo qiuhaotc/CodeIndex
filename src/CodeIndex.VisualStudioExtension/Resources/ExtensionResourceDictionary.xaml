@@ -18,6 +18,9 @@
         <Setter Property="Foreground" Value="White"/>
         <Setter Property="Background" Value="#FF434343"/>
     </Style>
+    <Style TargetType="{x:Type CheckBox}">
+        <Setter Property="Foreground" Value="White"/>
+    </Style>
     <Style TargetType="{x:Type ListView}">
         <Setter Property="Background" Value="#FF2D2D30"/>
         <Setter Property="Foreground" Value="White"/>

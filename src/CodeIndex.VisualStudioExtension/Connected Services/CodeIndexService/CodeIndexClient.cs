@@ -42,14 +42,14 @@ namespace CodeIndex.VisualStudioExtension
         partial void ProcessResponse(System.Net.Http.HttpClient client, System.Net.Http.HttpResponseMessage response);
     
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public System.Threading.Tasks.Task<FetchResultOfIEnumerableOfCodeSource> ApiLuceneGetcodesourcesAsync(string searchQuery, bool? preview, System.Guid? indexPk, string contentQuery, int? showResults)
+        public System.Threading.Tasks.Task<FetchResultOfIEnumerableOfCodeSource> ApiLuceneGetcodesourcesAsync(string searchQuery, bool? preview, System.Guid? indexPk, string contentQuery, int? showResults, bool? caseSensitive)
         {
-            return ApiLuceneGetcodesourcesAsync(searchQuery, preview, indexPk, contentQuery, showResults, System.Threading.CancellationToken.None);
+            return ApiLuceneGetcodesourcesAsync(searchQuery, preview, indexPk, contentQuery, showResults, caseSensitive, System.Threading.CancellationToken.None);
         }
     
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public async System.Threading.Tasks.Task<FetchResultOfIEnumerableOfCodeSource> ApiLuceneGetcodesourcesAsync(string searchQuery, bool? preview, System.Guid? indexPk, string contentQuery, int? showResults, System.Threading.CancellationToken cancellationToken)
+        public async System.Threading.Tasks.Task<FetchResultOfIEnumerableOfCodeSource> ApiLuceneGetcodesourcesAsync(string searchQuery, bool? preview, System.Guid? indexPk, string contentQuery, int? showResults, bool? caseSensitive, System.Threading.CancellationToken cancellationToken)
         {
             var urlBuilder_ = new System.Text.StringBuilder();
             urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/Lucene/GetCodeSources?");
@@ -72,6 +72,10 @@ namespace CodeIndex.VisualStudioExtension
             if (showResults != null) 
             {
                 urlBuilder_.Append(System.Uri.EscapeDataString("showResults") + "=").Append(System.Uri.EscapeDataString(ConvertToString(showResults, System.Globalization.CultureInfo.InvariantCulture))).Append("&");
+            }
+            if (caseSensitive != null) 
+            {
+                urlBuilder_.Append(System.Uri.EscapeDataString("caseSensitive") + "=").Append(System.Uri.EscapeDataString(ConvertToString(caseSensitive, System.Globalization.CultureInfo.InvariantCulture))).Append("&");
             }
             urlBuilder_.Length--;
     
@@ -133,14 +137,14 @@ namespace CodeIndex.VisualStudioExtension
         }
     
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public System.Threading.Tasks.Task<FetchResultOfIEnumerableOfCodeSourceWithMatchedLine> ApiLuceneGetcodesourceswithmatchedlineAsync(string searchQuery, System.Guid? indexPk, string contentQuery, int? showResults, bool? needReplaceSuffixAndPrefix, bool? forWeb)
+        public System.Threading.Tasks.Task<FetchResultOfIEnumerableOfCodeSourceWithMatchedLine> ApiLuceneGetcodesourceswithmatchedlineAsync(string searchQuery, System.Guid? indexPk, string contentQuery, int? showResults, bool? needReplaceSuffixAndPrefix, bool? forWeb, bool? caseSensitive)
         {
-            return ApiLuceneGetcodesourceswithmatchedlineAsync(searchQuery, indexPk, contentQuery, showResults, needReplaceSuffixAndPrefix, forWeb, System.Threading.CancellationToken.None);
+            return ApiLuceneGetcodesourceswithmatchedlineAsync(searchQuery, indexPk, contentQuery, showResults, needReplaceSuffixAndPrefix, forWeb, caseSensitive, System.Threading.CancellationToken.None);
         }
     
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public async System.Threading.Tasks.Task<FetchResultOfIEnumerableOfCodeSourceWithMatchedLine> ApiLuceneGetcodesourceswithmatchedlineAsync(string searchQuery, System.Guid? indexPk, string contentQuery, int? showResults, bool? needReplaceSuffixAndPrefix, bool? forWeb, System.Threading.CancellationToken cancellationToken)
+        public async System.Threading.Tasks.Task<FetchResultOfIEnumerableOfCodeSourceWithMatchedLine> ApiLuceneGetcodesourceswithmatchedlineAsync(string searchQuery, System.Guid? indexPk, string contentQuery, int? showResults, bool? needReplaceSuffixAndPrefix, bool? forWeb, bool? caseSensitive, System.Threading.CancellationToken cancellationToken)
         {
             var urlBuilder_ = new System.Text.StringBuilder();
             urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/Lucene/GetCodeSourcesWithMatchedLine?");
@@ -167,6 +171,10 @@ namespace CodeIndex.VisualStudioExtension
             if (forWeb != null) 
             {
                 urlBuilder_.Append(System.Uri.EscapeDataString("forWeb") + "=").Append(System.Uri.EscapeDataString(ConvertToString(forWeb, System.Globalization.CultureInfo.InvariantCulture))).Append("&");
+            }
+            if (caseSensitive != null) 
+            {
+                urlBuilder_.Append(System.Uri.EscapeDataString("caseSensitive") + "=").Append(System.Uri.EscapeDataString(ConvertToString(caseSensitive, System.Globalization.CultureInfo.InvariantCulture))).Append("&");
             }
             urlBuilder_.Length--;
     

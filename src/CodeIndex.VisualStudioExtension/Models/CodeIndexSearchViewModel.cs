@@ -53,6 +53,8 @@ namespace CodeIndex.VisualStudioExtension
             }
         }
 
+        public bool CaseSensitive { get; set; }
+
         CancellationTokenSource tokenToLoadIndexInfos;
 
         async Task LoadIndexInfosAsync()
@@ -277,7 +279,7 @@ namespace CodeIndex.VisualStudioExtension
             if (IsValidate())
             {
                 var client = new CodeIndexClient(new HttpClient(), ServiceUrl);
-                var result = await client.ApiLuceneGetcodesourceswithmatchedlineAsync(GetSearchStr(), IndexPk, Content, ShowResultsNumber, false, false);
+                var result = await client.ApiLuceneGetcodesourceswithmatchedlineAsync(GetSearchStr(), IndexPk, Content, ShowResultsNumber, false, false, CaseSensitive);
 
                 if (result.Status.Success)
                 {

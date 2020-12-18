@@ -19,7 +19,14 @@
                 <TextBox Height="23" TextWrapping="Wrap" Text="{Binding FileExtension, UpdateSourceTrigger=PropertyChanged}" Width="120" KeyDown="TextBox_KeyDown"/>
                 <Label Content="File Location:"/>
                 <TextBox Height="23" TextWrapping="Wrap" Text="{Binding FileLocation, UpdateSourceTrigger=PropertyChanged}" Width="120" KeyDown="TextBox_KeyDown"/>
-                <Label Content="Show Results: "/>
+                <CheckBox Content=":Case Sensitive" FlowDirection="RightToLeft" IsChecked="{Binding CaseSensitive}" Margin="5 0 0 0" VerticalAlignment="Center" >
+                    <CheckBox.Resources>
+                        <Style TargetType="{x:Type Path}">
+                            <Setter Property="FlowDirection" Value="LeftToRight" />
+                        </Style>
+                    </CheckBox.Resources>
+                </CheckBox>
+                <Label Content="Show Results:"/>
                 <ComboBox SelectedValue="{Binding ShowResultsNumber}" ItemsSource="{Binding Options}" DisplayMemberPath="Name" SelectedValuePath="Value" Width="100" VerticalAlignment="Center"/>
                 <Button x:Name="SearchButton" Margin="10 0 0 0" Content="Search" Command="{Binding SearchIndexCommand}" Style="{StaticResource InfoButton}"/>
                 <Button Margin="10 0 0 0" Content="Stop Search" Command="{Binding StopSearchCommand}" Style="{StaticResource WarnButton}"/>
@@ -46,7 +53,7 @@
             </Grid>
             <DockPanel DockPanel.Dock="Top">
                 <Label Content="Hind Words:" DockPanel.Dock="Left"/>
-                <ScrollViewer DockPanel.Dock="Right" VerticalScrollBarVisibility="Auto" MaxHeight="100">
+                <ScrollViewer DockPanel.Dock="Right" VerticalScrollBarVisibility="Auto" MaxHeight="60">
                     <ItemsControl ItemsSource="{Binding HintWords}" ItemsPanel="{StaticResource ItemsPanelTemplateHorizontal}" HorizontalAlignment="Left">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
