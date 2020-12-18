@@ -305,11 +305,13 @@ namespace CodeIndex.MaintainIndex
 
             List<FileInfo> needToBuildIndex = null;
             var failedUpdateOrDeleteFiles = new List<string>();
+            var brandNewBuild = false;
 
             if (IndexBuilderHelper.IndexExists(IndexBuilder.CodeIndexPool.LuceneIndex))
             {
                 if (forceRebuild)
                 {
+                    brandNewBuild = true;
                     Log.Info($"{IndexConfig.IndexName}: Force rebuild all indexes");
                     IndexBuilder.DeleteAllIndex();
                 }
@@ -358,13 +360,12 @@ namespace CodeIndex.MaintainIndex
                     }
                 }
             }
+            else
+            {
+                brandNewBuild = true;
+            }
 
-            var wholeWords = IndexBuilder.GetAllHintWords();
-            GC.Collect(); // Run GC after fetching massive documents from index
-
-            AddNewIndexFiles(needToBuildIndex ?? allFiles, out var failedIndexFiles, wholeWords);
-
-            wholeWords.Clear();
+            AddNewIndexFiles(needToBuildIndex ?? allFiles, out var failedIndexFiles, brandNewBuild);
             GC.Collect(); // Run GC to save the memory
 
             IndexBuilder.Commit();
@@ -379,14 +380,14 @@ namespace CodeIndex.MaintainIndex
             }
         }
 
-        void AddNewIndexFiles(IEnumerable<FileInfo> needToBuildIndex, out List<FileInfo> failedIndexFiles, HashSet<string> wholeWords)
+        void AddNewIndexFiles(IEnumerable<FileInfo> needToBuildIndex, out List<FileInfo> failedIndexFiles, bool brandNewBuild)
         {
-            failedIndexFiles = IndexBuilder.BuildIndexByBatch(needToBuildIndex, true, false, false, TokenSource.Token, wholeWords);
+            failedIndexFiles = IndexBuilder.BuildIndexByBatch(needToBuildIndex, true, false, false, TokenSource.Token, brandNewBuild);
 
             if (failedIndexFiles.Count > 0)
             {
                 Log.Info($"{IndexConfig.IndexName}: Retry failed build indexes files, files count {failedIndexFiles.Count}");
-                failedIndexFiles = IndexBuilder.BuildIndexByBatch(failedIndexFiles, true, false, false, TokenSource.Token, wholeWords);
+                failedIndexFiles = IndexBuilder.BuildIndexByBatch(failedIndexFiles, true, false, false, TokenSource.Token, false);
             }
         }
 

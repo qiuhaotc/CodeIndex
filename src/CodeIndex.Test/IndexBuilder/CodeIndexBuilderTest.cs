@@ -34,7 +34,7 @@ namespace CodeIndex.Test
             File.AppendAllText(fileName1, "ABCD ABCD" + Environment.NewLine + "ABCD");
             File.AppendAllText(fileName2, "ABCD EFGH");
 
-            var failedFiles = indexBuilder.BuildIndexByBatch(new[] { new FileInfo(fileName1), new FileInfo(fileName2) }, true, true, true, CancellationToken.None, new HashSet<string>());
+            var failedFiles = indexBuilder.BuildIndexByBatch(new[] { new FileInfo(fileName1), new FileInfo(fileName2) }, true, true, true, CancellationToken.None, true);
             CollectionAssert.IsEmpty(failedFiles);
 
             var results = indexBuilder.CodeIndexPool.SearchCode(Generator.GetQueryFromStr("ABCD"));
@@ -65,7 +65,7 @@ namespace CodeIndex.Test
             File.AppendAllText(fileName2, "ABCD ABCD");
             try
             {
-                var failedFiles = indexBuilder.BuildIndexByBatch(new[] { new FileInfo(fileName1), new FileInfo(fileName2) }, true, true, true, CancellationToken.None, new HashSet<string>());
+                var failedFiles = indexBuilder.BuildIndexByBatch(new[] { new FileInfo(fileName1), new FileInfo(fileName2) }, true, true, true, CancellationToken.None, true);
                 CollectionAssert.AreEquivalent(new[] { fileName1 }, failedFiles.Select(u => u.FullName));
             }
             finally
@@ -234,7 +234,7 @@ namespace CodeIndex.Test
             File.AppendAllText(fileName1, "ABCD ABCD");
             File.AppendAllText(fileName2, "ABCD EFGH");
 
-            var failedFiles = indexBuilder.BuildIndexByBatch(new[] { new FileInfo(fileName1), new FileInfo(fileName2) }, true, true, true, CancellationToken.None, new HashSet<string>());
+            var failedFiles = indexBuilder.BuildIndexByBatch(new[] { new FileInfo(fileName1), new FileInfo(fileName2) }, true, true, true, CancellationToken.None, true);
             CollectionAssert.IsEmpty(failedFiles);
             Assert.AreEqual(2, indexBuilder.CodeIndexPool.SearchCode(new MatchAllDocsQuery()).Length);
             Assert.AreEqual(2, indexBuilder.HintIndexPool.SearchWord(new MatchAllDocsQuery()).Length);
@@ -242,6 +242,29 @@ namespace CodeIndex.Test
             indexBuilder.DeleteAllIndex();
             Assert.AreEqual(0, indexBuilder.CodeIndexPool.SearchCode(new MatchAllDocsQuery()).Length);
             Assert.AreEqual(0, indexBuilder.HintIndexPool.SearchWord(new MatchAllDocsQuery()).Length);
+        }
+
+        [Test]
+        public void TestNotBrandNewBuild()
+        {
+            using var indexBuilder = new CodeIndexBuilder("ABC", new LucenePoolLight(TempCodeIndexDir), new LucenePoolLight(TempHintIndexDir), Log);
+            Assert.IsFalse(Directory.Exists(TempCodeIndexDir));
+            Assert.IsFalse(Directory.Exists(TempHintIndexDir));
+
+            var fileName1 = Path.Combine(MonitorFolder, "A.txt");
+            var fileName2 = Path.Combine(MonitorFolder, "B.txt");
+            File.AppendAllText(fileName1, "ABCD ABCD");
+            File.AppendAllText(fileName2, "ABCD EFGH");
+
+            var failedFiles = indexBuilder.BuildIndexByBatch(new[] { new FileInfo(fileName1) }, true, true, true, CancellationToken.None, true);
+            CollectionAssert.IsEmpty(failedFiles);
+            Assert.AreEqual(1, indexBuilder.CodeIndexPool.SearchCode(new MatchAllDocsQuery()).Length);
+            Assert.AreEqual(1, indexBuilder.HintIndexPool.SearchWord(new MatchAllDocsQuery()).Length);
+
+            indexBuilder.BuildIndexByBatch(new[] { new FileInfo(fileName2) }, true, true, true, CancellationToken.None, false);
+            CollectionAssert.IsEmpty(failedFiles);
+            Assert.AreEqual(2, indexBuilder.CodeIndexPool.SearchCode(new MatchAllDocsQuery()).Length);
+            Assert.AreEqual(2, indexBuilder.HintIndexPool.SearchWord(new MatchAllDocsQuery()).Length, "When not brand new build, will do update hint index rather than add without check");
         }
     }
 }

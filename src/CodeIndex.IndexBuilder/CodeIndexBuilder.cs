@@ -48,13 +48,14 @@ namespace CodeIndex.IndexBuilder
             }
         }
 
-        public List<FileInfo> BuildIndexByBatch(IEnumerable<FileInfo> fileInfos, bool needCommit, bool triggerMerge, bool applyAllDeletes, CancellationToken cancellationToken, HashSet<string> wholeWords, int batchSize = 10000)
+        public List<FileInfo> BuildIndexByBatch(IEnumerable<FileInfo> fileInfos, bool needCommit, bool triggerMerge, bool applyAllDeletes, CancellationToken cancellationToken, bool brandNewBuild, int batchSize = 10000)
         {
             cancellationToken.ThrowIfCancellationRequested();
             fileInfos.RequireNotNull(nameof(fileInfos));
             batchSize.RequireRange(nameof(batchSize), int.MaxValue, 50);
 
             var codeDocuments = new List<Document>();
+            var wholeWords = new HashSet<string>();
             var newHintWords = new HashSet<string>();
             var failedIndexFiles = new List<FileInfo>();
 
@@ -84,7 +85,7 @@ namespace CodeIndex.IndexBuilder
 
                 if (codeDocuments.Count >= batchSize)
                 {
-                    BuildIndex(needCommit, triggerMerge, applyAllDeletes, codeDocuments, newHintWords, cancellationToken);
+                    BuildIndex(needCommit, triggerMerge, applyAllDeletes, codeDocuments, newHintWords, cancellationToken, brandNewBuild);
                     codeDocuments.Clear();
                     newHintWords.Clear();
                 }
@@ -92,7 +93,7 @@ namespace CodeIndex.IndexBuilder
 
             if (codeDocuments.Count > 0)
             {
-                BuildIndex(needCommit, triggerMerge, applyAllDeletes, codeDocuments, newHintWords, cancellationToken);
+                BuildIndex(needCommit, triggerMerge, applyAllDeletes, codeDocuments, newHintWords, cancellationToken, brandNewBuild);
             }
 
             return failedIndexFiles;
@@ -177,7 +178,7 @@ namespace CodeIndex.IndexBuilder
             }
         }
 
-        void BuildIndex(bool needCommit, bool triggerMerge, bool applyAllDeletes, List<Document> codeDocuments, HashSet<string> newHintWords, CancellationToken cancellationToken)
+        void BuildIndex(bool needCommit, bool triggerMerge, bool applyAllDeletes, List<Document> codeDocuments, HashSet<string> newHintWords, CancellationToken cancellationToken, bool brandNewBuild)
         {
             cancellationToken.ThrowIfCancellationRequested();
 
@@ -201,9 +202,11 @@ namespace CodeIndex.IndexBuilder
 
             Log.Info($"{Name}: Build code index finished");
 
-            Log.Info($"{Name}: Build hint index start, documents count {newHintWords.Count}");
+            Log.Info($"{Name}: Build {(brandNewBuild ? "brand New" : "exist")} hint index start, documents count {newHintWords.Count}");
 
-            Parallel.ForEach(
+            if (brandNewBuild)
+            {
+                Parallel.ForEach(
                 newHintWords,
                 () => new List<Document>(),
                 (word, status, documentLists) =>
@@ -223,6 +226,23 @@ namespace CodeIndex.IndexBuilder
                         HintIndexPool.BuildIndex(documentLists, needCommit, triggerMerge, applyAllDeletes);
                     }
                 });
+            }
+            else
+            {
+                Parallel.ForEach(newHintWords, word =>
+                {
+                    HintIndexPool.UpdateIndex(new Term(nameof(CodeWord.Word), word), new Document
+                    {
+                        new StringField(nameof(CodeWord.Word), word, Field.Store.YES),
+                        new StringField(nameof(CodeWord.WordLower), word.ToLowerInvariant(), Field.Store.YES)
+                    });
+                });
+
+                if (needCommit || triggerMerge || applyAllDeletes)
+                {
+                    HintIndexPool.Commit();
+                }
+            }
 
             Log.Info($"{Name}: Build hint index finished");
         }
