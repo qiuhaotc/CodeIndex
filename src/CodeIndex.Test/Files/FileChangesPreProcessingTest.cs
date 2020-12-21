@@ -38,7 +38,7 @@ namespace CodeIndex.Test
                 }
             };
 
-            listChanges.PreProcessingChanges(string.Empty, indexConfig, log);
+            listChanges.PreProcessingChanges(string.Empty, indexConfig, _ => { });
             CollectionAssert.AreEquivalent(new[]
                 {
                     (new DateTime(2020, 1, 1), WatcherChangeTypes.Changed, "D:\\b.txt", (string)null),
@@ -81,7 +81,7 @@ namespace CodeIndex.Test
                 }
             };
 
-            listChanges.PreProcessingChanges(string.Empty, indexConfig, log);
+            listChanges.PreProcessingChanges(string.Empty, indexConfig, _ => { });
             CollectionAssert.AreEquivalent(new[]
                 {
                     (new DateTime(2020, 1, 1), WatcherChangeTypes.Changed, "D:\\B.txt", (string)null),
@@ -142,7 +142,7 @@ namespace CodeIndex.Test
                 }
             };
 
-            listChanges.PreProcessingChanges(string.Empty, indexConfig, log);
+            listChanges.PreProcessingChanges(string.Empty, indexConfig, _ => { });
             CollectionAssert.AreEquivalent(new[]
                 {
                     (new DateTime(2020, 1, 1), WatcherChangeTypes.Changed, "D:\\B.txt", (string)null),

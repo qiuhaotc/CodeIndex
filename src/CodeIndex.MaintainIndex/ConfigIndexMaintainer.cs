@@ -3,12 +3,13 @@ using System.Collections.Generic;
 using System.IO;
 using CodeIndex.Common;
 using CodeIndex.IndexBuilder;
+using Microsoft.Extensions.Logging;
 
 namespace CodeIndex.MaintainIndex
 {
     public class ConfigIndexMaintainer : IDisposable
     {
-        public ConfigIndexMaintainer(CodeIndexConfiguration codeIndexConfiguration, ILog log)
+        public ConfigIndexMaintainer(CodeIndexConfiguration codeIndexConfiguration, ILogger log)
         {
             codeIndexConfiguration.RequireNotNull(nameof(codeIndexConfiguration));
             log.RequireNotNull(nameof(log));
@@ -20,7 +21,7 @@ namespace CodeIndex.MaintainIndex
 
             if (!Directory.Exists(folder))
             {
-                Log.Info($"Create Configuraion index folder {folder}");
+                Log.LogInformation($"Create Configuraion index folder {folder}");
                 Directory.CreateDirectory(folder);
             }
 
@@ -49,7 +50,7 @@ namespace CodeIndex.MaintainIndex
 
         public bool IsDisposing { get; private set; }
         public CodeIndexConfiguration CodeIndexConfiguration { get; }
-        public ILog Log { get; }
+        public ILogger Log { get; }
         ConfigIndexBuilder ConfigIndexBuilder { get; }
 
         public void Dispose()

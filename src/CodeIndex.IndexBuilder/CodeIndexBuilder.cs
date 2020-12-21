@@ -9,12 +9,13 @@ using CodeIndex.Files;
 using Lucene.Net.Documents;
 using Lucene.Net.Index;
 using Lucene.Net.Search;
+using Microsoft.Extensions.Logging;
 
 namespace CodeIndex.IndexBuilder
 {
     public class CodeIndexBuilder : IDisposable
     {
-        public CodeIndexBuilder(string name, LucenePoolLight codeIndexPool, LucenePoolLight hintIndexPool, ILog log)
+        public CodeIndexBuilder(string name, LucenePoolLight codeIndexPool, LucenePoolLight hintIndexPool, ILogger log)
         {
             name.RequireNotNullOrEmpty(nameof(name));
             codeIndexPool.RequireNotNull(nameof(codeIndexPool));
@@ -30,19 +31,19 @@ namespace CodeIndex.IndexBuilder
         public string Name { get; }
         public LucenePoolLight CodeIndexPool { get; }
         public LucenePoolLight HintIndexPool { get; }
-        public ILog Log { get; }
+        public ILogger Log { get; }
 
         public void InitIndexFolderIfNeeded()
         {
             if (!Directory.Exists(CodeIndexPool.LuceneIndex))
             {
-                Log.Info($"Create {Name} index folder {CodeIndexPool.LuceneIndex}");
+                Log.LogInformation($"Create {Name} index folder {CodeIndexPool.LuceneIndex}");
                 Directory.CreateDirectory(CodeIndexPool.LuceneIndex);
             }
 
             if (!Directory.Exists(HintIndexPool.LuceneIndex))
             {
-                Log.Info($"Create {Name} index folder {HintIndexPool.LuceneIndex}");
+                Log.LogInformation($"Create {Name} index folder {HintIndexPool.LuceneIndex}");
                 Directory.CreateDirectory(HintIndexPool.LuceneIndex);
             }
         }
@@ -75,13 +76,13 @@ namespace CodeIndex.IndexBuilder
                             var doc = IndexBuilderHelper.GetDocumentFromSource(source);
                             codeDocuments.Add(doc);
 
-                            Log.Info($"{Name}: Add index for {source.FilePath}");
+                            Log.LogInformation($"{Name}: Add index for {source.FilePath}");
                         }
                     }
                     catch (Exception ex)
                     {
                         failedIndexFiles.Add(fileInfo);
-                        Log.Error($"{Name}: Add index for {fileInfo.FullName} failed, exception: " + ex);
+                        Log.LogError($"{Name}: Add index for {fileInfo.FullName} failed, exception: " + ex);
                     }
 
                     if (codeDocuments.Count >= batchSize)
@@ -130,10 +131,10 @@ namespace CodeIndex.IndexBuilder
 
         public void DeleteAllIndex()
         {
-            Log.Info($"{Name}: Delete All Index start");
+            Log.LogInformation($"{Name}: Delete All Index start");
             CodeIndexPool.DeleteAllIndex();
             HintIndexPool.DeleteAllIndex();
-            Log.Info($"{Name}: Delete All Index finished");
+            Log.LogInformation($"{Name}: Delete All Index finished");
         }
 
         public IEnumerable<(string FilePath, DateTime LastWriteTimeUtc)> GetAllIndexedCodeSource()
@@ -167,14 +168,14 @@ namespace CodeIndex.IndexBuilder
                         });
                     }
 
-                    Log.Info($"{Name}: Create index For {source.FilePath} finished");
+                    Log.LogInformation($"{Name}: Create index For {source.FilePath} finished");
                 }
 
                 return IndexBuildResults.Successful;
             }
             catch (Exception ex)
             {
-                Log.Error($"{Name}: Create index for {fileInfo.FullName} failed, exception: " + ex);
+                Log.LogError($"{Name}: Create index for {fileInfo.FullName} failed, exception: " + ex);
 
                 if (ex is IOException)
                 {
@@ -193,7 +194,7 @@ namespace CodeIndex.IndexBuilder
         {
             cancellationToken.ThrowIfCancellationRequested();
 
-            Log.Info($"{Name}: Build code index start, documents count {codeDocuments.Count}");
+            Log.LogInformation($"{Name}: Build code index start, documents count {codeDocuments.Count}");
 
             Parallel.ForEach(
                 codeDocuments,
@@ -211,9 +212,9 @@ namespace CodeIndex.IndexBuilder
                     }
                 });
 
-            Log.Info($"{Name}: Build code index finished");
+            Log.LogInformation($"{Name}: Build code index finished");
 
-            Log.Info($"{Name}: Build {(brandNewBuild ? "brand New" : "exist")} hint index start, documents count {newHintWords.Count}");
+            Log.LogInformation($"{Name}: Build {(brandNewBuild ? "brand New" : "exist")} hint index start, documents count {newHintWords.Count}");
 
             if (brandNewBuild)
             {
@@ -255,7 +256,7 @@ namespace CodeIndex.IndexBuilder
                 }
             }
 
-            Log.Info($"{Name}: Build hint index finished");
+            Log.LogInformation($"{Name}: Build hint index finished");
         }
 
         public bool RenameFolderIndexes(string oldFolderPath, string nowFolderPath, CancellationToken cancellationToken)
@@ -270,12 +271,12 @@ namespace CodeIndex.IndexBuilder
                     RenameIndex(document, oldFolderPath, nowFolderPath);
                 }
 
-                Log.Info($"{Name}: Rename folder index from {oldFolderPath} to {nowFolderPath} successful");
+                Log.LogInformation($"{Name}: Rename folder index from {oldFolderPath} to {nowFolderPath} successful");
                 return true;
             }
             catch (Exception ex)
             {
-                Log.Error($"{Name}: Rename folder index from {oldFolderPath} to {nowFolderPath} failed, exception: " + ex);
+                Log.LogError($"{Name}: Rename folder index from {oldFolderPath} to {nowFolderPath} failed, exception: " + ex);
                 return false;
             }
         }
@@ -290,23 +291,23 @@ namespace CodeIndex.IndexBuilder
                 {
                     RenameIndex(documents[0], oldFilePath, nowFilePath);
 
-                    Log.Info($"{Name}: Rename file index from {oldFilePath} to {nowFilePath} successful");
+                    Log.LogInformation($"{Name}: Rename file index from {oldFilePath} to {nowFilePath} successful");
 
                     return IndexBuildResults.Successful;
                 }
 
                 if (documents.Length == 0)
                 {
-                    Log.Info($"{Name}: Rename file index failed, unable to find any document from {oldFilePath}, possible template file renamed, fallback to create index.");
+                    Log.LogInformation($"{Name}: Rename file index failed, unable to find any document from {oldFilePath}, possible template file renamed, fallback to create index.");
                     return CreateIndex(new FileInfo(nowFilePath));
                 }
 
-                Log.Warn($"{Name}: Rename file index from {oldFilePath} to {nowFilePath} failed, unable to find one document, there are {documents.Length} document(s) founded");
+                Log.LogWarning($"{Name}: Rename file index from {oldFilePath} to {nowFilePath} failed, unable to find one document, there are {documents.Length} document(s) founded");
                 return IndexBuildResults.FailedWithError;
             }
             catch (Exception ex)
             {
-                Log.Error($"{Name}: Rename file index from {oldFilePath} to {nowFilePath} failed, exception: " + ex);
+                Log.LogError($"{Name}: Rename file index from {oldFilePath} to {nowFilePath} failed, exception: " + ex);
 
                 if (ex is IOException)
                 {
@@ -365,11 +366,11 @@ namespace CodeIndex.IndexBuilder
                         var wordsNeedToAdd = words.Except(rawWords);
                         words = wordsNeedToAdd.ToHashSet();
 
-                        Log.Info($"{Name}: Find {wordsNeedToRemove.Length} Delete Candidates Words, {words.Count} Update Candidates Words With Path {source.FilePath}");
+                        Log.LogInformation($"{Name}: Find {wordsNeedToRemove.Length} Delete Candidates Words, {words.Count} Update Candidates Words With Path {source.FilePath}");
 
                         if (rawDocuments.Length > 1)
                         {
-                            Log.Warn($"{Name}: Find {rawDocuments.Length} Documents With Path {source.FilePath} To Update");
+                            Log.LogError($"{Name}: Find {rawDocuments.Length} Documents With Path {source.FilePath} To Update");
                         }
 
                         foreach (var needToDeleteWord in wordsNeedToRemove)
@@ -382,7 +383,7 @@ namespace CodeIndex.IndexBuilder
                     }
                     else
                     {
-                        Log.Warn($"{Name}: Find 0 Document To Update With Path {source.FilePath}, Create New Index");
+                        Log.LogError($"{Name}: Find 0 Document To Update With Path {source.FilePath}, Create New Index");
                     }
 
                     foreach (var word in words)
@@ -394,14 +395,14 @@ namespace CodeIndex.IndexBuilder
                         });
                     }
 
-                    Log.Info($"{Name}: Update index For {source.FilePath} finished");
+                    Log.LogInformation($"{Name}: Update index For {source.FilePath} finished");
                 }
 
                 return IndexBuildResults.Successful;
             }
             catch (Exception ex)
             {
-                Log.Error($"{Name}: Update index for {fileInfo.FullName} failed, exception: " + ex);
+                Log.LogError($"{Name}: Update index for {fileInfo.FullName} failed, exception: " + ex);
 
                 if (ex is IOException)
                 {
@@ -436,11 +437,11 @@ namespace CodeIndex.IndexBuilder
                         AddHintWords(wordsNeedToRemove, GetCodeSourceFromDocument(document).Content);
                     }
 
-                    Log.Info($"{Name}: Find {wordsNeedToRemove.Count} Delete Candidates Words With Path {filePath}");
+                    Log.LogInformation($"{Name}: Find {wordsNeedToRemove.Count} Delete Candidates Words With Path {filePath}");
 
                     if (documentsBeenDeleted.Length > 1)
                     {
-                        Log.Warn($"{Name}: Find {documentsBeenDeleted.Length} Documents With Path {filePath} To Delete");
+                        Log.LogError($"{Name}: Find {documentsBeenDeleted.Length} Documents With Path {filePath} To Delete");
                     }
 
                     foreach (var needToDeleteWord in wordsNeedToRemove)
@@ -453,16 +454,16 @@ namespace CodeIndex.IndexBuilder
                 }
                 else
                 {
-                    Log.Warn($"{Name}: Find No Documents To Delete For {filePath}");
+                    Log.LogError($"{Name}: Find No Documents To Delete For {filePath}");
                 }
 
-                Log.Info($"{Name}: Delete index For {filePath} finished");
+                Log.LogInformation($"{Name}: Delete index For {filePath} finished");
 
                 return true;
             }
             catch (Exception ex)
             {
-                Log.Error($"{Name}: Delete index for {filePath} failed, exception: " + ex);
+                Log.LogError($"{Name}: Delete index for {filePath} failed, exception: " + ex);
                 return false;
             }
         }

@@ -7,24 +7,24 @@ using CodeIndex.Common;
 using CodeIndex.IndexBuilder;
 using CodeIndex.MaintainIndex;
 using Lucene.Net.Analysis;
-using Lucene.Net.Documents;
 using Lucene.Net.Index;
 using Lucene.Net.Search;
 using Lucene.Net.Search.Highlight;
+using Microsoft.Extensions.Logging;
 using static CodeIndex.IndexBuilder.CodeContentProcessing;
 
 namespace CodeIndex.Search
 {
     public class CodeIndexSearcher
     {
-        public CodeIndexSearcher(IndexManagement indexManagement, ILog log)
+        public CodeIndexSearcher(IndexManagement indexManagement, ILogger<CodeIndexSearcher> log)
         {
             IndexManagement = indexManagement;
             Log = log;
         }
 
         public IndexManagement IndexManagement { get; }
-        public ILog Log { get; }
+        public ILogger Log { get; }
 
         public CodeSource[] SearchCode(string searchStr, out Query query, int maxResults, Guid pk)
         {
@@ -236,7 +236,7 @@ namespace CodeIndex.Search
                 return result.Result;
             }
 
-            Log.Warn($"Index {pk} not exist in Index Management: {result.Status.StatusDesc}");
+            Log.LogError($"Index {pk} not exist in Index Management: {result.Status.StatusDesc}");
             return null;
         }
 

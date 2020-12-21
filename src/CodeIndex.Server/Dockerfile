@@ -3,7 +3,7 @@
 FROM mcr.microsoft.com/dotnet/aspnet:5.0-buster-slim AS base
 RUN apt-get update && apt-get install -y libgdiplus
 WORKDIR /app
-ENV ASPNETCORE_ENVIRONMENT Development
+ENV ASPNETCORE_ENVIRONMENT Production
 ENV CodeIndex__LuceneIndex /luceneindex
 ENV CodeIndex__MonitorFolder /monitorfolder
 ENV CodeIndex__IsInLinux true

@@ -69,7 +69,6 @@ namespace CodeIndex.Server
             services.AddMvc();
             services.AddRazorPages();
             services.AddServerSideBlazor();
-            services.AddSingleton<ILog>(new NLogger());
             services.AddSingleton<IndexManagement>();
             services.AddScoped<Storage>();
             services.AddSingleton<CodeIndexSearcher>();
@@ -95,7 +94,7 @@ namespace CodeIndex.Server
         }
 
         // This method gets called by the runtime. Use this method to configure the HTTP request pipeline.
-        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, IHostApplicationLifetime lifeTime, ILog log, IndexManagement indexManagement)
+        public void Configure(IApplicationBuilder app, IWebHostEnvironment env, IHostApplicationLifetime lifeTime, IndexManagement indexManagement)
         {
             if (env.IsDevelopment())
             {

@@ -6,6 +6,7 @@ using System.Threading.Tasks;
 using CodeIndex.Common;
 using CodeIndex.MaintainIndex;
 using Lucene.Net.Search;
+using Microsoft.Extensions.Logging;
 using NUnit.Framework;
 
 namespace CodeIndex.Test
@@ -152,9 +153,12 @@ namespace CodeIndex.Test
             CollectionAssert.AreEquivalent(new[] { "ABCD ABCD NewContent", "Created" }, codeDocuments.Select(u => u.Get(nameof(CodeSource.Content))));
         }
 
-        class IndexMaintainerForTest : IndexMaintainer
+        protected new DummyLog<IndexMaintainerForTest> Log => log ??= new DummyLog<IndexMaintainerForTest>();
+        DummyLog<IndexMaintainerForTest> log;
+
+        public class IndexMaintainerForTest : IndexMaintainer
         {
-            public IndexMaintainerForTest(IndexConfig indexConfig, CodeIndexConfiguration codeIndexConfiguration, ILog log, AutoResetEvent resetEvent) : base(indexConfig, codeIndexConfiguration, log)
+            public IndexMaintainerForTest(IndexConfig indexConfig, CodeIndexConfiguration codeIndexConfiguration, ILogger<IndexMaintainerForTest> log, AutoResetEvent resetEvent) : base(indexConfig, codeIndexConfiguration, log)
             {
                 ResetEvent = resetEvent;
             }

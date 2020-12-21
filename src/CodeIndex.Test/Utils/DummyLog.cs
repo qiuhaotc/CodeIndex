@@ -1,47 +1,37 @@
 ﻿using System;
 using System.Diagnostics.CodeAnalysis;
 using System.Text;
-using CodeIndex.Common;
+using Microsoft.Extensions.Logging;
 
 namespace CodeIndex.Test
 {
     [ExcludeFromCodeCoverage]
-    public class DummyLog : ILog
+    public class DummyLog : ILogger
     {
-        readonly StringBuilder logs = new StringBuilder();
+        readonly StringBuilder logs = new ();
 
         public string ThrowExceptionWhenLogContains { get; set; }
 
         public string LogsContent => logs.ToString();
+
+        public IDisposable BeginScope<TState>(TState state)
+        {
+            throw new NotImplementedException();
+        }
 
         public void ClearLog()
         {
             logs.Clear();
         }
 
-        public void Debug(string message)
+        public bool IsEnabled(LogLevel logLevel)
         {
-            Log(message);
+            return true;
         }
 
-        public void Error(string message)
+        public void Log<TState>(LogLevel logLevel, EventId eventId, TState state, Exception exception, Func<TState, Exception, string> formatter)
         {
-            Log(message);
-        }
-
-        public void Info(string message)
-        {
-            Log(message);
-        }
-
-        public void Trace(string message)
-        {
-            Log(message);
-        }
-
-        public void Warn(string message)
-        {
-            Log(message);
+            Log(formatter.Invoke(state, exception));
         }
 
         void Log(string message)
@@ -53,5 +43,9 @@ namespace CodeIndex.Test
 
             logs.AppendLine(message);
         }
+    }
+
+    public class DummyLog<T> : DummyLog, ILogger<T>
+    {
     }
 }

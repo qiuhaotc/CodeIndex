@@ -3,6 +3,7 @@ using System.IO;
 using System.Linq;
 using CodeIndex.Common;
 using CodeIndex.MaintainIndex;
+using Microsoft.Extensions.Logging;
 using NUnit.Framework;
 
 namespace CodeIndex.Test
@@ -245,5 +246,8 @@ namespace CodeIndex.Test
             Assert.IsFalse(wrapper.StopIndex(indexConfig2.Pk).Status.Success);
             CollectionAssert.AreEquivalent(new[] { "ABC" }, wrapper.GetIndexViewList().Result.Select(u => u.IndexName));
         }
+
+        protected new ILogger<IndexManagement> Log => log ??= new DummyLog<IndexManagement>();
+        ILogger<IndexManagement> log;
     }
 }

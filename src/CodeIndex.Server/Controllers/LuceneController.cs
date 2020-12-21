@@ -15,6 +15,7 @@ using Lucene.Net.Analysis.Standard;
 using Lucene.Net.Analysis.TokenAttributes;
 using Lucene.Net.Search;
 using Microsoft.AspNetCore.Mvc;
+using Microsoft.Extensions.Logging;
 
 namespace CodeIndex.Server.Controllers
 {
@@ -22,16 +23,17 @@ namespace CodeIndex.Server.Controllers
     [ApiController]
     public class LuceneController : ControllerBase
     {
-        public LuceneController(CodeIndexConfiguration codeIndexConfiguration, ILog log, CodeIndexSearcher codeIndexSearcher)
+        public LuceneController(CodeIndexConfiguration codeIndexConfiguration, ILogger<LuceneController> log, CodeIndexSearcher codeIndexSearcher)
         {
             this.codeIndexConfiguration = codeIndexConfiguration;
-            this.log = log;
+            Log = log;
             this.codeIndexSearcher = codeIndexSearcher;
         }
 
+        ILogger<LuceneController> Log { get; }
+
         readonly CodeIndexConfiguration codeIndexConfiguration;
-        readonly ILog log;
-        private readonly CodeIndexSearcher codeIndexSearcher;
+        readonly CodeIndexSearcher codeIndexSearcher;
 
         [HttpGet]
         public FetchResult<IEnumerable<CodeSource>> GetCodeSources(string searchQuery, bool preview, Guid indexPk, string contentQuery = "", int? showResults = 0, bool caseSensitive = false)
@@ -68,7 +70,7 @@ namespace CodeIndex.Server.Controllers
                     }
                 }
 
-                log.Debug($"Request: '{searchQuery}' successful, return matched code source");
+                Log.LogDebug($"Request: '{searchQuery}' successful, return matched code source");
             }
             catch (Exception ex)
             {
@@ -81,7 +83,7 @@ namespace CodeIndex.Server.Controllers
                     }
                 };
 
-                log.Error(ex.ToString());
+                Log.LogError(ex.ToString());
             }
 
             return result;
@@ -139,7 +141,7 @@ namespace CodeIndex.Server.Controllers
                     }));
                 }
 
-                log.Debug($"Request: '{searchQuery}' successful, return matched code source with line number");
+                Log.LogDebug($"Request: '{searchQuery}' successful, return matched code source with line number");
             }
             catch (Exception ex)
             {
@@ -152,7 +154,7 @@ namespace CodeIndex.Server.Controllers
                     }
                 };
 
-                log.Error(ex.ToString());
+                Log.LogError(ex.ToString());
             }
 
             return result;
@@ -175,7 +177,7 @@ namespace CodeIndex.Server.Controllers
                     }
                 };
 
-                log.Debug($"Get Hints For '{word}' successful");
+                Log.LogDebug($"Get Hints For '{word}' successful");
             }
             catch (Exception ex)
             {
@@ -188,7 +190,7 @@ namespace CodeIndex.Server.Controllers
                     }
                 };
 
-                log.Error(ex.ToString());
+                Log.LogError(ex.ToString());
             }
 
             return result;
@@ -270,7 +272,7 @@ namespace CodeIndex.Server.Controllers
                     }
                 };
 
-                log.Error(ex.ToString());
+                Log.LogError(ex.ToString());
             }
 
             return result;

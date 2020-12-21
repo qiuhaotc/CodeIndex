@@ -8,12 +8,13 @@ using System.Threading.Tasks;
 using CodeIndex.Common;
 using CodeIndex.Files;
 using CodeIndex.IndexBuilder;
+using Microsoft.Extensions.Logging;
 
 namespace CodeIndex.MaintainIndex
 {
     public class IndexMaintainer : IDisposable
     {
-        public IndexMaintainer(IndexConfig indexConfig, CodeIndexConfiguration codeIndexConfiguration, ILog log)
+        public IndexMaintainer(IndexConfig indexConfig, CodeIndexConfiguration codeIndexConfiguration, ILogger log)
         {
             indexConfig.RequireNotNull(nameof(indexConfig));
             codeIndexConfiguration.RequireNotNull(nameof(codeIndexConfiguration));
@@ -39,7 +40,7 @@ namespace CodeIndex.MaintainIndex
 
             try
             {
-                Log.Info($"{IndexConfig.IndexName}: Start Initializing");
+                Log.LogInformation($"{IndexConfig.IndexName}: Start Initializing");
                 Status = IndexStatus.Initializing;
 
                 if (Directory.Exists(IndexConfig.MonitorFolder))
@@ -55,14 +56,14 @@ namespace CodeIndex.MaintainIndex
                 {
                     Status = IndexStatus.Error;
                     Description = "Monitor Folder Not Exist";
-                    Log.Warn($"{IndexConfig.IndexName}: Initializing failed: {Description}");
+                    Log.LogError($"{IndexConfig.IndexName}: Initializing failed: {Description}");
                 }
             }
             catch (Exception ex)
             {
                 Status = IndexStatus.Error;
                 Description = ex.Message;
-                Log.Error($"{IndexConfig.IndexName}: Initializing failed: {ex}");
+                Log.LogError($"{IndexConfig.IndexName}: Initializing failed: {ex}");
             }
         }
 
@@ -73,7 +74,7 @@ namespace CodeIndex.MaintainIndex
                 return;
             }
 
-            Log.Info($"{IndexConfig.IndexName}: Start Maintain Indexes");
+            Log.LogInformation($"{IndexConfig.IndexName}: Start Maintain Indexes");
 
             Status = IndexStatus.Monitoring;
 
@@ -140,9 +141,9 @@ namespace CodeIndex.MaintainIndex
         {
             var prefix = isFailedChangedSource ? "Failed " : string.Empty;
 
-            orderedNeedProcessingChanges.PreProcessingChanges(prefix, IndexConfig, Log);
+            orderedNeedProcessingChanges.PreProcessingChanges(prefix, IndexConfig, u => Log.LogInformation(u));
 
-            Log.Info($"{IndexConfig.IndexName}: Processing {prefix}Changes start, changes count: {orderedNeedProcessingChanges.Count}");
+            Log.LogInformation($"{IndexConfig.IndexName}: Processing {prefix}Changes start, changes count: {orderedNeedProcessingChanges.Count}");
 
             foreach (var changes in orderedNeedProcessingChanges)
             {
@@ -167,14 +168,14 @@ namespace CodeIndex.MaintainIndex
                         break;
 
                     default:
-                        Log.Warn($"{IndexConfig.IndexName}: Unknown changes type {changes}");
+                        Log.LogError($"{IndexConfig.IndexName}: Unknown changes type {changes}");
                         break;
                 }
 
-                Log.Info($"{IndexConfig.IndexName}: Processing {changes} finished");
+                Log.LogInformation($"{IndexConfig.IndexName}: Processing {changes} finished");
             }
 
-            Log.Info($"{IndexConfig.IndexName}: Processing {prefix}Changes finished");
+            Log.LogInformation($"{IndexConfig.IndexName}: Processing {prefix}Changes finished");
         }
 
         void CreateIndex(ChangedSource changes)
@@ -217,7 +218,7 @@ namespace CodeIndex.MaintainIndex
         {
             if (changes is not PendingRetrySource)
             {
-                Log.Warn($"Enqueue failed processing changed source {changes}"); PendingRetryCodeSources.Enqueue(new PendingRetrySource
+                Log.LogError($"Enqueue failed processing changed source {changes}"); PendingRetryCodeSources.Enqueue(new PendingRetrySource
                 {
                     ChangesType = changes.ChangesType,
                     FilePath = changes.FilePath,
@@ -271,10 +272,10 @@ namespace CodeIndex.MaintainIndex
             ChangedSources = new ConcurrentQueue<ChangedSource>();
             PendingRetryCodeSources = new ConcurrentQueue<PendingRetrySource>();
             FilesWatcher = FilesWatcherHelper.StartWatch(IndexConfig.MonitorFolder, OnChange, OnRename);
-            Log.Info($"{IndexConfig.IndexName}: Start Watch files change");
+            Log.LogInformation($"{IndexConfig.IndexName}: Start Watch files change");
 
             var allFiles = FilesFetcher.FetchAllFiles(IndexConfig.MonitorFolder, IndexConfig.ExcludedExtensionsArray, IndexConfig.ExcludedPathsArray, includedExtensions: IndexConfig.IncludedExtensionsArray, isInLinux: CodeIndexConfiguration.IsInLinux).ToList();
-            Log.Info($"{IndexConfig.IndexName}: Fetching {allFiles.Count} files need to indexing");
+            Log.LogInformation($"{IndexConfig.IndexName}: Fetching {allFiles.Count} files need to indexing");
 
             List<FileInfo> needToBuildIndex = null;
             var failedUpdateOrDeleteFiles = new List<string>();
@@ -285,12 +286,12 @@ namespace CodeIndex.MaintainIndex
                 if (forceRebuild)
                 {
                     brandNewBuild = true;
-                    Log.Info($"{IndexConfig.IndexName}: Force rebuild all indexes");
+                    Log.LogInformation($"{IndexConfig.IndexName}: Force rebuild all indexes");
                     IndexBuilder.DeleteAllIndex();
                 }
                 else
                 {
-                    Log.Info($"{IndexConfig.IndexName}: Compare index difference");
+                    Log.LogInformation($"{IndexConfig.IndexName}: Compare index difference");
 
                     var allCodeSource = IndexBuilder.GetAllIndexedCodeSource();
 
@@ -307,7 +308,7 @@ namespace CodeIndex.MaintainIndex
                         {
                             if (fileInfo.LastWriteTimeUtc != codeSource.LastWriteTimeUtc)
                             {
-                                Log.Info($"{IndexConfig.IndexName}: File {fileInfo.FullName} modified");
+                                Log.LogInformation($"{IndexConfig.IndexName}: File {fileInfo.FullName} modified");
                                 if (IndexBuilder.UpdateIndex(fileInfo, TokenSource.Token) != IndexBuildResults.Successful)
                                 {
                                     failedUpdateOrDeleteFiles.Add(codeSource.FilePath);
@@ -318,7 +319,7 @@ namespace CodeIndex.MaintainIndex
                         }
                         else
                         {
-                            Log.Info($"{IndexConfig.IndexName}: File {codeSource.FilePath} deleted");
+                            Log.LogInformation($"{IndexConfig.IndexName}: File {codeSource.FilePath} deleted");
                             if (!IndexBuilder.DeleteIndex(codeSource.FilePath))
                             {
                                 failedUpdateOrDeleteFiles.Add(codeSource.FilePath);
@@ -328,7 +329,7 @@ namespace CodeIndex.MaintainIndex
 
                     foreach (var needToCreateFiles in allFilesDictionary)
                     {
-                        Log.Info($"{IndexConfig.IndexName}: Found new file {needToCreateFiles.Value.FullName}");
+                        Log.LogInformation($"{IndexConfig.IndexName}: Found new file {needToCreateFiles.Value.FullName}");
                         needToBuildIndex.Add(needToCreateFiles.Value);
                     }
                 }
@@ -345,11 +346,11 @@ namespace CodeIndex.MaintainIndex
 
             if (failedIndexFiles.Count > 0 || failedUpdateOrDeleteFiles.Count > 0)
             {
-                Log.Warn($"{IndexConfig.IndexName}: Initialize finished for {IndexConfig.MonitorFolder}, failed with these file(s): {string.Join(", ", failedIndexFiles.Select(u => u.FullName).Concat(failedUpdateOrDeleteFiles))}");
+                Log.LogError($"{IndexConfig.IndexName}: Initialize finished for {IndexConfig.MonitorFolder}, failed with these file(s): {string.Join(", ", failedIndexFiles.Select(u => u.FullName).Concat(failedUpdateOrDeleteFiles))}");
             }
             else
             {
-                Log.Info($"{IndexConfig.IndexName}: Initialize finished for {IndexConfig.MonitorFolder}");
+                Log.LogInformation($"{IndexConfig.IndexName}: Initialize finished for {IndexConfig.MonitorFolder}");
             }
         }
 
@@ -359,7 +360,7 @@ namespace CodeIndex.MaintainIndex
 
             if (failedIndexFiles.Count > 0)
             {
-                Log.Info($"{IndexConfig.IndexName}: Retry failed build indexes files, files count {failedIndexFiles.Count}");
+                Log.LogInformation($"{IndexConfig.IndexName}: Retry failed build indexes files, files count {failedIndexFiles.Count}");
                 failedIndexFiles = IndexBuilder.BuildIndexByBatch(failedIndexFiles, true, false, false, TokenSource.Token, false);
             }
         }
@@ -392,7 +393,7 @@ namespace CodeIndex.MaintainIndex
 
         IndexConfig IndexConfig { get; }
         public CodeIndexConfiguration CodeIndexConfiguration { get; }
-        public ILog Log { get; }
+        public ILogger Log { get; }
         public IndexStatus Status { get; private set; }
         public CodeIndexBuilder IndexBuilder { get; private set; }
         public string Description { get; set; }
@@ -427,7 +428,7 @@ namespace CodeIndex.MaintainIndex
 
             if (excluded)
             {
-                Log.Debug($"{IndexConfig.IndexName}: {fullPath} is excluded from index");
+                Log.LogDebug($"{IndexConfig.IndexName}: {fullPath} is excluded from index");
             }
 
             return excluded;

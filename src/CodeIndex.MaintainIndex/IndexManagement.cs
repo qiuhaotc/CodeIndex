@@ -4,6 +4,7 @@ using System.IO;
 using System.Linq;
 using System.Threading;
 using CodeIndex.Common;
+using Microsoft.Extensions.Logging;
 
 namespace CodeIndex.MaintainIndex
 {
@@ -11,13 +12,13 @@ namespace CodeIndex.MaintainIndex
     {
         ConcurrentDictionary<Guid, IndexMaintainerWrapper> MaintainerPool { get; set; }
         CodeIndexConfiguration CodeIndexConfiguration { get; }
-        ILog Log { get; }
+        ILogger<IndexManagement> Log { get; }
         ConfigIndexMaintainer ConfigMaintainer { get; }
         public bool IsDisposing { get; private set; }
 
         object syncLock = new object();
 
-        public IndexManagement(CodeIndexConfiguration codeIndexConfiguration, ILog log)
+        public IndexManagement(CodeIndexConfiguration codeIndexConfiguration, ILogger<IndexManagement> log)
         {
             codeIndexConfiguration.RequireNotNull(nameof(codeIndexConfiguration));
             log.RequireNotNull(nameof(log));
@@ -34,14 +35,14 @@ namespace CodeIndex.MaintainIndex
         {
             var allConfigs = ConfigMaintainer.GetConfigs();
 
-            Log.Info("Initialize Maintainer Pool Start");
+            Log.LogInformation("Initialize Maintainer Pool Start");
 
             foreach (var config in allConfigs)
             {
                 MaintainerPool.TryAdd(config.Pk, new IndexMaintainerWrapper(config, CodeIndexConfiguration, Log));
             }
 
-            Log.Info("Initialize Maintainer Pool Finished");
+            Log.LogInformation("Initialize Maintainer Pool Finished");
         }
 
         public FetchResult<IndexStatusInfo[]> GetIndexList()
@@ -119,7 +120,7 @@ namespace CodeIndex.MaintainIndex
                     ConfigMaintainer.AddIndexConfig(indexConfig);
                     MaintainerPool.TryAdd(indexConfig.Pk, new IndexMaintainerWrapper(indexConfig, CodeIndexConfiguration, Log));
 
-                    Log.Info($"Add Index Config {indexConfig} Successful");
+                    Log.LogInformation($"Add Index Config {indexConfig} Successful");
 
                     return new FetchResult<bool>
                     {
@@ -162,7 +163,7 @@ namespace CodeIndex.MaintainIndex
                     needDisposeAndRemovedWrapper.Dispose();
                     MaintainerPool.TryUpdate(indexConfig.Pk, new IndexMaintainerWrapper(indexConfig, CodeIndexConfiguration, Log), needDisposeAndRemovedWrapper);
 
-                    Log.Info($"Edit Index Config {indexConfig} Successful");
+                    Log.LogInformation($"Edit Index Config {indexConfig} Successful");
 
                     return new FetchResult<bool>
                     {
@@ -206,7 +207,7 @@ namespace CodeIndex.MaintainIndex
                         ConfigMaintainer.DeleteIndexConfig(pk);
                     }
 
-                    Log.Info($"Delete Index Config {needDisposeAndRemovedWrapper.IndexConfig} Successful");
+                    Log.LogInformation($"Delete Index Config {needDisposeAndRemovedWrapper.IndexConfig} Successful");
 
                     return new FetchResult<bool>
                     {
@@ -253,11 +254,11 @@ namespace CodeIndex.MaintainIndex
 
                     if (result.Status.Success)
                     {
-                        Log.Info($"Start Index Config {needDisposeWrapper.IndexConfig} Successful");
+                        Log.LogInformation($"Start Index Config {needDisposeWrapper.IndexConfig} Successful");
                     }
                     else
                     {
-                        Log.Info($"Start Index Config {needDisposeWrapper.IndexConfig} Failed: {result.Status.StatusDesc}");
+                        Log.LogInformation($"Start Index Config {needDisposeWrapper.IndexConfig} Failed: {result.Status.StatusDesc}");
                     }
 
                     return new FetchResult<bool>
@@ -340,7 +341,7 @@ namespace CodeIndex.MaintainIndex
                     {
                         if (wrapper.Maintainer.Status == IndexStatus.Idle)
                         {
-                            Log.Info($"Start initializing and monitoring for index {wrapper.IndexConfig.IndexName}");
+                            Log.LogInformation($"Start initializing and monitoring for index {wrapper.IndexConfig.IndexName}");
                             wrapper.Maintainer.InitializeIndex(false).ContinueWith(u => wrapper.Maintainer.MaintainIndexes());
                         }
 
@@ -376,7 +377,7 @@ namespace CodeIndex.MaintainIndex
 
         void DeleteIndexFolderSafe(string monitorFolder)
         {
-            Log.Info($"Delete all files under {monitorFolder}");
+            Log.LogInformation($"Delete all files under {monitorFolder}");
 
             try
             {
@@ -387,7 +388,7 @@ namespace CodeIndex.MaintainIndex
             }
             catch (Exception ex)
             {
-                Log.Info($"Failed to delete all files under {monitorFolder}, exception: {ex}");
+                Log.LogInformation($"Failed to delete all files under {monitorFolder}, exception: {ex}");
             }
         }
 
@@ -543,7 +544,7 @@ namespace CodeIndex.MaintainIndex
                     }
                     catch (Exception ex)
                     {
-                        Log.Error($"Index management failed to dispose {item.Value.IndexConfig.IndexName}, error: {ex}");
+                        Log.LogError($"Index management failed to dispose {item.Value.IndexConfig.IndexName}, error: {ex}");
                     }
                 }
 

@@ -1,5 +1,7 @@
 using Microsoft.AspNetCore.Hosting;
 using Microsoft.Extensions.Hosting;
+using NLog;
+using NLog.Web;
 
 namespace CodeIndex.Server
 {
@@ -7,9 +9,15 @@ namespace CodeIndex.Server
     {
         public static void Main(string[] args)
         {
-            CreateHostBuilder(args).Build().Run();
-
-            // TODO: Add site-wide NLogger
+            try
+            {
+                CreateHostBuilder(args).Build().Run();
+            }
+            finally
+            {
+                // Ensure to flush and stop internal timers/threads before application-exit (Avoid segmentation fault on Linux)
+                LogManager.Shutdown();
+            }
         }
 
         public static IHostBuilder CreateHostBuilder(string[] args) =>
@@ -17,6 +25,7 @@ namespace CodeIndex.Server
                 .ConfigureWebHostDefaults(webBuilder =>
                 {
                     webBuilder.UseStartup<Startup>();
-                });
+                })
+                .UseNLog();
     }
 }

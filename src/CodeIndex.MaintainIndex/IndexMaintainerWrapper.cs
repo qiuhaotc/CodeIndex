@@ -2,12 +2,13 @@
 using CodeIndex.Common;
 using CodeIndex.IndexBuilder;
 using Lucene.Net.QueryParsers.Classic;
+using Microsoft.Extensions.Logging;
 
 namespace CodeIndex.MaintainIndex
 {
     public class IndexMaintainerWrapper : IDisposable
     {
-        public IndexMaintainerWrapper(IndexConfig indexConfig, CodeIndexConfiguration codeIndexConfiguration, ILog log)
+        public IndexMaintainerWrapper(IndexConfig indexConfig, CodeIndexConfiguration codeIndexConfiguration, ILogger log)
         {
             indexConfig.RequireNotNull(nameof(indexConfig));
             codeIndexConfiguration.RequireNotNull(nameof(codeIndexConfiguration));

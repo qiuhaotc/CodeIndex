@@ -6,6 +6,7 @@ using System.Web;
 using CodeIndex.Common;
 using CodeIndex.MaintainIndex;
 using CodeIndex.Search;
+using Microsoft.Extensions.Logging;
 using NUnit.Framework;
 
 namespace CodeIndex.Test
@@ -16,7 +17,7 @@ namespace CodeIndex.Test
         [Test]
         public void TestSearchCode()
         {
-            using var initManagement = new InitManagement(MonitorFolder, Config, Log, true);
+            using var initManagement = new InitManagement(MonitorFolder, Config, true);
             var searcher = initManagement.GetIndexSearcher();
 
             var results1 = searcher.SearchCode("ABCD", out var query, 10, initManagement.IndexPk);
@@ -36,7 +37,7 @@ namespace CodeIndex.Test
         [Test]
         public void TestGenerateHtmlPreviewText()
         {
-            using var initManagement = new InitManagement(MonitorFolder, Config, Log);
+            using var initManagement = new InitManagement(MonitorFolder, Config);
             var searcher = initManagement.GetIndexSearcher();
 
             var content = $"My ABC{Environment.NewLine}Is A ABC CONTENT{Environment.NewLine}It's abc in lowercase{Environment.NewLine}It's Abc in mix{Environment.NewLine}Not AB with C";
@@ -58,7 +59,7 @@ Is A <label class='highlight'>ABC</label>...s <label class='highlight'>abc</labe
         [Test]
         public void TestGenerateHtmlPreviewText_ReturnRawContent()
         {
-            using var initManagement = new InitManagement(MonitorFolder, Config, Log);
+            using var initManagement = new InitManagement(MonitorFolder, Config);
             var searcher = initManagement.GetIndexSearcher();
 
             var content = $"My ABC{Environment.NewLine}Is A ABC CONTENT{Environment.NewLine}It's abc in lowercase{Environment.NewLine}It's Abc in mix{Environment.NewLine}Not AB with C";
@@ -75,7 +76,7 @@ Is A <label class='highlight'>ABC</label>...s <label class='highlight'>abc</labe
         [Test]
         public void TestGenerateHtmlPreviewText_ContentTooLong()
         {
-            using var initManagement = new InitManagement(MonitorFolder, Config, Log, maxContentHighlightLength: 20);
+            using var initManagement = new InitManagement(MonitorFolder, Config, maxContentHighlightLength: 20);
             var searcher = initManagement.GetIndexSearcher();
 
             var content = $"My ABC{Environment.NewLine}Is A ABC CONTENT{Environment.NewLine}It's abc in lowercase{Environment.NewLine}It's Abc in mix{Environment.NewLine}Not AB with C";
@@ -86,7 +87,7 @@ Is A <label class='highlight'>ABC</label>...s <label class='highlight'>abc</labe
         [Test]
         public void TestGetHints()
         {
-            using var initManagement = new InitManagement(MonitorFolder, Config, Log, true);
+            using var initManagement = new InitManagement(MonitorFolder, Config, true);
             var searcher = initManagement.GetIndexSearcher();
 
             searcher.GetHints("ABC", initManagement.IndexPk);
@@ -98,7 +99,7 @@ Is A <label class='highlight'>ABC</label>...s <label class='highlight'>abc</labe
         [Test]
         public void TestGeneratePreviewTextWithLineNumber()
         {
-            using var initManagement = new InitManagement(MonitorFolder, Config, Log);
+            using var initManagement = new InitManagement(MonitorFolder, Config);
             var searcher = initManagement.GetIndexSearcher();
 
             var content = $"My ABC{Environment.NewLine}Is A ABC CONTENT{Environment.NewLine}ABCD EFG";
@@ -115,7 +116,7 @@ Is A <label class='highlight'>ABC</label>...s <label class='highlight'>abc</labe
         [Test]
         public void TestGeneratePreviewTextWithLineNumber_ContentTooLong()
         {
-            using var initManagement = new InitManagement(MonitorFolder, Config, Log, maxContentHighlightLength: 10);
+            using var initManagement = new InitManagement(MonitorFolder, Config, maxContentHighlightLength: 10);
             var searcher = initManagement.GetIndexSearcher();
 
             var content = $"My ABC{Environment.NewLine}Is A ABC CONTENT{Environment.NewLine}ABCD EFG";
@@ -127,7 +128,7 @@ Is A <label class='highlight'>ABC</label>...s <label class='highlight'>abc</labe
         [Test]
         public void TestGeneratePreviewTextWithLineNumber_CompletionPrefixAndSuffix()
         {
-            using var initManagement = new InitManagement(MonitorFolder, Config, Log);
+            using var initManagement = new InitManagement(MonitorFolder, Config);
             var searcher = initManagement.GetIndexSearcher();
 
             var content = $"OH ABC{Environment.NewLine}DEF QWE ABC DEF ABC{Environment.NewLine}DEF OOOODD DEF ABC";
@@ -141,7 +142,7 @@ Is A <label class='highlight'>ABC</label>...s <label class='highlight'>abc</labe
         [Test]
         public void TestGeneratePreviewTextWithLineNumber_TrimLine()
         {
-            using var initManagement = new InitManagement(MonitorFolder, Config, Log);
+            using var initManagement = new InitManagement(MonitorFolder, Config);
             var searcher = initManagement.GetIndexSearcher();
 
             var content = $"{Environment.NewLine}   \t\tABC\t   \t";
@@ -154,9 +155,10 @@ Is A <label class='highlight'>ABC</label>...s <label class='highlight'>abc</labe
         {
             readonly IndexManagement management;
             readonly IndexConfig indexConfig;
-            readonly ILog log;
+            readonly ILogger<IndexManagement> log1 = new DummyLog<IndexManagement>();
+            readonly ILogger<CodeIndexSearcher> log2 = new DummyLog<CodeIndexSearcher>();
 
-            public InitManagement(string monitorFolder, CodeIndexConfiguration codeIndexConfiguration, ILog log, bool initFiles = false, int maxContentHighlightLength = Constants.DefaultMaxContentHighlightLength)
+            public InitManagement(string monitorFolder, CodeIndexConfiguration codeIndexConfiguration, bool initFiles = false, int maxContentHighlightLength = Constants.DefaultMaxContentHighlightLength)
             {
                 indexConfig = new IndexConfig
                 {
@@ -175,8 +177,7 @@ Is A <label class='highlight'>ABC</label>...s <label class='highlight'>abc</labe
                     File.AppendAllText(fileName3, "ABCD EFGH IJKL");
                 }
 
-                this.log = log;
-                management = new IndexManagement(codeIndexConfiguration, log);
+                management = new IndexManagement(codeIndexConfiguration, log1);
                 management.AddIndex(indexConfig);
                 var maintainer = management.GetIndexMaintainerWrapperAndInitializeIfNeeded(indexConfig.Pk);
 
@@ -189,7 +190,7 @@ Is A <label class='highlight'>ABC</label>...s <label class='highlight'>abc</labe
 
             public CodeIndexSearcher GetIndexSearcher()
             {
-                return new CodeIndexSearcher(management, log);
+                return new CodeIndexSearcher(management, log2);
             }
 
             public Guid IndexPk => indexConfig.Pk;
