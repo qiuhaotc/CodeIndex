@@ -1,5 +1,4 @@
 ﻿using System;
-using System.Collections.Concurrent;
 using System.Collections.Generic;
 using System.IO;
 using System.Linq;
@@ -59,44 +58,53 @@ namespace CodeIndex.IndexBuilder
             var newHintWords = new HashSet<string>();
             var failedIndexFiles = new List<FileInfo>();
 
-            foreach (var fileInfo in fileInfos)
+            try
             {
-                cancellationToken.ThrowIfCancellationRequested();
-
-                try
+                foreach (var fileInfo in fileInfos)
                 {
-                    if (fileInfo.Exists)
+                    cancellationToken.ThrowIfCancellationRequested();
+
+                    try
                     {
-                        var source = CodeSource.GetCodeSource(fileInfo, FilesContentHelper.ReadAllText(fileInfo.FullName));
+                        if (fileInfo.Exists)
+                        {
+                            var source = CodeSource.GetCodeSource(fileInfo, FilesContentHelper.ReadAllText(fileInfo.FullName));
 
-                        AddHintWords(newHintWords, wholeWords, source.Content);
+                            AddHintWords(newHintWords, wholeWords, source.Content);
 
-                        var doc = IndexBuilderHelper.GetDocumentFromSource(source);
-                        codeDocuments.Add(doc);
+                            var doc = IndexBuilderHelper.GetDocumentFromSource(source);
+                            codeDocuments.Add(doc);
 
-                        Log.Info($"{Name}: Add index for {source.FilePath}");
+                            Log.Info($"{Name}: Add index for {source.FilePath}");
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        failedIndexFiles.Add(fileInfo);
+                        Log.Error($"{Name}: Add index for {fileInfo.FullName} failed, exception: " + ex);
+                    }
+
+                    if (codeDocuments.Count >= batchSize)
+                    {
+                        BuildIndex(needCommit, triggerMerge, applyAllDeletes, codeDocuments, newHintWords, cancellationToken, brandNewBuild);
+                        codeDocuments.Clear();
+                        newHintWords.Clear();
                     }
                 }
-                catch (Exception ex)
-                {
-                    failedIndexFiles.Add(fileInfo);
-                    Log.Error($"{Name}: Add index for {fileInfo.FullName} failed, exception: " + ex);
-                }
 
-                if (codeDocuments.Count >= batchSize)
+                if (codeDocuments.Count > 0)
                 {
                     BuildIndex(needCommit, triggerMerge, applyAllDeletes, codeDocuments, newHintWords, cancellationToken, brandNewBuild);
-                    codeDocuments.Clear();
-                    newHintWords.Clear();
                 }
-            }
 
-            if (codeDocuments.Count > 0)
+                return failedIndexFiles;
+            }
+            finally
             {
-                BuildIndex(needCommit, triggerMerge, applyAllDeletes, codeDocuments, newHintWords, cancellationToken, brandNewBuild);
+                wholeWords.Clear();
+                newHintWords.Clear();
+                codeDocuments.Clear();
             }
-
-            return failedIndexFiles;
         }
 
         void AddHintWords(HashSet<string> hintWords, string content)
@@ -130,7 +138,10 @@ namespace CodeIndex.IndexBuilder
 
         public IEnumerable<(string FilePath, DateTime LastWriteTimeUtc)> GetAllIndexedCodeSource()
         {
-            return CodeIndexPool.Search(new MatchAllDocsQuery(), int.MaxValue).Select(u => (u.Get(nameof(CodeSource.FilePath)), new DateTime(long.Parse(u.Get(nameof(CodeSource.LastWriteTimeUtc)))))).ToList();
+            return CodeIndexPool.SearchWithSpecificFields(
+                new MatchAllDocsQuery(),
+                int.MaxValue,
+                nameof(CodeSource.LastWriteTimeUtc), nameof(CodeSource.FilePath)).Select(u => (u.Get(nameof(CodeSource.FilePath)), new DateTime(u.GetField(nameof(CodeSource.LastWriteTimeUtc)).GetInt64Value() ?? throw new ArgumentException(nameof(CodeSource.LastWriteTimeUtc)))));
         }
 
         public IndexBuildResults CreateIndex(FileInfo fileInfo)
@@ -481,8 +492,8 @@ namespace CodeIndex.IndexBuilder
                 FileExtension = document.Get(nameof(CodeSource.FileExtension)),
                 FileName = document.Get(nameof(CodeSource.FileName)),
                 FilePath = document.Get(nameof(CodeSource.FilePath)),
-                IndexDate = new DateTime(long.Parse(document.Get(nameof(CodeSource.IndexDate)))),
-                LastWriteTimeUtc = new DateTime(long.Parse(document.Get(nameof(CodeSource.LastWriteTimeUtc))))
+                IndexDate = new DateTime(document.GetField(nameof(CodeSource.IndexDate)).GetInt64Value() ?? throw new ArgumentException(nameof(CodeSource.IndexDate))),
+                LastWriteTimeUtc = new DateTime(document.GetField(nameof(CodeSource.LastWriteTimeUtc)).GetInt64Value() ?? throw new ArgumentException(nameof(CodeSource.LastWriteTimeUtc)))
             };
         }
     }

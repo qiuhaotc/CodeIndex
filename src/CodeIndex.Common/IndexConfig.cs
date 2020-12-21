@@ -6,12 +6,15 @@ namespace CodeIndex.Common
     public record IndexConfig
     {
         public const char SplitChar = '|';
+        public const string FilePathPlaceholder = "{FilePath}";
+        public const string LinePlaceholder = "{Line}";
+        public const string ColumnPlaceholder = "{Column}";
         public Guid Pk { get; set; } = Guid.NewGuid();
         public string IndexName { get; set; } = string.Empty;
         public string MonitorFolder { get; set; } = string.Empty;
         public int MaxContentHighlightLength { get; set; } = 3000000;
         public int SaveIntervalSeconds { get; set; } = 3;
-        public string OpenIDEUriFormat { get; set; } = "vscode://file/{FilePath}";
+        public string OpenIDEUriFormat { get; set; } = $"vscode://file/{FilePathPlaceholder}:{LinePlaceholder}:{ColumnPlaceholder}";
         public string MonitorFolderRealPath { get; set; } = string.Empty;
 
         public string ExcludedPaths

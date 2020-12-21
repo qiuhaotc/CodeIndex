@@ -12,6 +12,8 @@ namespace CodeIndex.IndexBuilder
 
         Document[] Search(Query query, int maxResults, Filter filter = null);
 
+        Document[] SearchWithSpecificFields(Query query, int maxResults, params string[] fieldsNeedToLoad);
+
         void DeleteIndex(params Query[] searchQueries);
 
         void DeleteIndex(params Term[] terms);

@@ -22,7 +22,7 @@
                             <pre>@((MarkupString)item.MatchedContent)</pre>
                         </td>
                         <td>
-                            <a href="@RazorPageUtils.GetOpenIDEUri(CurrentIndexConfig.OpenIDEUriFormat, item.CodeSource.FilePath, CurrentIndexConfig.MonitorFolderRealPath)">@item.CodeSource.FilePath?.SubStringSafeWithEllipsis(item.CodeSource.FilePath.Length - 50, 50)</a>
+                            <a href="@RazorPageUtils.GetOpenIDEUri(CurrentIndexConfig.OpenIDEUriFormat, item.CodeSource.FilePath, CurrentIndexConfig.MonitorFolderRealPath, item.MatchedLine)">@item.CodeSource.FilePath?.SubStringSafeWithEllipsis(item.CodeSource.FilePath.Length - 50, 50)</a>
                         </td>
                         <td>@item.CodeSource.FileExtension</td>
                         <td>

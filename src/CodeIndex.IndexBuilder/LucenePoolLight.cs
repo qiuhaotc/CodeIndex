@@ -84,8 +84,8 @@ namespace CodeIndex.IndexBuilder
         public Document[] Search(Query query, int maxResults, Filter filter = null)
         {
             using var readLock = new EnterReaderWriterLock(readerWriteLock);
-            Document[] documents;
             using var searcher = GetUseIndexSearcher();
+            Document[] documents;
 
             if (filter != null)
             {
@@ -97,6 +97,21 @@ namespace CodeIndex.IndexBuilder
             }
 
             return documents;
+        }
+
+        public Document[] SearchWithSpecificFields(Query query, int maxResults, params string[] fieldsNeedToLoad)
+        {
+            fieldsNeedToLoad.RequireContainsElement(nameof(fieldsNeedToLoad));
+
+            using var readLock = new EnterReaderWriterLock(readerWriteLock);
+            using var searcher = GetUseIndexSearcher();
+
+            return searcher.IndexSearcher.Search(query, maxResults).ScoreDocs.Select(hit =>
+            {
+                var visitor = new DocumentStoredFieldVisitor(fieldsNeedToLoad);
+                searcher.IndexSearcher.Doc(hit.Doc, visitor);
+                return visitor.Document;
+            }).ToArray();
         }
 
         public static Analyzer Analyzer => analyzer ??= CodeAnalyzer.GetCaseSensitiveAndInsesitiveCodeAnalyzer(CodeIndexBuilder.GetCaseSensitiveField(nameof(CodeSource.Content)));

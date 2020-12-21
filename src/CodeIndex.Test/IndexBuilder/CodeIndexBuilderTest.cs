@@ -272,5 +272,44 @@ namespace CodeIndex.Test
             Assert.AreEqual(2, indexBuilder.CodeIndexPool.SearchCode(new MatchAllDocsQuery()).Length);
             Assert.AreEqual(2, indexBuilder.HintIndexPool.SearchWord(new MatchAllDocsQuery()).Length, "When not brand new build, will do update hint index rather than add without check");
         }
+
+        [Test]
+        public void TestGetCodeSourceFromDocument()
+        {
+            using var indexBuilder = new CodeIndexBuilder("ABC", new LucenePoolLight(TempCodeIndexDir), new LucenePoolLight(TempHintIndexDir), Log);
+            var fileName = Path.Combine(MonitorFolder, "A.txt");
+            File.AppendAllText(fileName, "ABCD ABCD");
+            var fileInfo = new FileInfo(fileName);
+            Thread.Sleep(1);
+
+            Assert.AreEqual(IndexBuildResults.Successful, indexBuilder.CreateIndex(new FileInfo(fileName)));
+            var codeSources = indexBuilder.CodeIndexPool.Search(new MatchAllDocsQuery(), 1).Select(CodeIndexBuilder.GetCodeSourceFromDocument).ToArray();
+            Assert.AreEqual(1, codeSources.Length);
+            Assert.AreEqual(fileName, codeSources[0].FilePath);
+            Assert.AreEqual("A.txt", codeSources[0].FileName);
+            Assert.AreEqual("txt", codeSources[0].FileExtension);
+            Assert.AreEqual("ABCD ABCD", codeSources[0].Content);
+            Assert.AreNotEqual(Guid.Empty, new Guid(codeSources[0].CodePK));
+            Assert.AreEqual(fileInfo.LastWriteTimeUtc, codeSources[0].LastWriteTimeUtc);
+            Assert.LessOrEqual(codeSources[0].LastWriteTimeUtc, codeSources[0].IndexDate);
+        }
+
+        [Test]
+        public void TestGetAllIndexedCodeSource()
+        {
+            using var indexBuilder = new CodeIndexBuilder("ABC", new LucenePoolLight(TempCodeIndexDir), new LucenePoolLight(TempHintIndexDir), Log);
+            var fileName1 = Path.Combine(MonitorFolder, "A.txt");
+            var fileName2 = Path.Combine(MonitorFolder, "B.txt");
+            File.AppendAllText(fileName1, "ABCD ABCD");
+            File.AppendAllText(fileName2, "EFGH");
+
+            var file1Info = new FileInfo(fileName1);
+            var file2Info = new FileInfo(fileName2);
+
+            var failedFiles = indexBuilder.BuildIndexByBatch(new[] { new FileInfo(fileName1), new FileInfo(fileName2) }, true, true, true, CancellationToken.None, true);
+            CollectionAssert.IsEmpty(failedFiles);
+
+            CollectionAssert.AreEquivalent(new[] { (file1Info.FullName, file1Info.LastWriteTimeUtc), (file2Info.FullName, file2Info.LastWriteTimeUtc) }, indexBuilder.GetAllIndexedCodeSource());
+        }
     }
 }

@@ -44,6 +44,44 @@ namespace CodeIndex.Test
         }
 
         [Test]
+        public void TestSearchWithSpecificFields()
+        {
+            using var light = new LucenePoolLight(TempIndexDir);
+
+            light.BuildIndex(new[] {
+                GetDocument(new CodeSource
+                {
+                    FileName = "Dummy File 1",
+                    FileExtension = "cs",
+                    FilePath = @"C:\Dummy File 1.cs",
+                    Content = "Test Content" + Environment.NewLine + "A New Line For Test"
+                }),
+                GetDocument(new CodeSource
+                {
+                    FileName = "Dummy File 2",
+                    FileExtension = "cs",
+                    FilePath = @"C:\Dummy File 2.cs",
+                    Content = "Test Content" + Environment.NewLine + "A New Line For Test"
+                })}, true, true, true);
+
+            var documents = light.SearchWithSpecificFields(new TermQuery(new Term(nameof(CodeSource.FileName), "2")), int.MaxValue, nameof(CodeSource.FileName), nameof(CodeSource.FileExtension));
+            Assert.AreEqual(1, documents.Length);
+            Assert.AreEqual("Dummy File 2", documents[0].Get(nameof(CodeSource.FileName)));
+            Assert.AreEqual("cs", documents[0].Get(nameof(CodeSource.FileExtension)));
+            Assert.IsNull(documents[0].Get(nameof(CodeSource.Content)));
+
+            documents = light.SearchWithSpecificFields(new TermQuery(new Term(nameof(CodeSource.FileName), "2")), int.MaxValue, nameof(CodeSource.Content));
+            Assert.AreEqual(1, documents.Length);
+            Assert.IsNull(documents[0].Get(nameof(CodeSource.FileName)));
+            Assert.IsNull(documents[0].Get(nameof(CodeSource.FileExtension)));
+            Assert.AreEqual("Test Content" + Environment.NewLine + "A New Line For Test", documents[0].Get(nameof(CodeSource.Content)));
+
+            documents = light.SearchWithSpecificFields(new MatchAllDocsQuery(), int.MaxValue, nameof(CodeSource.FileName));
+            Assert.AreEqual(2, documents.Length);
+            CollectionAssert.AreEquivalent(new[] { "Dummy File 1", "Dummy File 2" }, documents.Select(u => u.Get(nameof(CodeSource.FileName))));
+        }
+
+        [Test]
         public void TestDeleteIndex()
         {
             using var light = new LucenePoolLight(TempIndexDir);

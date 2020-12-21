@@ -1,19 +1,18 @@
 ﻿using CodeIndex.Common;
+using static CodeIndex.Common.IndexConfig;
 
 namespace CodeIndex.Server
 {
     public static class RazorPageUtils
     {
-        public static string GetOpenIDEUri(string openIDEUriFormat, string filePath, string monitorFolderRealPath)
+        public static string GetOpenIDEUri(string openIDEUriFormat, string filePath, string monitorFolderRealPath, int line = 0, int column = 0)
         {
             if (!string.IsNullOrWhiteSpace(openIDEUriFormat))
             {
-                return openIDEUriFormat.Replace("{FilePath}", GetPath(filePath, monitorFolderRealPath));
+                return openIDEUriFormat.Replace(FilePathPlaceholder, GetPath(filePath, monitorFolderRealPath)).Replace(LinePlaceholder, line.ToString()).Replace(ColumnPlaceholder, column.ToString());
             }
-            else
-            {
-                return filePath;
-            }
+
+            return filePath;
         }
 
         static string GetPath(string path, string monitorFolderRealPath)
@@ -22,10 +21,8 @@ namespace CodeIndex.Server
             {
                 return monitorFolderRealPath + path.SubStringSafe("/monitorfolder".Length, path.Length);
             }
-            else
-            {
-                return path;
-            }
+
+            return path;
         }
     }
 }

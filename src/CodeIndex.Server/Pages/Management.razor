@@ -40,7 +40,7 @@
                         <p>Indexed File Path: @indexStatus.IndexConfig.GetRootFolder(Configuration.LuceneIndex)</p>
                         <button class="btn btn-primary btn-sm" @onclick="() => Edit(indexStatus)" disabled="@(!IndexManagement.ValidToEdit(indexStatus.IndexStatus))" title="@(IndexManagement.ValidToEdit(indexStatus.IndexStatus) ? string.Empty: "Only Idle or Disposed Index Can Be Edit")">Edit</button>
                         <button class="btn btn-info btn-sm" @onclick="() => StopOrStartIndex(indexStatus)">@(IndexManagement.ValidToStart(indexStatus.IndexStatus) ? "Start" : "Stop")</button>
-                        <button class="btn btn-danger btn-sm" @onclick="() => Delete(indexStatus)">Delete</button>
+                        <button class="btn btn-danger btn-sm float-sm-right" @onclick="() => Delete(indexStatus)">Delete</button>
                     </div>
                 </div>
             </div>
