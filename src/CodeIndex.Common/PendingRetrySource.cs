@@ -1,6 +1,6 @@
 ﻿using System;
 
-namespace CodeIndex.MaintainIndex
+namespace CodeIndex.Common
 {
     public class PendingRetrySource : ChangedSource
     {

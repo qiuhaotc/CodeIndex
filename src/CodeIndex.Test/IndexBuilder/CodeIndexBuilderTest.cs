@@ -93,6 +93,12 @@ namespace CodeIndex.Test
             Assert.AreEqual("ABCD EEEE", results[0].Content);
             Assert.GreaterOrEqual(DateTime.UtcNow, results[0].IndexDate);
             CollectionAssert.AreEquivalent(new[] { "ABCD", "EEEE" }, words.Select(u => u.Word));
+
+            Assert.AreEqual(IndexBuildResults.Successful, indexBuilder.CreateIndex(new FileInfo(fileName)));
+            results = indexBuilder.CodeIndexPool.SearchCode(new MatchAllDocsQuery());
+            words = indexBuilder.HintIndexPool.SearchWord(new MatchAllDocsQuery());
+            Assert.AreEqual(1, results.Length, "No Duplicate Index Created");
+            Assert.AreEqual(2, words.Length, "No Duplicate Index Created");
         }
 
         [Test]

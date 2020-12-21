@@ -145,7 +145,7 @@ namespace CodeIndex.IndexBuilder
                     AddHintWords(words, source.Content);
 
                     var doc = IndexBuilderHelper.GetDocumentFromSource(source);
-                    CodeIndexPool.BuildIndex(new[] { doc }, false);
+                    CodeIndexPool.UpdateIndex(GetNoneTokenizeFieldTerm(nameof(CodeSource.FilePath), source.FilePath), doc);
 
                     foreach (var word in words)
                     {
@@ -371,7 +371,7 @@ namespace CodeIndex.IndexBuilder
                     }
                     else
                     {
-                        Log.Warn($"{Name}: Find 0 Document To Update With Path {source.FilePath}");
+                        Log.Warn($"{Name}: Find 0 Document To Update With Path {source.FilePath}, Create New Index");
                     }
 
                     foreach (var word in words)

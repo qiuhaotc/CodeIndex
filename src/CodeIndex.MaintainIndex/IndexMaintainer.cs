@@ -115,7 +115,7 @@ namespace CodeIndex.MaintainIndex
                 if (needRetry > 0)
                 {
                     var needRetrySources = new List<ChangedSource>();
-                    for (int index = 0; index < needRetry; index++)
+                    for (var index = 0; index < needRetry; index++)
                     {
                         if (PendingRetryCodeSources.TryDequeue(out var pendingRetrySource))
                         {
@@ -136,11 +136,11 @@ namespace CodeIndex.MaintainIndex
         {
         }
 
-        void ProcessingChanges(List<ChangedSource> orderedNeedProcessingChanges, bool isFailedChangedSource = false)
+        void ProcessingChanges(IList<ChangedSource> orderedNeedProcessingChanges, bool isFailedChangedSource = false)
         {
             var prefix = isFailedChangedSource ? "Failed " : string.Empty;
 
-            PreProcessingChanges(orderedNeedProcessingChanges, prefix);
+            orderedNeedProcessingChanges.PreProcessingChanges(prefix, IndexConfig, Log);
 
             Log.Info($"{IndexConfig.IndexName}: Processing {prefix}Changes start, changes count: {orderedNeedProcessingChanges.Count}");
 
@@ -170,39 +170,11 @@ namespace CodeIndex.MaintainIndex
                         Log.Warn($"{IndexConfig.IndexName}: Unknown changes type {changes}");
                         break;
                 }
+
+                Log.Info($"{IndexConfig.IndexName}: Processing {changes} finished");
             }
 
             Log.Info($"{IndexConfig.IndexName}: Processing {prefix}Changes finished");
-        }
-
-        void PreProcessingChanges(IList<ChangedSource> orderedNeedProcessingChanges, string prefix)
-        {
-            Log.Debug($"{IndexConfig.IndexName}: Pre Processing {prefix}Changes Start, changes count: {orderedNeedProcessingChanges.Count}");
-
-            var needDeleted = new List<ChangedSource>();
-
-            for (var i = 0; i < orderedNeedProcessingChanges.Count; i++)
-            {
-                var change = orderedNeedProcessingChanges[i];
-
-                if (change.ChangesType == WatcherChangeTypes.Renamed)
-                {
-                    var templateRenameChange = orderedNeedProcessingChanges.Skip(i + 1).FirstOrDefault(u => u.ChangesType == WatcherChangeTypes.Renamed && u.FilePath == change.OldPath);
-
-                    if (templateRenameChange != null)
-                    {
-                        change.ChangesType = WatcherChangeTypes.Changed;
-                        change.FilePath = change.OldPath;
-                        change.OldPath = null;
-                        needDeleted.Add(templateRenameChange);
-
-                        Log.Debug($"{IndexConfig.IndexName}: Template Change Found {templateRenameChange}, remove this and update {change} from Renamed to Changed");
-                    }
-                }
-            }
-
-            needDeleted.ForEach(u => orderedNeedProcessingChanges.Remove(u));
-            Log.Debug($"{IndexConfig.IndexName}: Pre Processing {prefix}Changes Finished");
         }
 
         void CreateIndex(ChangedSource changes)
@@ -299,6 +271,7 @@ namespace CodeIndex.MaintainIndex
             ChangedSources = new ConcurrentQueue<ChangedSource>();
             PendingRetryCodeSources = new ConcurrentQueue<PendingRetrySource>();
             FilesWatcher = FilesWatcherHelper.StartWatch(IndexConfig.MonitorFolder, OnChange, OnRename);
+            Log.Info($"{IndexConfig.IndexName}: Start Watch files change");
 
             var allFiles = FilesFetcher.FetchAllFiles(IndexConfig.MonitorFolder, IndexConfig.ExcludedExtensionsArray, IndexConfig.ExcludedPathsArray, includedExtensions: IndexConfig.IncludedExtensionsArray, isInLinux: CodeIndexConfiguration.IsInLinux).ToList();
             Log.Info($"{IndexConfig.IndexName}: Fetching {allFiles.Count} files need to indexing");
