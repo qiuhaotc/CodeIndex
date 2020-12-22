@@ -108,9 +108,11 @@ namespace CodeIndex.IndexBuilder
             }
         }
 
+        const int HintWordMinLength = 4;
+
         void AddHintWords(HashSet<string> hintWords, string content)
         {
-            var words = WordSegmenter.GetWords(content).Where(word => word.Length > 3 && word.Length < 200); // TODO: Optimize the length of hint words and the GetWords logic
+            var words = WordSegmenter.GetWords(content, HintWordMinLength);
             foreach (var word in words)
             {
                 hintWords.Add(word);
@@ -119,7 +121,8 @@ namespace CodeIndex.IndexBuilder
 
         void AddHintWords(HashSet<string> hintWords, HashSet<string> wholeWords, string content)
         {
-            var words = WordSegmenter.GetWords(content).Where(word => word.Length > 3 && word.Length < 200);  // TODO: Optimize the length of hint words and the GetWords logic
+            var words = WordSegmenter.GetWords(content, HintWordMinLength);
+
             foreach (var word in words)
             {
                 if (wholeWords.Add(word)) // Avoid Distinct Value

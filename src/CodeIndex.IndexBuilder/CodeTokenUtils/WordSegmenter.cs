@@ -109,9 +109,11 @@ namespace CodeIndex.IndexBuilder
             (123, 126)
         };
 
-        public static string[] GetWords(string content)
+        public static string[] GetWords(string content, int minLength = 1, int maxLength = 199)
         {
             content.RequireNotNull(nameof(content));
+            minLength.RequireRange(nameof(minLength), 199, 1);
+            maxLength.RequireRange(nameof(maxLength), 1000, minLength);
 
             var words = new List<string>();
             var chars = new List<char>();
@@ -124,12 +126,16 @@ namespace CodeIndex.IndexBuilder
                 }
                 else if (chars.Count > 0)
                 {
-                    words.Add(new string(chars.ToArray()));
+                    if (chars.Count >= minLength && chars.Count <= maxLength)
+                    {
+                        words.Add(new string(chars.ToArray()));
+                    }
+
                     chars.Clear();
                 }
             }
 
-            if (chars.Count > 0)
+            if (chars.Count >= minLength && chars.Count <= maxLength)
             {
                 words.Add(new string(chars.ToArray()));
             }

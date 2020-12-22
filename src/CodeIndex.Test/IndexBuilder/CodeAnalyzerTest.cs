@@ -60,8 +60,15 @@ Line Four");
         {
             var content = "It's a content for test" + Environment.NewLine + "这是一个例句,我知道了";
             CollectionAssert.AreEquivalent(new[] { "It", "s", "a", "content", "for", "test", "这是一个例句", "我知道了" }, WordSegmenter.GetWords(content));
+            CollectionAssert.AreEquivalent(new[] { "It", "for", "test", "我知道了" }, WordSegmenter.GetWords(content, 2, 4));
+            CollectionAssert.IsEmpty(WordSegmenter.GetWords("a".PadRight(201, 'b')));
 
             Assert.Throws<ArgumentException>(() => WordSegmenter.GetWords(null));
+            Assert.Throws<ArgumentException>(() => WordSegmenter.GetWords(content, 0));
+            Assert.Throws<ArgumentException>(() => WordSegmenter.GetWords(content, 200));
+            Assert.Throws<ArgumentException>(() => WordSegmenter.GetWords(content, 3, 1));
+            Assert.Throws<ArgumentException>(() => WordSegmenter.GetWords(content, 3, -1));
+            Assert.Throws<ArgumentException>(() => WordSegmenter.GetWords(content, 3, 1001));
         }
 
         List<string> GetTokens(Analyzer analyzer, string content)
