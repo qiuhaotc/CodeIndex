@@ -109,10 +109,11 @@ namespace CodeIndex.IndexBuilder
         }
 
         const int HintWordMinLength = 4;
+        public const int HintWordMaxLength = 199;
 
         void AddHintWords(HashSet<string> hintWords, string content)
         {
-            var words = WordSegmenter.GetWords(content, HintWordMinLength);
+            var words = WordSegmenter.GetWords(content, HintWordMinLength, HintWordMaxLength);
             foreach (var word in words)
             {
                 hintWords.Add(word);
@@ -121,7 +122,7 @@ namespace CodeIndex.IndexBuilder
 
         void AddHintWords(HashSet<string> hintWords, HashSet<string> wholeWords, string content)
         {
-            var words = WordSegmenter.GetWords(content, HintWordMinLength);
+            var words = WordSegmenter.GetWords(content, HintWordMinLength, HintWordMaxLength);
 
             foreach (var word in words)
             {

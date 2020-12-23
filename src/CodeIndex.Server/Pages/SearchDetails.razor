@@ -8,7 +8,7 @@
     <h1 class="display-4">Details For @Source?.FileName</h1>
     <p class="lead">Extension: @Source?.FileExtension | Index Date: @Source?.IndexDate | Last Write Time Utc: @Source?.LastWriteTimeUtc</p>
     <hr class="my-4">
-    <p>File Path: <a href="@CurrentIndexConfig.OpenIDEUriFormat.Replace("{FilePath}", GetPath(Source?.FilePath))">@Source?.FilePath</a></p>
+    <p>File Path: <a href="@CurrentIndexConfig.OpenIDEUriFormat?.Replace("{FilePath}", GetPath(Source?.FilePath))">@Source?.FilePath</a></p>
     <hr class="my-4">
     <p>Content:</p>
     <p>
@@ -44,8 +44,36 @@
 
     protected override async Task OnInitializedAsync()
     {
-        var result = await Client.GetJsonAsync<FetchResult<IEnumerable<CodeSource>>>($"{Config.LocalUrl}api/lucene/GetCodeSources?searchQuery=" + System.Web.HttpUtility.UrlEncode($"CodePK:\"{CodePK}\"") + "&contentQuery=" + ContentQuery + "&indexPK=" + IndexPK);
-        Source = result.Result.FirstOrDefault();
+        try
+        {
+            var result = await Client.PostAsJsonAsync($"{Config.LocalUrl}api/lucene/GetCodeSources",
+                new SearchRequest
+                {
+                    IndexPk = new Guid(IndexPK),
+                    CodePK = CodePK,
+                    Content = @System.Web.HttpUtility.UrlDecode(ContentQuery)
+                });
+
+            if (result.IsSuccessStatusCode)
+            {
+                Source = (await result.Content.ReadFromJsonAsync<FetchResult<IEnumerable<CodeSource>>>()).Result.FirstOrDefault();
+            }
+            else
+            {
+                Source = new CodeSource
+                {
+                    Content = await result.Content.ReadAsStringAsync()
+                };
+            }
+        }
+        catch (Exception ex)
+        {
+            Source = new CodeSource
+            {
+                Content = ex.Message
+            };
+        }
+
         await base.OnInitializedAsync();
     }
 

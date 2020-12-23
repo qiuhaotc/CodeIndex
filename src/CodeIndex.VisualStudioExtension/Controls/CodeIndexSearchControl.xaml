@@ -12,13 +12,13 @@
         <DockPanel LastChildFill="True" Margin="6">
             <WrapPanel HorizontalAlignment="Left" DockPanel.Dock="Top">
                 <Label Content="Content:"/>
-                <TextBox Height="23" TextWrapping="Wrap" Text="{Binding Content, UpdateSourceTrigger=PropertyChanged}" Width="240" KeyUp="TextBox_KeyDown"/>
+                <TextBox Height="23" TextWrapping="Wrap" Text="{Binding Content, UpdateSourceTrigger=PropertyChanged}" Width="240" KeyUp="TextBox_KeyDown" MaxLength="1000"/>
                 <Label Content="File Name:"/>
-                <TextBox Height="23" TextWrapping="Wrap" Text="{Binding FileName, UpdateSourceTrigger=PropertyChanged}" Width="120" KeyDown="TextBox_KeyDown"/>
+                <TextBox Height="23" TextWrapping="Wrap" Text="{Binding FileName, UpdateSourceTrigger=PropertyChanged}" Width="120" KeyDown="TextBox_KeyDown" MaxLength="200"/>
                 <Label Content="File Extension:"/>
-                <TextBox Height="23" TextWrapping="Wrap" Text="{Binding FileExtension, UpdateSourceTrigger=PropertyChanged}" Width="120" KeyDown="TextBox_KeyDown"/>
+                <TextBox Height="23" TextWrapping="Wrap" Text="{Binding FileExtension, UpdateSourceTrigger=PropertyChanged}" Width="120" KeyDown="TextBox_KeyDown" MaxLength="21"/>
                 <Label Content="File Location:"/>
-                <TextBox Height="23" TextWrapping="Wrap" Text="{Binding FileLocation, UpdateSourceTrigger=PropertyChanged}" Width="120" KeyDown="TextBox_KeyDown"/>
+                <TextBox Height="23" TextWrapping="Wrap" Text="{Binding FileLocation, UpdateSourceTrigger=PropertyChanged}" Width="120" KeyDown="TextBox_KeyDown" MaxLength="1000"/>
                 <CheckBox Content=":Case Sensitive" FlowDirection="RightToLeft" IsChecked="{Binding CaseSensitive}" Margin="5 0 0 0" VerticalAlignment="Center" >
                     <CheckBox.Resources>
                         <Style TargetType="{x:Type Path}">
@@ -47,7 +47,7 @@
                 <ComboBox SelectedValue="{Binding IndexPk}" Grid.Column="3" ItemsSource="{Binding IndexInfos}" DisplayMemberPath="Name" SelectedValuePath="Value" Width="200" VerticalAlignment="Center"/>
                 <Button x:Name="RefreshButton" Grid.Column="4" Margin="10 0 0 0" Content="Refresh Index" Command="{Binding RefreshIndexCommand}" Style="{StaticResource InfoButton}" Height="26" Width="82"/>
                 <Label Content="Result Info:" VerticalAlignment="Center" Grid.Column="5"/>
-                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" MaxHeight="60" Grid.Column="6">
+                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" MaxHeight="100" Grid.Column="6">
                     <Label Content="{Binding ResultInfo}" Foreground="Yellow"/>
                 </ScrollViewer>
             </Grid>

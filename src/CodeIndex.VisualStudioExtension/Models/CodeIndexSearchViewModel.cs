@@ -279,7 +279,19 @@ namespace CodeIndex.VisualStudioExtension
             if (IsValidate())
             {
                 var client = new CodeIndexClient(new HttpClient(), ServiceUrl);
-                var result = await client.ApiLuceneGetcodesourceswithmatchedlineAsync(GetSearchStr(), IndexPk, Content, ShowResultsNumber, false, false, CaseSensitive);
+                var result = await client.ApiLuceneGetcodesourceswithmatchedlineAsync(new SearchRequest
+                {
+                    IndexPk = indexPk,
+                    Content = Content,
+                    ShowResults = ShowResultsNumber,
+                    NeedReplaceSuffixAndPrefix = false,
+                    FileName = FileName,
+                    CaseSensitive = CaseSensitive,
+                    FileExtension = FileExtension,
+                    FilePath = FileLocation,
+                    ForWeb = false,
+                    Preview = true,
+                });
 
                 if (result.Status.Success)
                 {

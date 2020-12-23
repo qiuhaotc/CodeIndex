@@ -14,7 +14,7 @@
             <div class="input-group-prepend">
                 <span class="input-group-text">Content</span>
             </div>
-            <input type="text" class="form-control" placeholder="Put Your Content Here" aria-label="Put Your Content Here" @bind-value="@ContentQuery" @bind-value:event="oninput" @onkeyup="@(async e => await KeyPressForContent(e))" />
+            <input type="text" class="form-control" placeholder="Put Your Content Here" aria-label="Put Your Content Here" @bind-value="@ContentQuery" @bind-value:event="oninput" @onkeyup="@(async e => await KeyPressForContent(e))" maxlength="1000"/>
         </div>
     </div>
 </div>
@@ -24,7 +24,7 @@
             <div class="input-group-prepend">
                 <span class="input-group-text">File Name</span>
             </div>
-            <input type="text" class="form-control" placeholder="Put Your File Name Here" aria-label="Put Your File Name Here" @bind-value="@FileNameQuery" @bind-value:event="oninput" @onkeydown="@(async e => await KeyPress(e))" />
+            <input type="text" class="form-control" placeholder="Put Your File Name Here" aria-label="Put Your File Name Here" @bind-value="@FileNameQuery" @bind-value:event="oninput" @onkeydown="@(async e => await KeyPress(e))"  maxlength="200"/>
         </div>
     </div>
     <div class="col-sm">
@@ -32,7 +32,7 @@
             <div class="input-group-prepend">
                 <span class="input-group-text">File Extension</span>
             </div>
-            <input type="text" class="form-control" placeholder="Put Your File Extension Here" aria-label="Put Your File Extension Here" @bind-value="@FileExtensionQuery" @bind-value:event="oninput" @onkeydown="@(async e => await KeyPress(e))" />
+            <input type="text" class="form-control" placeholder="Put Your File Extension Here" aria-label="Put Your File Extension Here" @bind-value="@FileExtensionQuery" @bind-value:event="oninput" @onkeydown="@(async e => await KeyPress(e))" maxlength="20"/>
         </div>
     </div>
     <div class="col-sm">
@@ -40,7 +40,7 @@
             <div class="input-group-prepend">
                 <span class="input-group-text">File Location</span>
             </div>
-            <input type="text" class="form-control" placeholder="Put Your File Path Here" aria-label="Put Your File Path Here" @bind-value="@FilePathQuery" @bind-value:event="oninput" @onkeydown="@(async e => await KeyPress(e))" />
+            <input type="text" class="form-control" placeholder="Put Your File Path Here" aria-label="Put Your File Path Here" @bind-value="@FilePathQuery" @bind-value:event="oninput" @onkeydown="@(async e => await KeyPress(e))" maxlength="1000"/>
         </div>
     </div>
 </div>
@@ -268,7 +268,50 @@ else
             {
                 if (!string.IsNullOrEmpty(SearchQuery) && IndexPk != Guid.Empty)
                 {
-                    FetchResultWithLineNumber = await Client.GetJsonAsync<FetchResult<IEnumerable<CodeSourceWithMatchedLine>>>($"{Config.LocalUrl}api/lucene/GetCodeSourcesWithMatchedLine?searchQuery=" + System.Web.HttpUtility.UrlEncode(SearchQuery) + "&showResults=" + ShowResults + "&contentQuery=" + System.Web.HttpUtility.UrlEncode(ContentQuery ?? string.Empty) + "&indexPk=" + IndexPk + "&CaseSensitive=" + CaseSensitive);
+                    try
+                    {
+                        var response = await Client.PostAsJsonAsync($"{Config.LocalUrl}api/lucene/GetCodeSourcesWithMatchedLine",
+                            new SearchRequest
+                            {
+                                CaseSensitive = CaseSensitive,
+                                Content = ContentQuery,
+                                FileExtension = FileExtensionQuery,
+                                FileName = FileNameQuery,
+                                FilePath = FilePathQuery,
+                                ForWeb = true,
+                                IndexPk = IndexPk,
+                                NeedReplaceSuffixAndPrefix = true,
+                                Preview = true,
+                                ShowResults = ShowResults
+                            });
+
+                        if (response.IsSuccessStatusCode)
+                        {
+                            FetchResultWithLineNumber = await response.Content.ReadFromJsonAsync<FetchResult<IEnumerable<CodeSourceWithMatchedLine>>>();
+                        }
+                        else
+                        {
+                            FetchResultWithLineNumber = new FetchResult<IEnumerable<CodeSourceWithMatchedLine>>()
+                            {
+                                Status = new Status()
+                                {
+                                    Success = false,
+                                    StatusDesc = await response.Content.ReadAsStringAsync()
+                                }
+                            };
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        FetchResultWithLineNumber = new FetchResult<IEnumerable<CodeSourceWithMatchedLine>>()
+                        {
+                            Status = new Status()
+                            {
+                                Success = false,
+                                StatusDesc = ex.Message
+                            }
+                        };
+                    }
                 }
                 else
                 {
@@ -277,7 +320,7 @@ else
                         Status = new Status()
                         {
                             Success = false,
-                            StatusDesc = "Search query can't be empty"
+                            StatusDesc = "Search query or index name can't be empty"
                         }
                     };
                 }
@@ -286,7 +329,50 @@ else
             {
                 if (!string.IsNullOrEmpty(SearchQuery) && IndexPk != Guid.Empty)
                 {
-                    FetchResult = await Client.GetJsonAsync<FetchResult<IEnumerable<CodeSource>>>($"{Config.LocalUrl}api/lucene/GetCodeSources?searchQuery=" + System.Web.HttpUtility.UrlEncode(SearchQuery) + "&showResults=" + ShowResults + "&preview=true" + "&contentQuery=" + System.Web.HttpUtility.UrlEncode(ContentQuery ?? string.Empty) + "&indexPk=" + IndexPk + "&CaseSensitive=" + CaseSensitive);
+                    try
+                    {
+                        var response = await Client.PostAsJsonAsync($"{Config.LocalUrl}api/lucene/GetCodeSources",
+                            new SearchRequest
+                            {
+                                CaseSensitive = CaseSensitive,
+                                Content = ContentQuery,
+                                FileExtension = FileExtensionQuery,
+                                FileName = FileNameQuery,
+                                FilePath = FilePathQuery,
+                                ForWeb = true,
+                                IndexPk = IndexPk,
+                                NeedReplaceSuffixAndPrefix = true,
+                                Preview = true,
+                                ShowResults = ShowResults
+                            });
+
+                        if (response.IsSuccessStatusCode)
+                        {
+                            FetchResult = await response.Content.ReadFromJsonAsync<FetchResult<IEnumerable<CodeSource>>>();
+                        }
+                        else
+                        {
+                            FetchResult = new FetchResult<IEnumerable<CodeSource>>()
+                            {
+                                Status = new Status()
+                                {
+                                    Success = false,
+                                    StatusDesc = await response.Content.ReadAsStringAsync()
+                                }
+                            };
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        FetchResult = new FetchResult<IEnumerable<CodeSource>>()
+                        {
+                            Status = new Status()
+                            {
+                                Success = false,
+                                StatusDesc = ex.Message
+                            }
+                        };
+                    }
                 }
                 else
                 {

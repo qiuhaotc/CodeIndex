@@ -2,6 +2,7 @@
 using System.Collections.Generic;
 using System.Linq;
 using CodeIndex.Common;
+using CodeIndex.IndexBuilder;
 using CodeIndex.MaintainIndex;
 using Microsoft.Extensions.Logging;
 
@@ -146,6 +147,11 @@ namespace CodeIndex.Search
             {
                 word.RequireNotNullOrEmpty(nameof(word));
 
+                if(word.Length > CodeIndexBuilder.HintWordMaxLength)
+                {
+                    word = word.Substring(0, CodeIndexBuilder.HintWordMaxLength);
+                }
+
                 result = new FetchResult<IEnumerable<string>>
                 {
                     Result = CodeIndexSearcher.GetHints(word, indexPk),
@@ -178,7 +184,7 @@ namespace CodeIndex.Search
         {
             showResults = searchRequest.ShowResults.HasValue && searchRequest.ShowResults.Value <= CodeIndexConfiguration.MaximumResults && searchRequest.ShowResults.Value > 0 ? searchRequest.ShowResults.Value : 100;
 
-            return CodeIndexSearcher.SearchCode(QueryGenerator.GetSearchStr(searchRequest.FileName, searchRequest.Content, searchRequest.FileExtension, searchRequest.FilePath, searchRequest.CaseSensitive), out _, showResults, searchRequest.IndexPk);
+            return CodeIndexSearcher.SearchCode(QueryGenerator.GetSearchStr(searchRequest.FileName, searchRequest.Content, searchRequest.FileExtension, searchRequest.FilePath, searchRequest.CaseSensitive, searchRequest.CodePK), out _, showResults, searchRequest.IndexPk);
         }
     }
 }

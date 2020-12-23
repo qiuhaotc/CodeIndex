@@ -16,8 +16,13 @@ namespace CodeIndex.MaintainIndex
             QueryParser = queryParser;
         }
 
-        public static string GetSearchStr(string fileName, string content, string fileExtension, string filePath, bool caseSensitive = false)
+        public static string GetSearchStr(string fileName, string content, string fileExtension, string filePath, bool caseSensitive = false, string codePk = null)
         {
+            if (!string.IsNullOrWhiteSpace(codePk))
+            {
+                return $"{nameof(CodeSource.CodePK)}:{codePk}";
+            }
+
             var searchQueries = new List<string>();
 
             if (!string.IsNullOrWhiteSpace(fileName))

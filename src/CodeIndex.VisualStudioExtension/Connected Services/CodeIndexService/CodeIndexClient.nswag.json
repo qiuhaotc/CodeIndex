@@ -11,11 +11,16 @@
   ],
   "paths": {
     "/api/Lucene/GetCodeSources": {
-      "get": {
+      "post": {
         "tags": [
           "Lucene"
         ],
         "operationId": "Lucene_GetCodeSources",
+        "consumes": [
+          "application/json",
+          "text/json",
+          "application/*+json"
+        ],
         "produces": [
           "text/plain",
           "application/json",
@@ -23,44 +28,12 @@
         ],
         "parameters": [
           {
-            "type": "string",
-            "name": "searchQuery",
-            "in": "query",
-            "x-nullable": true
-          },
-          {
-            "type": "boolean",
-            "name": "preview",
-            "in": "query",
-            "x-nullable": false
-          },
-          {
-            "type": "string",
-            "name": "indexPk",
-            "in": "query",
-            "format": "guid",
-            "x-nullable": false
-          },
-          {
-            "type": "string",
-            "name": "contentQuery",
-            "in": "query",
-            "default": "",
-            "x-nullable": true
-          },
-          {
-            "type": "integer",
-            "name": "showResults",
-            "in": "query",
-            "format": "int32",
-            "default": 0,
-            "x-nullable": true
-          },
-          {
-            "type": "boolean",
-            "name": "caseSensitive",
-            "in": "query",
-            "default": false,
+            "name": "searchRequest",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/SearchRequest"
+            },
             "x-nullable": false
           }
         ],
@@ -76,11 +49,16 @@
       }
     },
     "/api/Lucene/GetCodeSourcesWithMatchedLine": {
-      "get": {
+      "post": {
         "tags": [
           "Lucene"
         ],
         "operationId": "Lucene_GetCodeSourcesWithMatchedLine",
+        "consumes": [
+          "application/json",
+          "text/json",
+          "application/*+json"
+        ],
         "produces": [
           "text/plain",
           "application/json",
@@ -88,52 +66,12 @@
         ],
         "parameters": [
           {
-            "type": "string",
-            "name": "searchQuery",
-            "in": "query",
-            "x-nullable": true
-          },
-          {
-            "type": "string",
-            "name": "indexPk",
-            "in": "query",
-            "format": "guid",
-            "x-nullable": false
-          },
-          {
-            "type": "string",
-            "name": "contentQuery",
-            "in": "query",
-            "default": "",
-            "x-nullable": true
-          },
-          {
-            "type": "integer",
-            "name": "showResults",
-            "in": "query",
-            "format": "int32",
-            "default": 0,
-            "x-nullable": true
-          },
-          {
-            "type": "boolean",
-            "name": "needReplaceSuffixAndPrefix",
-            "in": "query",
-            "default": true,
-            "x-nullable": false
-          },
-          {
-            "type": "boolean",
-            "name": "forWeb",
-            "in": "query",
-            "default": true,
-            "x-nullable": false
-          },
-          {
-            "type": "boolean",
-            "name": "caseSensitive",
-            "in": "query",
-            "default": false,
+            "name": "searchRequest",
+            "in": "body",
+            "required": true,
+            "schema": {
+              "$ref": "#/definitions/SearchRequest"
+            },
             "x-nullable": false
           }
         ],
@@ -580,6 +518,62 @@
         },
         "info": {
           "type": "string"
+        }
+      }
+    },
+    "SearchRequest": {
+      "type": "object",
+      "required": [
+        "indexPk",
+        "caseSensitive",
+        "phaseQuery",
+        "preview",
+        "needReplaceSuffixAndPrefix",
+        "forWeb"
+      ],
+      "properties": {
+        "indexPk": {
+          "type": "string",
+          "format": "guid"
+        },
+        "content": {
+          "type": "string",
+          "maxLength": 1000
+        },
+        "fileName": {
+          "type": "string",
+          "maxLength": 200
+        },
+        "fileExtension": {
+          "type": "string",
+          "maxLength": 20
+        },
+        "filePath": {
+          "type": "string",
+          "maxLength": 1000
+        },
+        "caseSensitive": {
+          "type": "boolean"
+        },
+        "phaseQuery": {
+          "type": "boolean"
+        },
+        "showResults": {
+          "type": "integer",
+          "format": "int32"
+        },
+        "preview": {
+          "type": "boolean"
+        },
+        "needReplaceSuffixAndPrefix": {
+          "type": "boolean"
+        },
+        "forWeb": {
+          "type": "boolean"
+        },
+        "codePK": {
+          "type": "string",
+          "maxLength": 32
         }
       }
     },

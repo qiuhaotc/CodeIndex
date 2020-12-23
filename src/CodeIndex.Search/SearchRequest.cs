@@ -1,13 +1,18 @@
 ﻿using System;
+using System.ComponentModel.DataAnnotations;
 
-namespace CodeIndex.Common
+namespace CodeIndex.Search
 {
     public record SearchRequest
     {
         public Guid IndexPk { get; set; }
+        [MaxLength(1000)]
         public string Content { get; set; }
+        [MaxLength(200)]
         public string FileName { get; set; }
+        [MaxLength(20)]
         public string FileExtension { get; set; }
+        [MaxLength(1000)]
         public string FilePath { get; set; }
         public bool CaseSensitive { get; set; }
         public bool PhaseQuery { get; set; }
@@ -15,5 +20,7 @@ namespace CodeIndex.Common
         public bool Preview { get; set; }
         public bool NeedReplaceSuffixAndPrefix { get; set; }
         public bool ForWeb { get; set; }
+        [MaxLength(32)]
+        public string CodePK { get; set; }
     }
 }

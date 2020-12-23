@@ -42,42 +42,20 @@ namespace CodeIndex.VisualStudioExtension
         partial void ProcessResponse(System.Net.Http.HttpClient client, System.Net.Http.HttpResponseMessage response);
     
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public System.Threading.Tasks.Task<FetchResultOfIEnumerableOfCodeSource> ApiLuceneGetcodesourcesAsync(string searchQuery, bool? preview, System.Guid? indexPk, string contentQuery, int? showResults, bool? caseSensitive)
+        public System.Threading.Tasks.Task<FetchResultOfIEnumerableOfCodeSource> ApiLuceneGetcodesourcesAsync(SearchRequest searchRequest)
         {
-            return ApiLuceneGetcodesourcesAsync(searchQuery, preview, indexPk, contentQuery, showResults, caseSensitive, System.Threading.CancellationToken.None);
+            return ApiLuceneGetcodesourcesAsync(searchRequest, System.Threading.CancellationToken.None);
         }
     
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public async System.Threading.Tasks.Task<FetchResultOfIEnumerableOfCodeSource> ApiLuceneGetcodesourcesAsync(string searchQuery, bool? preview, System.Guid? indexPk, string contentQuery, int? showResults, bool? caseSensitive, System.Threading.CancellationToken cancellationToken)
+        public async System.Threading.Tasks.Task<FetchResultOfIEnumerableOfCodeSource> ApiLuceneGetcodesourcesAsync(SearchRequest searchRequest, System.Threading.CancellationToken cancellationToken)
         {
+            if (searchRequest == null)
+                throw new System.ArgumentNullException("searchRequest");
+    
             var urlBuilder_ = new System.Text.StringBuilder();
-            urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/Lucene/GetCodeSources?");
-            if (searchQuery != null) 
-            {
-                urlBuilder_.Append(System.Uri.EscapeDataString("searchQuery") + "=").Append(System.Uri.EscapeDataString(ConvertToString(searchQuery, System.Globalization.CultureInfo.InvariantCulture))).Append("&");
-            }
-            if (preview != null) 
-            {
-                urlBuilder_.Append(System.Uri.EscapeDataString("preview") + "=").Append(System.Uri.EscapeDataString(ConvertToString(preview, System.Globalization.CultureInfo.InvariantCulture))).Append("&");
-            }
-            if (indexPk != null) 
-            {
-                urlBuilder_.Append(System.Uri.EscapeDataString("indexPk") + "=").Append(System.Uri.EscapeDataString(ConvertToString(indexPk, System.Globalization.CultureInfo.InvariantCulture))).Append("&");
-            }
-            if (contentQuery != null) 
-            {
-                urlBuilder_.Append(System.Uri.EscapeDataString("contentQuery") + "=").Append(System.Uri.EscapeDataString(ConvertToString(contentQuery, System.Globalization.CultureInfo.InvariantCulture))).Append("&");
-            }
-            if (showResults != null) 
-            {
-                urlBuilder_.Append(System.Uri.EscapeDataString("showResults") + "=").Append(System.Uri.EscapeDataString(ConvertToString(showResults, System.Globalization.CultureInfo.InvariantCulture))).Append("&");
-            }
-            if (caseSensitive != null) 
-            {
-                urlBuilder_.Append(System.Uri.EscapeDataString("caseSensitive") + "=").Append(System.Uri.EscapeDataString(ConvertToString(caseSensitive, System.Globalization.CultureInfo.InvariantCulture))).Append("&");
-            }
-            urlBuilder_.Length--;
+            urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/Lucene/GetCodeSources");
     
             var client_ = _httpClient;
             var disposeClient_ = false;
@@ -85,7 +63,10 @@ namespace CodeIndex.VisualStudioExtension
             {
                 using (var request_ = new System.Net.Http.HttpRequestMessage())
                 {
-                    request_.Method = new System.Net.Http.HttpMethod("GET");
+                    var content_ = new System.Net.Http.StringContent(Newtonsoft.Json.JsonConvert.SerializeObject(searchRequest, _settings.Value));
+                    content_.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json");
+                    request_.Content = content_;
+                    request_.Method = new System.Net.Http.HttpMethod("POST");
                     request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
     
                     PrepareRequest(client_, request_, urlBuilder_);
@@ -137,46 +118,20 @@ namespace CodeIndex.VisualStudioExtension
         }
     
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public System.Threading.Tasks.Task<FetchResultOfIEnumerableOfCodeSourceWithMatchedLine> ApiLuceneGetcodesourceswithmatchedlineAsync(string searchQuery, System.Guid? indexPk, string contentQuery, int? showResults, bool? needReplaceSuffixAndPrefix, bool? forWeb, bool? caseSensitive)
+        public System.Threading.Tasks.Task<FetchResultOfIEnumerableOfCodeSourceWithMatchedLine> ApiLuceneGetcodesourceswithmatchedlineAsync(SearchRequest searchRequest)
         {
-            return ApiLuceneGetcodesourceswithmatchedlineAsync(searchQuery, indexPk, contentQuery, showResults, needReplaceSuffixAndPrefix, forWeb, caseSensitive, System.Threading.CancellationToken.None);
+            return ApiLuceneGetcodesourceswithmatchedlineAsync(searchRequest, System.Threading.CancellationToken.None);
         }
     
         /// <param name="cancellationToken">A cancellation token that can be used by other objects or threads to receive notice of cancellation.</param>
         /// <exception cref="ApiException">A server side error occurred.</exception>
-        public async System.Threading.Tasks.Task<FetchResultOfIEnumerableOfCodeSourceWithMatchedLine> ApiLuceneGetcodesourceswithmatchedlineAsync(string searchQuery, System.Guid? indexPk, string contentQuery, int? showResults, bool? needReplaceSuffixAndPrefix, bool? forWeb, bool? caseSensitive, System.Threading.CancellationToken cancellationToken)
+        public async System.Threading.Tasks.Task<FetchResultOfIEnumerableOfCodeSourceWithMatchedLine> ApiLuceneGetcodesourceswithmatchedlineAsync(SearchRequest searchRequest, System.Threading.CancellationToken cancellationToken)
         {
+            if (searchRequest == null)
+                throw new System.ArgumentNullException("searchRequest");
+    
             var urlBuilder_ = new System.Text.StringBuilder();
-            urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/Lucene/GetCodeSourcesWithMatchedLine?");
-            if (searchQuery != null) 
-            {
-                urlBuilder_.Append(System.Uri.EscapeDataString("searchQuery") + "=").Append(System.Uri.EscapeDataString(ConvertToString(searchQuery, System.Globalization.CultureInfo.InvariantCulture))).Append("&");
-            }
-            if (indexPk != null) 
-            {
-                urlBuilder_.Append(System.Uri.EscapeDataString("indexPk") + "=").Append(System.Uri.EscapeDataString(ConvertToString(indexPk, System.Globalization.CultureInfo.InvariantCulture))).Append("&");
-            }
-            if (contentQuery != null) 
-            {
-                urlBuilder_.Append(System.Uri.EscapeDataString("contentQuery") + "=").Append(System.Uri.EscapeDataString(ConvertToString(contentQuery, System.Globalization.CultureInfo.InvariantCulture))).Append("&");
-            }
-            if (showResults != null) 
-            {
-                urlBuilder_.Append(System.Uri.EscapeDataString("showResults") + "=").Append(System.Uri.EscapeDataString(ConvertToString(showResults, System.Globalization.CultureInfo.InvariantCulture))).Append("&");
-            }
-            if (needReplaceSuffixAndPrefix != null) 
-            {
-                urlBuilder_.Append(System.Uri.EscapeDataString("needReplaceSuffixAndPrefix") + "=").Append(System.Uri.EscapeDataString(ConvertToString(needReplaceSuffixAndPrefix, System.Globalization.CultureInfo.InvariantCulture))).Append("&");
-            }
-            if (forWeb != null) 
-            {
-                urlBuilder_.Append(System.Uri.EscapeDataString("forWeb") + "=").Append(System.Uri.EscapeDataString(ConvertToString(forWeb, System.Globalization.CultureInfo.InvariantCulture))).Append("&");
-            }
-            if (caseSensitive != null) 
-            {
-                urlBuilder_.Append(System.Uri.EscapeDataString("caseSensitive") + "=").Append(System.Uri.EscapeDataString(ConvertToString(caseSensitive, System.Globalization.CultureInfo.InvariantCulture))).Append("&");
-            }
-            urlBuilder_.Length--;
+            urlBuilder_.Append(BaseUrl != null ? BaseUrl.TrimEnd('/') : "").Append("/api/Lucene/GetCodeSourcesWithMatchedLine");
     
             var client_ = _httpClient;
             var disposeClient_ = false;
@@ -184,7 +139,10 @@ namespace CodeIndex.VisualStudioExtension
             {
                 using (var request_ = new System.Net.Http.HttpRequestMessage())
                 {
-                    request_.Method = new System.Net.Http.HttpMethod("GET");
+                    var content_ = new System.Net.Http.StringContent(Newtonsoft.Json.JsonConvert.SerializeObject(searchRequest, _settings.Value));
+                    content_.Headers.ContentType = System.Net.Http.Headers.MediaTypeHeaderValue.Parse("application/json");
+                    request_.Content = content_;
+                    request_.Method = new System.Net.Http.HttpMethod("POST");
                     request_.Headers.Accept.Add(System.Net.Http.Headers.MediaTypeWithQualityHeaderValue.Parse("application/json"));
     
                     PrepareRequest(client_, request_, urlBuilder_);
@@ -1339,6 +1297,54 @@ namespace CodeIndex.VisualStudioExtension
     
         [Newtonsoft.Json.JsonProperty("info", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
         public string Info { get; set; }
+    
+    
+    }
+    
+    [System.CodeDom.Compiler.GeneratedCode("NJsonSchema", "10.3.1.0 (Newtonsoft.Json v12.0.0.2)")]
+    public partial class SearchRequest 
+    {
+        [Newtonsoft.Json.JsonProperty("indexPk", Required = Newtonsoft.Json.Required.Always)]
+        [System.ComponentModel.DataAnnotations.Required(AllowEmptyStrings = true)]
+        public System.Guid IndexPk { get; set; }
+    
+        [Newtonsoft.Json.JsonProperty("content", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [System.ComponentModel.DataAnnotations.StringLength(1000)]
+        public string Content { get; set; }
+    
+        [Newtonsoft.Json.JsonProperty("fileName", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [System.ComponentModel.DataAnnotations.StringLength(200)]
+        public string FileName { get; set; }
+    
+        [Newtonsoft.Json.JsonProperty("fileExtension", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [System.ComponentModel.DataAnnotations.StringLength(20)]
+        public string FileExtension { get; set; }
+    
+        [Newtonsoft.Json.JsonProperty("filePath", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [System.ComponentModel.DataAnnotations.StringLength(1000)]
+        public string FilePath { get; set; }
+    
+        [Newtonsoft.Json.JsonProperty("caseSensitive", Required = Newtonsoft.Json.Required.Always)]
+        public bool CaseSensitive { get; set; }
+    
+        [Newtonsoft.Json.JsonProperty("phaseQuery", Required = Newtonsoft.Json.Required.Always)]
+        public bool PhaseQuery { get; set; }
+    
+        [Newtonsoft.Json.JsonProperty("showResults", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        public int? ShowResults { get; set; }
+    
+        [Newtonsoft.Json.JsonProperty("preview", Required = Newtonsoft.Json.Required.Always)]
+        public bool Preview { get; set; }
+    
+        [Newtonsoft.Json.JsonProperty("needReplaceSuffixAndPrefix", Required = Newtonsoft.Json.Required.Always)]
+        public bool NeedReplaceSuffixAndPrefix { get; set; }
+    
+        [Newtonsoft.Json.JsonProperty("forWeb", Required = Newtonsoft.Json.Required.Always)]
+        public bool ForWeb { get; set; }
+    
+        [Newtonsoft.Json.JsonProperty("codePK", Required = Newtonsoft.Json.Required.Default, NullValueHandling = Newtonsoft.Json.NullValueHandling.Ignore)]
+        [System.ComponentModel.DataAnnotations.StringLength(32)]
+        public string CodePK { get; set; }
     
     
     }
