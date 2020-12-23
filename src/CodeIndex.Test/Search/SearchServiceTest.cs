@@ -1,5 +1,7 @@
 ﻿using System.Linq;
+using CodeIndex.Common;
 using CodeIndex.Search;
+using Lucene.Net.Search;
 using NUnit.Framework;
 
 namespace CodeIndex.Test
@@ -66,13 +68,19 @@ namespace CodeIndex.Test
             using var initManagement = new InitManagement(MonitorFolder, Config, true);
             var searcher = initManagement.GetIndexSearcher();
             var searchService = new SearchService(Config, new DummyLog<SearchService>(), searcher);
-            var result = searchService.GetHints("abc", initManagement.IndexPk);
-            Assert.IsTrue(result.Status.Success);
-            CollectionAssert.AreEquivalent(new[] { "ABCD", "ABCE" }, result.Result);
+            var allwords = searcher.IndexManagement.GetIndexMaintainerWrapperAndInitializeIfNeeded(initManagement.IndexPk).Result.Maintainer.IndexBuilder.HintIndexPool.Search(new MatchAllDocsQuery(), 100).Select(u => u.Get(nameof(CodeWord.Word)));
+            Assert.Multiple(() =>
+            {
+                CollectionAssert.AreEquivalent(new[] { "ABCD", "EFGH", "IJKL", "ABCE" }, allwords);
 
-            result = searchService.GetHints("efg", initManagement.IndexPk);
-            Assert.IsTrue(result.Status.Success);
-            CollectionAssert.AreEquivalent(new[] { "EFGH" }, result.Result);
+                var result = searchService.GetHints("abc", initManagement.IndexPk);
+                Assert.IsTrue(result.Status.Success);
+                CollectionAssert.AreEquivalent(new[] { "ABCD", "ABCE" }, result.Result);
+
+                result = searchService.GetHints("efg", initManagement.IndexPk);
+                Assert.IsTrue(result.Status.Success);
+                CollectionAssert.AreEquivalent(new[] { "EFGH" }, result.Result);
+            });
         }
     }
 }
