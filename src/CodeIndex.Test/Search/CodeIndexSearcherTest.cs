@@ -86,7 +86,7 @@ Is A <label class='highlight'>ABC</label>...s <label class='highlight'>abc</labe
             var searcher = initManagement.GetIndexSearcher();
 
             searcher.GetHints("ABC", initManagement.IndexPk);
-            CollectionAssert.AreEquivalent(new[] { "ABCD" }, searcher.GetHints("Abc", initManagement.IndexPk));
+            CollectionAssert.AreEquivalent(new[] { "ABCD", "ABCE" }, searcher.GetHints("Abc", initManagement.IndexPk));
             CollectionAssert.IsEmpty(searcher.GetHints("Abc", initManagement.IndexPk, caseSensitive: true));
             CollectionAssert.AreEquivalent(new[] { "EFGH" }, searcher.GetHints("EFG", initManagement.IndexPk));
         }
