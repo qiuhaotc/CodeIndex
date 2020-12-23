@@ -31,7 +31,7 @@ namespace CodeIndex.Test
                 var fileName3 = Path.Combine(monitorFolder, "C.txt");
                 File.AppendAllText(fileName1, "ABCD");
                 File.AppendAllText(fileName2, "ABCD EFGH");
-                File.AppendAllText(fileName3, "ABCD EFGH IJKL" + Environment.NewLine + "ABCD ABCE ");
+                File.AppendAllText(fileName3, "ABCD EFGH IJKL ABCE" + Environment.NewLine + "ABCD");
             }
 
             management = new IndexManagement(codeIndexConfiguration, log1);
