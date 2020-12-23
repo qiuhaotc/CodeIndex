@@ -1,7 +1,6 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.IO;
-using System.Linq;
 using System.Reflection;
 using System.Text;
 using System.Threading.Tasks;
@@ -13,7 +12,6 @@ using Lucene.Net.Analysis;
 using Lucene.Net.Analysis.Core;
 using Lucene.Net.Analysis.Standard;
 using Lucene.Net.Analysis.TokenAttributes;
-using Lucene.Net.Search;
 using Microsoft.AspNetCore.Mvc;
 using Microsoft.Extensions.Logging;
 
@@ -23,182 +21,31 @@ namespace CodeIndex.Server.Controllers
     [ApiController]
     public class LuceneController : ControllerBase
     {
-        public LuceneController(CodeIndexConfiguration codeIndexConfiguration, ILogger<LuceneController> log, CodeIndexSearcher codeIndexSearcher)
-        {
-            this.codeIndexConfiguration = codeIndexConfiguration;
-            Log = log;
-            this.codeIndexSearcher = codeIndexSearcher;
-        }
-
+        SearchService SearchService { get; }
         ILogger<LuceneController> Log { get; }
 
-        readonly CodeIndexConfiguration codeIndexConfiguration;
-        readonly CodeIndexSearcher codeIndexSearcher;
-
-        [HttpGet]
-        public FetchResult<IEnumerable<CodeSource>> GetCodeSources(string searchQuery, bool preview, Guid indexPk, string contentQuery = "", int? showResults = 0, bool caseSensitive = false)
+        public LuceneController(SearchService searchService, ILogger<LuceneController> log)
         {
-            FetchResult<IEnumerable<CodeSource>> result;
-
-            try
-            {
-                searchQuery.RequireNotNullOrEmpty(nameof(searchQuery));
-
-                var showResultsValue = showResults.HasValue && showResults.Value <= codeIndexConfiguration.MaximumResults && showResults.Value > 0 ? showResults.Value : 100;
-
-                result = new FetchResult<IEnumerable<CodeSource>>
-                {
-                    Result = SearchCodeSource(searchQuery, out var query, indexPk, showResultsValue),
-                    Status = new Status
-                    {
-                        Success = true
-                    }
-                };
-
-                if (preview)
-                {
-                    foreach (var item in result.Result)
-                    {
-                        item.Content = codeIndexSearcher.GenerateHtmlPreviewText(contentQuery, item.Content, 30, indexPk, caseSensitive: caseSensitive);
-                    }
-                }
-                else if (!preview)
-                {
-                    foreach (var item in result.Result)
-                    {
-                        item.Content = codeIndexSearcher.GenerateHtmlPreviewText(contentQuery, item.Content, int.MaxValue, indexPk, returnRawContentWhenResultIsEmpty: true, caseSensitive: caseSensitive);
-                    }
-                }
-
-                Log.LogDebug($"Request: '{searchQuery}' successful, return matched code source");
-            }
-            catch (Exception ex)
-            {
-                result = new FetchResult<IEnumerable<CodeSource>>
-                {
-                    Status = new Status
-                    {
-                        Success = false,
-                        StatusDesc = ex.ToString()
-                    }
-                };
-
-                Log.LogError(ex.ToString());
-            }
-
-            return result;
+            SearchService = searchService;
+            Log = log;
         }
 
-        [HttpGet]
-        public FetchResult<IEnumerable<CodeSourceWithMatchedLine>> GetCodeSourcesWithMatchedLine(string searchQuery, Guid indexPk, string contentQuery = "", int? showResults = 0, bool needReplaceSuffixAndPrefix = true, bool forWeb = true, bool caseSensitive = false)
+        [HttpPost]
+        public FetchResult<IEnumerable<CodeSource>> GetCodeSources(SearchRequest searchRequest)
         {
-            FetchResult<IEnumerable<CodeSourceWithMatchedLine>> result;
+            return SearchService.GetCodeSources(searchRequest);
+        }
 
-            try
-            {
-                searchQuery.RequireNotNullOrEmpty(nameof(searchQuery));
-
-                var showResultsValue = showResults.HasValue && showResults.Value <= codeIndexConfiguration.MaximumResults && showResults.Value > 0 ? showResults.Value : 100;
-
-                var codeSources = SearchCodeSource(searchQuery, out var query, indexPk, showResultsValue);
-
-                var queryForContent = codeIndexSearcher.GetContentQueryFromStr(contentQuery, indexPk, caseSensitive);
-
-                var codeSourceWithMatchedLineList = new List<CodeSourceWithMatchedLine>();
-
-                result = new FetchResult<IEnumerable<CodeSourceWithMatchedLine>>
-                {
-                    Result = codeSourceWithMatchedLineList,
-                    Status = new Status
-                    {
-                        Success = true
-                    }
-                };
-
-                if (queryForContent != null)
-                {
-                    var totalResult = 0;
-
-                    foreach (var codeSource in codeSources)
-                    {
-                        var matchedLines = codeIndexSearcher.GeneratePreviewTextWithLineNumber(queryForContent, codeSource.Content, int.MaxValue, showResultsValue - totalResult, indexPk, forWeb: forWeb, needReplaceSuffixAndPrefix: needReplaceSuffixAndPrefix, caseSensitive: caseSensitive);
-                        codeSource.Content = string.Empty; // Empty content to reduce response size
-
-                        foreach (var matchedLine in matchedLines)
-                        {
-                            totalResult++;
-
-                            codeSourceWithMatchedLineList.Add(new CodeSourceWithMatchedLine(codeSource, matchedLine.LineNumber, matchedLine.MatchedLineContent));
-                        }
-                    }
-                }
-                else
-                {
-                    codeSourceWithMatchedLineList.AddRange(codeSources.Select(u =>
-                    {
-                        u.Content = string.Empty; // Empty content to reduce response size
-                        return new CodeSourceWithMatchedLine(u, 1, string.Empty);
-                    }));
-                }
-
-                Log.LogDebug($"Request: '{searchQuery}' successful, return matched code source with line number");
-            }
-            catch (Exception ex)
-            {
-                result = new FetchResult<IEnumerable<CodeSourceWithMatchedLine>>
-                {
-                    Status = new Status
-                    {
-                        Success = false,
-                        StatusDesc = ex.ToString()
-                    }
-                };
-
-                Log.LogError(ex.ToString());
-            }
-
-            return result;
+        [HttpPost]
+        public FetchResult<IEnumerable<CodeSourceWithMatchedLine>> GetCodeSourcesWithMatchedLine(SearchRequest searchRequest)
+        {
+            return SearchService.GetCodeSourcesWithMatchedLine(searchRequest);
         }
 
         [HttpGet]
         public FetchResult<IEnumerable<string>> GetHints(string word, Guid indexPk)
         {
-            FetchResult<IEnumerable<string>> result;
-            try
-            {
-                word.RequireNotNullOrEmpty(nameof(word));
-
-                result = new FetchResult<IEnumerable<string>>
-                {
-                    Result = codeIndexSearcher.GetHints(word, indexPk),
-                    Status = new Status
-                    {
-                        Success = true
-                    }
-                };
-
-                Log.LogDebug($"Get Hints For '{word}' successful");
-            }
-            catch (Exception ex)
-            {
-                result = new FetchResult<IEnumerable<string>>
-                {
-                    Status = new Status
-                    {
-                        Success = false,
-                        StatusDesc = ex.ToString()
-                    }
-                };
-
-                Log.LogError(ex.ToString());
-            }
-
-            return result;
-        }
-
-        CodeSource[] SearchCodeSource(string searchStr, out Query query, Guid pk, int showResults = 100)
-        {
-            return codeIndexSearcher.SearchCode(searchStr, out query, showResults, pk);
+            return SearchService.GetHints(word, indexPk);
         }
 
         [HttpGet]
