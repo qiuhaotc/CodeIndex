@@ -51,7 +51,7 @@
                 {
                     IndexPk = new Guid(IndexPK),
                     CodePK = CodePK,
-                    Content = @System.Web.HttpUtility.UrlDecode(ContentQuery)
+                    Content = System.Web.HttpUtility.UrlDecode(ContentQuery)
                 });
 
             if (result.IsSuccessStatusCode)

@@ -32,9 +32,6 @@ namespace CodeIndex.ConsoleApp
                         {
                             IndexName = "Test",
                             MonitorFolder = @"D:\TestFolder\CodeFolder",
-                            ExcludedExtensions = ".DLL|.PBD",
-                            ExcludedPaths = "\\DEBUG\\|\\RELEASE\\|\\RELEASES\\|\\BIN\\|\\OBJ\\|\\DEBUGPUBLIC\\",
-                            IncludedExtensions = ".CS|.XML|.XAML|.JS|.TXT"
                         };
 
                         management.AddIndex(indexConfig);

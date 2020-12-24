@@ -88,8 +88,8 @@ namespace CodeIndex.Common
         string[] excludedPathsArray;
         string[] includedExtensionsArray;
         string[] excludedExtensionsArray;
-        string excludedPaths = "\\RELEASES\\|\\BIN\\|\\OBJ\\|\\DEBUGPUBLIC\\";
-        string includedExtensions = ".CS|.XML|.XAML|.JS|.TXT|.SQL";
+        string excludedPaths = "\\RELEASES\\|\\BIN\\|\\OBJ\\|\\DEBUGPUBLIC\\|\\PACKAGES\\|\\.GIT\\";
+        string includedExtensions = ".CS|.XML|.XAML|.JS|.TXT|.SQL|.CSPROJ|.SLN|.CSHTML|.RAZOR";
         string excludedExtensions = ".DLL|.PBD";
     }
 }

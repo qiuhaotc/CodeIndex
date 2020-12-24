@@ -28,9 +28,11 @@ namespace CodeIndex.VisualStudioExtension
             }
             else
             {
-                (DataContext as CodeIndexSearchViewModel)?.GetHintWordsAsync();
+                SearchViewModel?.GetHintWordsAsync();
             }
         }
+
+        CodeIndexSearchViewModel SearchViewModel => DataContext as CodeIndexSearchViewModel;
 
         void Row_DoubleClick(object sender, MouseButtonEventArgs e)
         {
@@ -48,7 +50,11 @@ namespace CodeIndex.VisualStudioExtension
                 else
                 {
                     // TODO: Download to local to open
-                    System.Windows.Forms.MessageBox.Show("This file is not on your local");
+                    if (System.Windows.MessageBox.Show("This file is not on your local, do you want to open it in the web portal?", "Info", System.Windows.MessageBoxButton.YesNo) == System.Windows.MessageBoxResult.Yes)
+                    {
+                        System.Diagnostics.Process.Start($"{SearchViewModel.ServiceUrl}/Details/{codeSourceWithMatchedLine.CodeSource.CodePK}/{SearchViewModel.IndexPk}/{System.Web.HttpUtility.UrlEncode(SearchViewModel.Content)}");
+                    }
+
                 }
             }
         }
