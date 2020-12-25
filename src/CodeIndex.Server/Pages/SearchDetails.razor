@@ -8,7 +8,7 @@
     <h1 class="display-4">Details For @Source?.FileName</h1>
     <p class="lead">Extension: @Source?.FileExtension | Index Date: @Source?.IndexDate | Last Write Time Utc: @Source?.LastWriteTimeUtc</p>
     <hr class="my-4">
-    <p>File Path: <a href="@CurrentIndexConfig.OpenIDEUriFormat?.Replace("{FilePath}", GetPath(Source?.FilePath))">@Source?.FilePath</a></p>
+    <p>File Path: <a href="@RazorPageUtils.GetOpenIDEUri(CurrentIndexConfig.OpenIDEUriFormat, Source?.FilePath, CurrentIndexConfig.MonitorFolderRealPath)">@Source?.FilePath</a></p>
     <hr class="my-4">
     <p>Content:</p>
     <p>

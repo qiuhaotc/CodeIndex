@@ -26,6 +26,17 @@ namespace CodeIndex.Test
             };
 
             Assert.AreEqual(request, request with { });
+            Assert.IsFalse(request.IsEmpty);
+
+            request.IndexPk = Guid.Empty;
+            Assert.IsTrue(request.IsEmpty);
+
+            request.IndexPk = Guid.NewGuid();
+            request.Content = string.Empty;
+            request.FileExtension = " ";
+            request.FilePath = null;
+            request.FileName = null;
+            Assert.IsTrue(request.IsEmpty);
         }
     }
 }
