@@ -31,7 +31,7 @@ namespace CodeIndex.Search
 
                 result = new FetchResult<IEnumerable<CodeSource>>
                 {
-                    Result = SearchCodeSource(searchRequest, out _),
+                    Result = SearchCodeSource(searchRequest),
                     Status = new Status
                     {
                         Success = true
@@ -42,14 +42,14 @@ namespace CodeIndex.Search
                 {
                     foreach (var item in result.Result)
                     {
-                        item.Content = CodeIndexSearcher.GenerateHtmlPreviewText(searchRequest.Content, item.Content, 30, searchRequest.IndexPk, caseSensitive: searchRequest.CaseSensitive);
+                        item.Content = CodeIndexSearcher.GenerateHtmlPreviewText(searchRequest, item.Content, 30);
                     }
                 }
                 else
                 {
                     foreach (var item in result.Result)
                     {
-                        item.Content = CodeIndexSearcher.GenerateHtmlPreviewText(searchRequest.Content, item.Content, int.MaxValue, searchRequest.IndexPk, returnRawContentWhenResultIsEmpty: true, caseSensitive: searchRequest.CaseSensitive);
+                        item.Content = CodeIndexSearcher.GenerateHtmlPreviewText(searchRequest, item.Content, int.MaxValue, returnRawContentWhenResultIsEmpty: true);
                     }
                 }
 
@@ -80,9 +80,9 @@ namespace CodeIndex.Search
             {
                 searchRequest.RequireNotNull(nameof(searchRequest));
 
-                var codeSources = SearchCodeSource(searchRequest, out var showResults);
+                var codeSources = SearchCodeSource(searchRequest);
 
-                var queryForContent = CodeIndexSearcher.GetContentQueryFromStr(searchRequest.Content, searchRequest.IndexPk, searchRequest.CaseSensitive);
+                var queryForContent = CodeIndexSearcher.GetContentQuery(searchRequest);
 
                 var codeSourceWithMatchedLineList = new List<CodeSourceWithMatchedLine>();
 
@@ -101,7 +101,7 @@ namespace CodeIndex.Search
 
                     foreach (var codeSource in codeSources)
                     {
-                        var matchedLines = CodeIndexSearcher.GeneratePreviewTextWithLineNumber(queryForContent, codeSource.Content, int.MaxValue, showResults - totalResult, searchRequest.IndexPk, forWeb: searchRequest.ForWeb, needReplaceSuffixAndPrefix: searchRequest.NeedReplaceSuffixAndPrefix, caseSensitive: searchRequest.CaseSensitive);
+                        var matchedLines = CodeIndexSearcher.GeneratePreviewTextWithLineNumber(queryForContent, codeSource.Content, int.MaxValue, searchRequest.ShowResults.Value - totalResult, searchRequest.IndexPk, forWeb: searchRequest.ForWeb, needReplaceSuffixAndPrefix: searchRequest.NeedReplaceSuffixAndPrefix, caseSensitive: searchRequest.CaseSensitive);
                         codeSource.Content = string.Empty; // Empty content to reduce response size
 
                         foreach (var matchedLine in matchedLines)
@@ -147,7 +147,7 @@ namespace CodeIndex.Search
             {
                 word.RequireNotNullOrEmpty(nameof(word));
 
-                if(word.Length > CodeIndexBuilder.HintWordMaxLength)
+                if (word.Length > CodeIndexBuilder.HintWordMaxLength)
                 {
                     word = word.Substring(0, CodeIndexBuilder.HintWordMaxLength);
                 }
@@ -180,11 +180,11 @@ namespace CodeIndex.Search
             return result;
         }
 
-        IEnumerable<CodeSource> SearchCodeSource(SearchRequest searchRequest, out int showResults)
+        IEnumerable<CodeSource> SearchCodeSource(SearchRequest searchRequest)
         {
-            showResults = searchRequest.ShowResults.HasValue && searchRequest.ShowResults.Value <= CodeIndexConfiguration.MaximumResults && searchRequest.ShowResults.Value > 0 ? searchRequest.ShowResults.Value : 100;
+            searchRequest.ShowResults = searchRequest.ShowResults.HasValue && searchRequest.ShowResults.Value <= CodeIndexConfiguration.MaximumResults && searchRequest.ShowResults.Value > 0 ? searchRequest.ShowResults.Value : 100;
 
-            return CodeIndexSearcher.SearchCode(QueryGenerator.GetSearchStr(searchRequest.FileName, searchRequest.Content, searchRequest.FileExtension, searchRequest.FilePath, searchRequest.CaseSensitive, searchRequest.CodePK), out _, showResults, searchRequest.IndexPk);
+            return CodeIndexSearcher.SearchCode(searchRequest);
         }
     }
 }

@@ -9,12 +9,20 @@
     </div>
 </div>
 <div class="row">
-    <div class="col-sm">
+    <div class="col-sm-10">
         <div class="input-group mb-3">
             <div class="input-group-prepend">
                 <span class="input-group-text">Content</span>
             </div>
             <input type="text" class="form-control" placeholder="Put Your Content Here" aria-label="Put Your Content Here" @bind-value="@Request.Content" @bind-value:event="oninput" @onkeyup="@(async e => await KeyPressForContent(e))" maxlength="1000" />
+        </div>
+    </div>
+    <div class="col-sm-2">
+        <div class="input-group mb-3">
+            <div class="input-group-prepend">
+                <span class="input-group-text">Phase Query</span>
+            </div>
+            <input type="checkbox" class="form-control" @bind="Request.PhaseQuery">
         </div>
     </div>
 </div>
@@ -93,7 +101,7 @@
         <div class="input-group mb-3">
             @if (FetchStatus != null && !FetchStatus.Value)
             {
-                <div class="alert alert-danger" role="alert">
+                <div class="alert alert-danger normal-alert-div" role="alert">
                     @StatusDesc
                 </div>
             }
@@ -115,7 +123,7 @@
         <div class="input-group mb-3">
             @if (!HintWords?.Status?.Success ?? false)
             {
-                <div class="alert alert-danger" role="alert">
+                <div class="alert alert-danger normal-alert-div" role="alert">
                     @HintWords.Status.StatusDesc
                 </div>
             }

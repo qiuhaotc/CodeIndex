@@ -21,59 +21,6 @@ namespace CodeIndex.MaintainIndex
             QueryParser = queryParser;
         }
 
-        public static string GetSearchStr(string fileName, string content, string fileExtension, string filePath, bool caseSensitive = false, string codePk = null)
-        {
-            if (!string.IsNullOrWhiteSpace(codePk))
-            {
-                return $"{nameof(CodeSource.CodePK)}:{codePk}";
-            }
-
-            var searchQueries = new List<string>();
-
-            if (!string.IsNullOrWhiteSpace(fileName))
-            {
-                searchQueries.Add($"{nameof(CodeSource.FileName)}:{fileName}");
-            }
-
-            var contentPart = GetSearchStr(content, caseSensitive);
-            if (contentPart != null)
-            {
-                searchQueries.Add(contentPart);
-            }
-
-            if (!string.IsNullOrWhiteSpace(fileExtension))
-            {
-                searchQueries.Add($"{nameof(CodeSource.FileExtension)}:{fileExtension}");
-            }
-
-            if (!string.IsNullOrWhiteSpace(filePath))
-            {
-                if (SurroundWithQuotation(filePath))
-                {
-                    filePath = filePath.Replace("\\", "\\\\");
-                }
-
-                searchQueries.Add($"{nameof(CodeSource.FilePath)}:{filePath}");
-            }
-
-            return string.Join(" AND ", searchQueries);
-        }
-
-        public static string GetSearchStr(string content, bool caseSensitive)
-        {
-            if (!string.IsNullOrWhiteSpace(content))
-            {
-                if (caseSensitive)
-                {
-                    return $"{CodeIndexBuilder.GetCaseSensitiveField(nameof(CodeSource.Content))}:{content}";
-                }
-
-                return $"{nameof(CodeSource.Content)}:{content}";
-            }
-
-            return null;
-        }
-
         public Query GetSearchQuery(SearchRequest searchRequest)
         {
             if (!searchRequest.PhaseQuery)
@@ -88,26 +35,47 @@ namespace CodeIndex.MaintainIndex
 
             var query = new BooleanQuery();
 
-            AddPhaseQuery(query, searchRequest.Content, searchRequest.CaseSensitive);
-            AddPhaseQuery(query, searchRequest.FileName);
-            AddPhaseQuery(query, searchRequest.FileExtension);
-            AddPhaseQuery(query, searchRequest.FilePath);
+            AddPhaseQuery(query, searchRequest.Content, searchRequest.CaseSensitive, nameof(CodeSource.Content));
+            AddPhaseQuery(query, searchRequest.FileName, searchRequest.CaseSensitive, nameof(CodeSource.FileName));
+            AddPhaseQuery(query, searchRequest.FileExtension, searchRequest.CaseSensitive, nameof(CodeSource.FileExtension));
+            AddPhaseQuery(query, searchRequest.FilePath, searchRequest.CaseSensitive, nameof(CodeSource.FilePath));
+
+            return query;
+        }
+
+        public Query GetContentSearchQuery(SearchRequest searchRequest)
+        {
+            if (string.IsNullOrWhiteSpace(searchRequest.Content))
+            {
+                return null;
+            }
+
+            if (!searchRequest.PhaseQuery)
+            {
+                return GetQueryFromStr(GetContentSearchStr(searchRequest.Content, searchRequest.CaseSensitive));
+            }
+
+            var query = new BooleanQuery();
+
+            AddPhaseQuery(query, searchRequest.Content, searchRequest.CaseSensitive, nameof(CodeSource.Content));
 
             return query;
         }
 
         #region Wildcard Phases Query
 
+        // TODO: Add Tests
+
         const string EncodedDoubleQuotes = "\\\"";
-        const string ReplaceEncodedDoubleQuotes = "D17D0790BB624053A86E551E6C0A66F6";
+        const string ReplaceEncodedDoubleQuotes = "d17d0790bb624053a86e551e6c0a66f6";
 
         const string EncodedAsterisk = "\\*";
-        const string ReplaceEncodedAsterisk = "7DF41FE6D52A4E62B9175758FE2A5A27";
+        const string ReplaceEncodedAsterisk = "7df41fe6d52a4e62b9175758fe2a5a27";
 
         const string WildcardAsterisk = "*";
-        const string ReplaceWildcardAsterisk = "BC3C0E14C1DA4C1F82C53F6185C662E7";
+        const string ReplaceWildcardAsterisk = "bc3c0e14c1da4c1f82c53f6185c662e7";
 
-        void AddPhaseQuery(BooleanQuery query, string queryStr, bool caseSensitive = false, [CallerMemberName] string propertyName = null)
+        void AddPhaseQuery(BooleanQuery query, string queryStr, bool caseSensitive, string propertyName)
         {
             if (!string.IsNullOrWhiteSpace(queryStr))
             {
@@ -217,9 +185,62 @@ namespace CodeIndex.MaintainIndex
             return QueryParser.Parse(searchStr);
         }
 
-        static bool SurroundWithQuotation(string content)
+        bool SurroundWithQuotation(string content)
         {
             return !string.IsNullOrWhiteSpace(content) && content.StartsWith("\"") && content.EndsWith("\"");
+        }
+
+        protected string GetSearchStr(string fileName, string content, string fileExtension, string filePath, bool caseSensitive = false, string codePk = null)
+        {
+            if (!string.IsNullOrWhiteSpace(codePk))
+            {
+                return $"{nameof(CodeSource.CodePK)}:{codePk}";
+            }
+
+            var searchQueries = new List<string>();
+
+            if (!string.IsNullOrWhiteSpace(fileName))
+            {
+                searchQueries.Add($"{nameof(CodeSource.FileName)}:{fileName}");
+            }
+
+            var contentPart = GetContentSearchStr(content, caseSensitive);
+            if (contentPart != null)
+            {
+                searchQueries.Add(contentPart);
+            }
+
+            if (!string.IsNullOrWhiteSpace(fileExtension))
+            {
+                searchQueries.Add($"{nameof(CodeSource.FileExtension)}:{fileExtension}");
+            }
+
+            if (!string.IsNullOrWhiteSpace(filePath))
+            {
+                if (SurroundWithQuotation(filePath))
+                {
+                    filePath = filePath.Replace("\\", "\\\\");
+                }
+
+                searchQueries.Add($"{nameof(CodeSource.FilePath)}:{filePath}");
+            }
+
+            return string.Join(" AND ", searchQueries);
+        }
+
+        string GetContentSearchStr(string content, bool caseSensitive)
+        {
+            if (!string.IsNullOrWhiteSpace(content))
+            {
+                if (caseSensitive)
+                {
+                    return $"{CodeIndexBuilder.GetCaseSensitiveField(nameof(CodeSource.Content))}:{content}";
+                }
+
+                return $"{nameof(CodeSource.Content)}:{content}";
+            }
+
+            return null;
         }
     }
 }

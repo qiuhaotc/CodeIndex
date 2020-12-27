@@ -194,3 +194,8 @@ app {
 pre {
     white-space: pre-wrap
 }
+
+.normal-alert-div {
+    max-height: 16em;
+    overflow: auto;
+}
