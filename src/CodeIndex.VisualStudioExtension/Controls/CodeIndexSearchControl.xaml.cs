@@ -17,6 +17,18 @@ namespace CodeIndex.VisualStudioExtension
             InitializeComponent();
         }
 
+        void ContentTextBox_KeyUp(object sender, KeyEventArgs e)
+        {
+            if (e.Key == Key.Enter)
+            {
+                TextBox_KeyDown(sender, e);
+            }
+            else
+            {
+                SearchViewModel?.GetHintWordsAsync();
+            }
+        }
+
         void TextBox_KeyDown(object sender, KeyEventArgs e)
         {
             if (e.Key == Key.Enter)
@@ -25,10 +37,6 @@ namespace CodeIndex.VisualStudioExtension
                 {
                     SearchButton.Command?.Execute(null);
                 }
-            }
-            else
-            {
-                SearchViewModel?.GetHintWordsAsync();
             }
         }
 
@@ -52,7 +60,7 @@ namespace CodeIndex.VisualStudioExtension
                     // TODO: Download to local to open
                     if (System.Windows.MessageBox.Show("This file is not on your local, do you want to open it in the web portal?", "Info", System.Windows.MessageBoxButton.YesNo) == System.Windows.MessageBoxResult.Yes)
                     {
-                        System.Diagnostics.Process.Start($"{SearchViewModel.ServiceUrl}/Details/{codeSourceWithMatchedLine.CodeSource.CodePK}/{SearchViewModel.IndexPk}/{System.Web.HttpUtility.UrlEncode(SearchViewModel.Content)}/{SearchViewModel.CaseSensitive}");
+                        System.Diagnostics.Process.Start($"{SearchViewModel.ServiceUrl}/Details/{codeSourceWithMatchedLine.CodeSource.CodePK}/{SearchViewModel.IndexPk}/{System.Web.HttpUtility.UrlEncode(SearchViewModel.Content)}/{SearchViewModel.CaseSensitive}/{SearchViewModel.PhaseQuery}");
                     }
                 }
             }

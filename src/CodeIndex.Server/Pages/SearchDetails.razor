@@ -1,6 +1,6 @@
 ﻿@page "/Details/{CodePK}/{IndexPK}"
 @page "/Details/{CodePK}/{IndexPK}/{ContentQuery}"
-@page "/Details/{CodePK}/{IndexPK}/{ContentQuery}/{CaseSensitive:bool}"
+@page "/Details/{CodePK}/{IndexPK}/{ContentQuery}/{CaseSensitive:bool}/{PhaseQuery:bool}"
 @inject HttpClient Client
 @inject CodeIndexConfiguration Config
 @inject IndexManagement IndexManagement
@@ -30,6 +30,9 @@
     [Parameter]
     public bool? CaseSensitive { get; set; }
 
+    [Parameter]
+    public bool? PhaseQuery { get; set; }
+
     IndexConfigForView currentIndexConfig;
     public IndexConfigForView CurrentIndexConfig
     {
@@ -56,7 +59,8 @@
                     IndexPk = new Guid(IndexPK),
                     CodePK = CodePK,
                     Content = System.Web.HttpUtility.UrlDecode(ContentQuery),
-                    CaseSensitive = CaseSensitive ?? false
+                    CaseSensitive = CaseSensitive ?? false,
+                    PhaseQuery = PhaseQuery ?? false
                 });
 
             if (result.IsSuccessStatusCode)

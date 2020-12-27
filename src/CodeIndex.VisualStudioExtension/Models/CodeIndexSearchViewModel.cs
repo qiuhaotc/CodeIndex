@@ -292,7 +292,7 @@ namespace CodeIndex.VisualStudioExtension
                     ForWeb = false,
                     Preview = true,
                     PhaseQuery = PhaseQuery
-                });
+                }, tokenSource.Token);
 
                 if (result.Status.Success)
                 {

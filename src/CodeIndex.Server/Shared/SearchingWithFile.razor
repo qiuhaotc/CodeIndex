@@ -25,7 +25,7 @@
                         </td>
                         <td>@item.FileExtension</td>
                         <td>
-                            <a href="/Details/@item.CodePK/@IndexPk.ToString()/@System.Web.HttpUtility.UrlEncode(ContentQuery ?? string.Empty)/@CaseSensitive">Details</a>
+                            <a href="/Details/@item.CodePK/@IndexPk.ToString()/@System.Web.HttpUtility.UrlEncode(ContentQuery ?? string.Empty)/@CaseSensitive/@PhaseQuery">Details</a>
                         </td>
                     </tr>
                 }
@@ -55,4 +55,7 @@
 
     [Parameter]
     public bool CaseSensitive { get; set; }
+
+    [Parameter]
+    public bool PhaseQuery { get; set; }
 }

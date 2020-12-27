@@ -152,11 +152,11 @@
 
 @if (SearchWithLineNumber)
 {
-    <SearchingWithLineNumber ContentQuery="@Request.Content" CurrentIndexConfig="@CurrentIndexConfig" FetchResult="@FetchResultWithLineNumber" IndexPk="@Request.IndexPk" CaseSensitive="@Request.CaseSensitive" />
+    <SearchingWithLineNumber ContentQuery="@Request.Content" CurrentIndexConfig="@CurrentIndexConfig" FetchResult="@FetchResultWithLineNumber" IndexPk="@Request.IndexPk" CaseSensitive="@Request.CaseSensitive" PhaseQuery="@Request.PhaseQuery"/>
 }
 else
 {
-    <SearchingWithFile ContentQuery="@Request.Content" CurrentIndexConfig="@CurrentIndexConfig" FetchResult="@FetchResult" IndexPk="@Request.IndexPk" CaseSensitive="@Request.CaseSensitive" />
+    <SearchingWithFile ContentQuery="@Request.Content" CurrentIndexConfig="@CurrentIndexConfig" FetchResult="@FetchResult" IndexPk="@Request.IndexPk" CaseSensitive="@Request.CaseSensitive" PhaseQuery="@Request.PhaseQuery"/>
 }
 
 @code {
