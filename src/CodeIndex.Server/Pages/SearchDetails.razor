@@ -1,5 +1,6 @@
 ﻿@page "/Details/{CodePK}/{IndexPK}"
 @page "/Details/{CodePK}/{IndexPK}/{ContentQuery}"
+@page "/Details/{CodePK}/{IndexPK}/{ContentQuery}/{CaseSensitive:bool}"
 @inject HttpClient Client
 @inject CodeIndexConfiguration Config
 @inject IndexManagement IndexManagement
@@ -26,6 +27,9 @@
     [Parameter]
     public string IndexPK { get; set; }
 
+    [Parameter]
+    public bool? CaseSensitive { get; set; }
+
     IndexConfigForView currentIndexConfig;
     public IndexConfigForView CurrentIndexConfig
     {
@@ -51,7 +55,8 @@
                 {
                     IndexPk = new Guid(IndexPK),
                     CodePK = CodePK,
-                    Content = System.Web.HttpUtility.UrlDecode(ContentQuery)
+                    Content = System.Web.HttpUtility.UrlDecode(ContentQuery),
+                    CaseSensitive = CaseSensitive ?? false
                 });
 
             if (result.IsSuccessStatusCode)
@@ -75,17 +80,5 @@
         }
 
         await base.OnInitializedAsync();
-    }
-
-    string GetPath(string path)
-    {
-        if (path != null && path.StartsWith("/monitorfolder") && !string.IsNullOrEmpty(CurrentIndexConfig.MonitorFolderRealPath))
-        {
-            return CurrentIndexConfig.MonitorFolderRealPath + path.SubStringSafe("/monitorfolder".Length, path.Length);
-        }
-        else
-        {
-            return path;
-        }
     }
 }
