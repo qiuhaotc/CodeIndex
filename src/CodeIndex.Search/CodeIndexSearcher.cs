@@ -26,33 +26,42 @@ namespace CodeIndex.Search
         public IndexManagement IndexManagement { get; }
         public ILogger Log { get; }
 
-        public CodeSource[] SearchCode(string searchStr, out Query query, int maxResults, Guid pk)
+        public CodeSource[] SearchCode(SearchRequest searchRequest)
         {
-            searchStr.RequireNotNullOrEmpty(nameof(searchStr));
-            maxResults.RequireRange(nameof(maxResults), int.MaxValue, 1);
+            searchRequest.RequireNotNull(nameof(searchRequest));
+            searchRequest.ShowResults.Value.RequireRange(nameof(searchRequest.ShowResults), int.MaxValue, 1);
 
-            var maintainer = GetIndexMaintainerWrapper(pk);
-
-            if (maintainer == null)
+            if (searchRequest.IsEmpty)
             {
-                query = null;
                 return Array.Empty<CodeSource>();
             }
 
-            query = maintainer.QueryGenerator.GetQueryFromStr(searchStr);
-            return StatusValid(maintainer) ? maintainer.Maintainer.IndexBuilder.CodeIndexPool.Search(query, maxResults).Select(CodeIndexBuilder.GetCodeSourceFromDocument).ToArray() : Array.Empty<CodeSource>();
+            var maintainer = GetIndexMaintainerWrapper(searchRequest.IndexPk);
+
+            if (maintainer == null || !StatusValid(maintainer))
+            {
+                return Array.Empty<CodeSource>();
+            }
+
+            var query = maintainer.QueryGenerator.GetSearchQuery(searchRequest);
+            return maintainer.Maintainer.IndexBuilder.CodeIndexPool.Search(query, searchRequest.ShowResults.Value).Select(CodeIndexBuilder.GetCodeSourceFromDocument).ToArray();
         }
 
-        public string GenerateHtmlPreviewText(string contentQuery, string text, int length, Guid pk, string prefix = "<label class='highlight'>", string suffix = "</label>", bool returnRawContentWhenResultIsEmpty = false, bool caseSensitive = false)
+        public string GenerateHtmlPreviewText(SearchRequest searchRequest, string text, int length, string prefix = "<label class='highlight'>", string suffix = "</label>", bool returnRawContentWhenResultIsEmpty = false)
         {
-            var maintainer = GetIndexMaintainerWrapper(pk);
+            if (searchRequest == null)
+            {
+                return returnRawContentWhenResultIsEmpty ? HttpUtility.HtmlEncode(text) : string.Empty;
+            }
+
+            var maintainer = GetIndexMaintainerWrapper(searchRequest.IndexPk);
 
             if (maintainer == null)
             {
                 return string.Empty;
             }
 
-            var queryForContent = GetContentQueryFromStr(contentQuery, maintainer, caseSensitive);
+            var queryForContent = GetContentQuery(searchRequest, maintainer);
 
             string result = null;
 
@@ -76,7 +85,7 @@ namespace CodeIndex.Search
                         MaxDocCharsToAnalyze = maxContentHighlightLength
                     };
 
-                    using var stream = GetTokenStream(text, caseSensitive);
+                    using var stream = GetTokenStream(text, searchRequest.CaseSensitive);
 
                     result = highlighter.GetBestFragments(stream, text, 3, "...");
                 }
@@ -121,20 +130,16 @@ namespace CodeIndex.Search
             return StatusValid(maintainer) ? maintainer.Maintainer.IndexBuilder.HintIndexPool.Search(searchQuery, maxResults).Select(u => u.Get(nameof(CodeWord.Word))).ToArray() : Array.Empty<string>();
         }
 
-        public Query GetContentQueryFromStr(string contentQuery, Guid pk, bool caseSensitive)
+        public Query GetContentQuery(SearchRequest searchRequest)
         {
-            return GetContentQueryFromStr(contentQuery, GetIndexMaintainerWrapper(pk), caseSensitive);
+            return GetContentQuery(searchRequest, GetIndexMaintainerWrapper(searchRequest.IndexPk));
         }
 
-        public Query GetContentQueryFromStr(string contentQuery, IndexMaintainerWrapper wrapper, bool caseSensitive)
+        public Query GetContentQuery(SearchRequest searchRequest, IndexMaintainerWrapper wrapper)
         {
             if (wrapper != null)
             {
-                contentQuery = QueryGenerator.GetSearchStr(contentQuery, caseSensitive);
-                if (contentQuery != null)
-                {
-                    return wrapper.QueryGenerator.GetQueryFromStr(contentQuery);
-                }
+                return wrapper.QueryGenerator.GetContentSearchQuery(searchRequest);
             }
 
             return null;

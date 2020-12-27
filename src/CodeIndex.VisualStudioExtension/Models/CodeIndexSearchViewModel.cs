@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Diagnostics;
 using System.Linq;
 using System.Net.Http;
 using System.Threading;
@@ -33,6 +32,7 @@ namespace CodeIndex.VisualStudioExtension
         public string FileExtension { get; set; }
         public string FileLocation { get; set; }
         public int ShowResultsNumber { get; set; } = 1000;
+
         public string ServiceUrl
         {
             get => serviceUrl;
@@ -54,6 +54,8 @@ namespace CodeIndex.VisualStudioExtension
         }
 
         public bool CaseSensitive { get; set; }
+
+        public bool PhaseQuery { get; set; }
 
         CancellationTokenSource tokenToLoadIndexInfos;
 
@@ -184,7 +186,6 @@ namespace CodeIndex.VisualStudioExtension
             public T Value { get; }
         }
 
-
         ICommand searchIndexCommand;
         ICommand stopSearchCommand;
         ICommand refreshIndexCommand;
@@ -209,7 +210,6 @@ namespace CodeIndex.VisualStudioExtension
                 return searchIndexCommand;
             }
         }
-
 
         public ICommand StopSearchCommand
         {
@@ -279,7 +279,20 @@ namespace CodeIndex.VisualStudioExtension
             if (IsValidate())
             {
                 var client = new CodeIndexClient(new HttpClient(), ServiceUrl);
-                var result = await client.ApiLuceneGetcodesourceswithmatchedlineAsync(GetSearchStr(), IndexPk, Content, ShowResultsNumber, false, false, CaseSensitive);
+                var result = await client.ApiLuceneGetcodesourceswithmatchedlineAsync(new SearchRequest
+                {
+                    IndexPk = indexPk,
+                    Content = Content,
+                    ShowResults = ShowResultsNumber,
+                    NeedReplaceSuffixAndPrefix = false,
+                    FileName = FileName,
+                    CaseSensitive = CaseSensitive,
+                    FileExtension = FileExtension,
+                    FilePath = FileLocation,
+                    ForWeb = false,
+                    Preview = true,
+                    PhaseQuery = PhaseQuery
+                });
 
                 if (result.Status.Success)
                 {
@@ -294,7 +307,7 @@ namespace CodeIndex.VisualStudioExtension
             }
             else
             {
-                ResultInfo = "Search query can't be empty.";
+                ResultInfo = "Search query or index name can't be empty.";
             }
         }
 

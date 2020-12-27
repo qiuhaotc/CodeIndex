@@ -9,12 +9,20 @@
     </div>
 </div>
 <div class="row">
-    <div class="col-sm">
+    <div class="col-sm-10">
         <div class="input-group mb-3">
             <div class="input-group-prepend">
                 <span class="input-group-text">Content</span>
             </div>
-            <input type="text" class="form-control" placeholder="Put Your Content Here" aria-label="Put Your Content Here" @bind-value="@ContentQuery" @bind-value:event="oninput" @onkeyup="@(async e => await KeyPressForContent(e))" />
+            <input type="text" class="form-control" placeholder="Put Your Content Here" aria-label="Put Your Content Here" @bind-value="@Request.Content" @bind-value:event="oninput" @onkeyup="@(async e => await KeyPressForContent(e))" maxlength="1000" />
+        </div>
+    </div>
+    <div class="col-sm-2">
+        <div class="input-group mb-3">
+            <div class="input-group-prepend">
+                <span class="input-group-text">Phase Query</span>
+            </div>
+            <input type="checkbox" class="form-control" @bind="Request.PhaseQuery">
         </div>
     </div>
 </div>
@@ -24,7 +32,7 @@
             <div class="input-group-prepend">
                 <span class="input-group-text">File Name</span>
             </div>
-            <input type="text" class="form-control" placeholder="Put Your File Name Here" aria-label="Put Your File Name Here" @bind-value="@FileNameQuery" @bind-value:event="oninput" @onkeydown="@(async e => await KeyPress(e))" />
+            <input type="text" class="form-control" placeholder="Put Your File Name Here" aria-label="Put Your File Name Here" @bind-value="@Request.FileName" @bind-value:event="oninput" @onkeydown="@(async e => await KeyPress(e))" maxlength="200" />
         </div>
     </div>
     <div class="col-sm">
@@ -32,7 +40,7 @@
             <div class="input-group-prepend">
                 <span class="input-group-text">File Extension</span>
             </div>
-            <input type="text" class="form-control" placeholder="Put Your File Extension Here" aria-label="Put Your File Extension Here" @bind-value="@FileExtensionQuery" @bind-value:event="oninput" @onkeydown="@(async e => await KeyPress(e))" />
+            <input type="text" class="form-control" placeholder="Put Your File Extension Here" aria-label="Put Your File Extension Here" @bind-value="@Request.FileExtension" @bind-value:event="oninput" @onkeydown="@(async e => await KeyPress(e))" maxlength="20" />
         </div>
     </div>
     <div class="col-sm">
@@ -40,7 +48,7 @@
             <div class="input-group-prepend">
                 <span class="input-group-text">File Location</span>
             </div>
-            <input type="text" class="form-control" placeholder="Put Your File Path Here" aria-label="Put Your File Path Here" @bind-value="@FilePathQuery" @bind-value:event="oninput" @onkeydown="@(async e => await KeyPress(e))" />
+            <input type="text" class="form-control" placeholder="Put Your File Path Here" aria-label="Put Your File Path Here" @bind-value="@Request.FilePath" @bind-value:event="oninput" @onkeydown="@(async e => await KeyPress(e))" maxlength="1000" />
         </div>
     </div>
 </div>
@@ -55,7 +63,7 @@
             <div class="input-group-prepend">
                 <span class="input-group-text">Index Name</span>
             </div>
-            <select class="form-control" @bind="IndexPk">
+            <select class="form-control" @bind="@Request.IndexPk">
                 @if (IndexConfigs != null)
                 {
                     foreach (var indexConfig in IndexConfigs)
@@ -71,7 +79,7 @@
             <div class="input-group-prepend">
                 <span class="input-group-text">Show Results</span>
             </div>
-            <select class="form-control" @bind="ShowResults">
+            <select class="form-control" @bind="Request.ShowResults">
                 <option value="10">10</option>
                 <option value="20">20</option>
                 <option value="50">50</option>
@@ -84,7 +92,7 @@
             <div class="input-group-prepend">
                 <span class="input-group-text">Case Sensitive</span>
             </div>
-            <input type="checkbox" class="form-control" @bind="CaseSensitive">
+            <input type="checkbox" class="form-control" @bind="Request.CaseSensitive">
         </div>
     </div>
 </div>
@@ -93,7 +101,7 @@
         <div class="input-group mb-3">
             @if (FetchStatus != null && !FetchStatus.Value)
             {
-                <div class="alert alert-danger" role="alert">
+                <div class="alert alert-danger normal-alert-div" role="alert">
                     @StatusDesc
                 </div>
             }
@@ -115,7 +123,7 @@
         <div class="input-group mb-3">
             @if (!HintWords?.Status?.Success ?? false)
             {
-                <div class="alert alert-danger" role="alert">
+                <div class="alert alert-danger normal-alert-div" role="alert">
                     @HintWords.Status.StatusDesc
                 </div>
             }
@@ -144,34 +152,19 @@
 
 @if (SearchWithLineNumber)
 {
-    <SearchingWithLineNumber ContentQuery="@ContentQuery" CurrentIndexConfig="@CurrentIndexConfig" FetchResult="@FetchResultWithLineNumber" IndexPk="@IndexPk" />
+    <SearchingWithLineNumber ContentQuery="@Request.Content" CurrentIndexConfig="@CurrentIndexConfig" FetchResult="@FetchResultWithLineNumber" IndexPk="@Request.IndexPk" CaseSensitive="@Request.CaseSensitive" />
 }
 else
 {
-    <SearchingWithFile ContentQuery="@ContentQuery" CurrentIndexConfig="@CurrentIndexConfig" FetchResult="@FetchResult" IndexPk="@IndexPk" />
+    <SearchingWithFile ContentQuery="@Request.Content" CurrentIndexConfig="@CurrentIndexConfig" FetchResult="@FetchResult" IndexPk="@Request.IndexPk" CaseSensitive="@Request.CaseSensitive" />
 }
 
 @code {
-
-    public string SearchQuery => MaintainIndex.QueryGenerator.GetSearchStr(FileNameQuery, ContentQuery, FileExtensionQuery, FilePathQuery, CaseSensitive);
-
-    public string ContentQuery { get; set; }
-
-    public string FileNameQuery { get; set; }
-
-    public string FileExtensionQuery { get; set; }
-
-    public string FilePathQuery { get; set; }
+    public SearchRequest Request { get; set; } = new SearchRequest { ShowResults = 20, ForWeb = true, Preview = true, NeedReplaceSuffixAndPrefix = true };
 
     public bool SearchWithLineNumber => MyNavigationManager.Uri.Contains("/SearchWithLine");
 
     public string Suffix => SearchWithLineNumber ? " - With Matched Line Number" : string.Empty;
-
-    public Guid IndexPk { get; set; }
-
-    public bool CaseSensitive { get; set; }
-
-    public int ShowResults { get; set; } = 20;
 
     public FetchResult<IEnumerable<CodeSource>> FetchResult { get; set; }
 
@@ -187,11 +180,18 @@ else
 
     public IndexConfigForView[] IndexConfigs { get; set; }
 
-    public IndexConfigForView CurrentIndexConfig => IndexConfigs?.FirstOrDefault(u => u.Pk == IndexPk) ?? (empty ??= new IndexConfigForView());
+    public IndexConfigForView CurrentIndexConfig => IndexConfigs?.FirstOrDefault(u => u.Pk == Request.IndexPk) ?? (empty ??= new IndexConfigForView());
 
     IndexConfigForView empty;
 
     bool IsSearching;
+
+    protected override void OnInitialized()
+    {
+        base.OnInitialized();
+
+        Request = Storage.GetValue(nameof(Request)) as SearchRequest ?? Request;
+    }
 
     protected override async Task OnInitializedAsync()
     {
@@ -214,30 +214,12 @@ else
             IndexConfigs = Array.Empty<IndexConfigForView>();
         }
 
-        ContentQuery = Storage.GetValue("ContentQuery")?.ToString();
-        FileNameQuery = Storage.GetValue("FileNameQuery")?.ToString();
-        FileExtensionQuery = Storage.GetValue("FileExtensionQuery")?.ToString();
-        FilePathQuery = Storage.GetValue("FilePathQuery")?.ToString();
-        CaseSensitive = Storage.GetValue(nameof(CaseSensitive)) == null ? false : Convert.ToBoolean(Storage.GetValue(nameof(CaseSensitive)));
-
-        var indexPkStr = Storage.GetValue("IndexPk")?.ToString();
-        Guid? indexPk = indexPkStr == null ? null : new Guid(indexPkStr);
-
-        if (indexPk == null || IndexConfigs.All(u => u.Pk != indexPk))
+        if (IndexConfigs.All(u => u.Pk != Request.IndexPk))
         {
-            IndexPk = IndexConfigs.FirstOrDefault()?.Pk ?? Guid.Empty;
-        }
-        else
-        {
-            IndexPk = indexPk.Value;
+            Request.IndexPk = IndexConfigs.FirstOrDefault()?.Pk ?? Guid.Empty;
         }
 
-        if (int.TryParse(Storage.GetValue(nameof(ShowResults))?.ToString(), out var result))
-        {
-            ShowResults = result;
-        }
-
-        if (!string.IsNullOrEmpty(SearchQuery) && IndexPk != Guid.Empty)
+        if (!Request.IsEmpty)
         {
             await SearchLuceneIndex();
         }
@@ -250,13 +232,7 @@ else
             return;
         }
 
-        Storage.SetOrUpdate("ContentQuery", ContentQuery);
-        Storage.SetOrUpdate("IndexPk", IndexPk);
-        Storage.SetOrUpdate("FileNameQuery", FileNameQuery);
-        Storage.SetOrUpdate("FileExtensionQuery", FileExtensionQuery);
-        Storage.SetOrUpdate("FilePathQuery", FilePathQuery);
-        Storage.SetOrUpdate(nameof(ShowResults), ShowResults);
-        Storage.SetOrUpdate(nameof(CaseSensitive), CaseSensitive);
+        Storage.SetOrUpdate(nameof(Request), Request);
 
         IsSearching = true;
         FetchResult = null;
@@ -266,9 +242,39 @@ else
         {
             if (SearchWithLineNumber)
             {
-                if (!string.IsNullOrEmpty(SearchQuery) && IndexPk != Guid.Empty)
+                if (!Request.IsEmpty)
                 {
-                    FetchResultWithLineNumber = await Client.GetJsonAsync<FetchResult<IEnumerable<CodeSourceWithMatchedLine>>>($"{Config.LocalUrl}api/lucene/GetCodeSourcesWithMatchedLine?searchQuery=" + System.Web.HttpUtility.UrlEncode(SearchQuery) + "&showResults=" + ShowResults + "&contentQuery=" + System.Web.HttpUtility.UrlEncode(ContentQuery ?? string.Empty) + "&indexPk=" + IndexPk + "&CaseSensitive=" + CaseSensitive);
+                    try
+                    {
+                        var response = await Client.PostAsJsonAsync($"{Config.LocalUrl}api/lucene/GetCodeSourcesWithMatchedLine", Request);
+
+                        if (response.IsSuccessStatusCode)
+                        {
+                            FetchResultWithLineNumber = await response.Content.ReadFromJsonAsync<FetchResult<IEnumerable<CodeSourceWithMatchedLine>>>();
+                        }
+                        else
+                        {
+                            FetchResultWithLineNumber = new FetchResult<IEnumerable<CodeSourceWithMatchedLine>>()
+                            {
+                                Status = new Status()
+                                {
+                                    Success = false,
+                                    StatusDesc = await response.Content.ReadAsStringAsync()
+                                }
+                            };
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        FetchResultWithLineNumber = new FetchResult<IEnumerable<CodeSourceWithMatchedLine>>()
+                        {
+                            Status = new Status()
+                            {
+                                Success = false,
+                                StatusDesc = ex.Message
+                            }
+                        };
+                    }
                 }
                 else
                 {
@@ -277,16 +283,46 @@ else
                         Status = new Status()
                         {
                             Success = false,
-                            StatusDesc = "Search query can't be empty"
+                            StatusDesc = "Search query or index name can't be empty"
                         }
                     };
                 }
             }
             else
             {
-                if (!string.IsNullOrEmpty(SearchQuery) && IndexPk != Guid.Empty)
+                if (!Request.IsEmpty)
                 {
-                    FetchResult = await Client.GetJsonAsync<FetchResult<IEnumerable<CodeSource>>>($"{Config.LocalUrl}api/lucene/GetCodeSources?searchQuery=" + System.Web.HttpUtility.UrlEncode(SearchQuery) + "&showResults=" + ShowResults + "&preview=true" + "&contentQuery=" + System.Web.HttpUtility.UrlEncode(ContentQuery ?? string.Empty) + "&indexPk=" + IndexPk + "&CaseSensitive=" + CaseSensitive);
+                    try
+                    {
+                        var response = await Client.PostAsJsonAsync($"{Config.LocalUrl}api/lucene/GetCodeSources", Request);
+
+                        if (response.IsSuccessStatusCode)
+                        {
+                            FetchResult = await response.Content.ReadFromJsonAsync<FetchResult<IEnumerable<CodeSource>>>();
+                        }
+                        else
+                        {
+                            FetchResult = new FetchResult<IEnumerable<CodeSource>>()
+                            {
+                                Status = new Status()
+                                {
+                                    Success = false,
+                                    StatusDesc = await response.Content.ReadAsStringAsync()
+                                }
+                            };
+                        }
+                    }
+                    catch (Exception ex)
+                    {
+                        FetchResult = new FetchResult<IEnumerable<CodeSource>>()
+                        {
+                            Status = new Status()
+                            {
+                                Success = false,
+                                StatusDesc = ex.Message
+                            }
+                        };
+                    }
                 }
                 else
                 {
@@ -317,12 +353,12 @@ else
 
     async Task KeyPressForContent(KeyboardEventArgs e)
     {
-        if (e.Key != "Enter" && ContentQuery != null && !ContentQuery.EndsWith(" ") && IndexPk != Guid.Empty)
+        if (e.Key != "Enter" && Request.Content != null && !Request.Content.EndsWith(" ") && Request.IndexPk != Guid.Empty)
         {
-            var inputWord = ContentQuery.Split(" ", StringSplitOptions.RemoveEmptyEntries).LastOrDefault();
+            var inputWord = Request.Content.Split(" ", StringSplitOptions.RemoveEmptyEntries).LastOrDefault();
             if (inputWord?.Length >= 3)
             {
-                HintWords = await Client.GetJsonAsync<FetchResult<IEnumerable<string>>>($"{Config.LocalUrl}api/lucene/GetHints?word=" + System.Web.HttpUtility.UrlEncode(inputWord) + "&indexPk=" + IndexPk);
+                HintWords = await Client.GetJsonAsync<FetchResult<IEnumerable<string>>>($"{Config.LocalUrl}api/lucene/GetHints?word=" + System.Web.HttpUtility.UrlEncode(inputWord) + "&indexPk=" + Request.IndexPk);
             }
         }
         else

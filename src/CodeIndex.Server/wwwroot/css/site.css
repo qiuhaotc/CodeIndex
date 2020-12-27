@@ -188,8 +188,14 @@ app {
     color: red;
     font-weight: bold;
     font-style: italic;
+    margin-bottom: 0;
 }
 
 pre {
     white-space: pre-wrap
+}
+
+.normal-alert-div {
+    max-height: 16em;
+    overflow: auto;
 }

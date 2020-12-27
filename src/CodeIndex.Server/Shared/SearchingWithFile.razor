@@ -1,41 +1,41 @@
 ﻿<div class="table-responsive">
     <table class="table">
         <thead>
-        <tr>
-            <th scope="col">File Name</th>
-            <th scope="col">Match Info</th>
-            <th scope="col">File Path</th>
-            <th scope="col">File Extension</th>
-            <th scope="col">Details</th>
-        </tr>
+            <tr>
+                <th scope="col">File Name</th>
+                <th scope="col">Match Info</th>
+                <th scope="col">File Path</th>
+                <th scope="col">File Extension</th>
+                <th scope="col">Details</th>
+            </tr>
         </thead>
         <tbody>
-        @if (FetchResult?.Result != null && FetchResult.Result.Any())
-        {
-            foreach (var item in FetchResult.Result)
+            @if (FetchResult?.Result != null && FetchResult.Result.Any())
+            {
+                foreach (var item in FetchResult.Result)
+                {
+                    <tr>
+                        <td title="@item.Info">@item.FileName</td>
+                        <td>
+                            <pre>@((MarkupString)item.Content)</pre>
+                        </td>
+                        <td>
+
+                            <a href=" @RazorPageUtils.GetOpenIDEUri(CurrentIndexConfig.OpenIDEUriFormat, item.FilePath, CurrentIndexConfig.MonitorFolderRealPath)">@item.FilePath?.SubStringSafeWithEllipsis(item.FilePath.Length - 50, 50)</a>
+                        </td>
+                        <td>@item.FileExtension</td>
+                        <td>
+                            <a href="/Details/@item.CodePK/@IndexPk.ToString()/@System.Web.HttpUtility.UrlEncode(ContentQuery ?? string.Empty)/@CaseSensitive">Details</a>
+                        </td>
+                    </tr>
+                }
+            }
+            else
             {
                 <tr>
-                    <td title="@item.Info">@item.FileName</td>
-                    <td>
-                        <pre>@((MarkupString)item.Content)</pre>
-                    </td>
-                    <td>
-
-                        <a href=" @RazorPageUtils.GetOpenIDEUri(CurrentIndexConfig.OpenIDEUriFormat, item.FilePath, CurrentIndexConfig.MonitorFolderRealPath)">@item.FilePath?.SubStringSafeWithEllipsis(item.FilePath.Length - 50, 50)</a>
-                    </td>
-                    <td>@item.FileExtension</td>
-                    <td>
-                        <a href="/Details/@item.CodePK/@IndexPk.ToString()/@System.Web.HttpUtility.UrlEncode(ContentQuery ?? string.Empty)">Details</a>
-                    </td>
+                    <td colspan="5" class="text-center">Empty</td>
                 </tr>
             }
-        }
-        else
-        {
-            <tr>
-                <td colspan="5" class="text-center">Empty</td>
-            </tr>
-        }
         </tbody>
     </table>
 </div>
@@ -52,4 +52,7 @@
 
     [Parameter]
     public string ContentQuery { get; set; }
+
+    [Parameter]
+    public bool CaseSensitive { get; set; }
 }

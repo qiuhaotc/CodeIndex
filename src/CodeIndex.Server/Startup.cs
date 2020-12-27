@@ -72,6 +72,7 @@ namespace CodeIndex.Server
             services.AddSingleton<IndexManagement>();
             services.AddScoped<Storage>();
             services.AddSingleton<CodeIndexSearcher>();
+            services.AddSingleton<SearchService>();
 
             config = new CodeIndexConfiguration();
             Configuration.GetSection("CodeIndex").Bind(config);

@@ -1,11 +1,12 @@
 using System;
-using System.Collections.Generic;
 using System.IO;
 using System.Linq;
 using System.Threading;
 using CodeIndex.Common;
 using CodeIndex.IndexBuilder;
+using CodeIndex.MaintainIndex;
 using Lucene.Net.Index;
+using Lucene.Net.QueryParsers.Classic;
 using Lucene.Net.Search;
 using NUnit.Framework;
 
@@ -311,5 +312,8 @@ namespace CodeIndex.Test
 
             CollectionAssert.AreEquivalent(new[] { (file1Info.FullName, file1Info.LastWriteTimeUtc), (file2Info.FullName, file2Info.LastWriteTimeUtc) }, indexBuilder.GetAllIndexedCodeSource());
         }
+
+        QueryGenerator generator;
+        QueryGenerator Generator => generator ??= new QueryGenerator(new QueryParser(Constants.AppLuceneVersion, nameof(CodeSource.Content), new CodeAnalyzer(Constants.AppLuceneVersion, true)));
     }
 }

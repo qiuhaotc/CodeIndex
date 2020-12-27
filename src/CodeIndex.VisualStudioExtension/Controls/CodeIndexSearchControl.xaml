@@ -11,53 +11,60 @@
     <Grid>
         <DockPanel LastChildFill="True" Margin="6">
             <WrapPanel HorizontalAlignment="Left" DockPanel.Dock="Top">
-                <Label Content="Content:"/>
-                <TextBox Height="23" TextWrapping="Wrap" Text="{Binding Content, UpdateSourceTrigger=PropertyChanged}" Width="240" KeyUp="TextBox_KeyDown"/>
-                <Label Content="File Name:"/>
-                <TextBox Height="23" TextWrapping="Wrap" Text="{Binding FileName, UpdateSourceTrigger=PropertyChanged}" Width="120" KeyDown="TextBox_KeyDown"/>
-                <Label Content="File Extension:"/>
-                <TextBox Height="23" TextWrapping="Wrap" Text="{Binding FileExtension, UpdateSourceTrigger=PropertyChanged}" Width="120" KeyDown="TextBox_KeyDown"/>
-                <Label Content="File Location:"/>
-                <TextBox Height="23" TextWrapping="Wrap" Text="{Binding FileLocation, UpdateSourceTrigger=PropertyChanged}" Width="120" KeyDown="TextBox_KeyDown"/>
-                <CheckBox Content=":Case Sensitive" FlowDirection="RightToLeft" IsChecked="{Binding CaseSensitive}" Margin="5 0 0 0" VerticalAlignment="Center" >
+                <Label Content="Content:" />
+                <TextBox Height="23" TextWrapping="Wrap" Text="{Binding Content, UpdateSourceTrigger=PropertyChanged}" Width="240" KeyUp="TextBox_KeyDown" MaxLength="1000" />
+                <Label Content="File Name:" />
+                <TextBox Height="23" TextWrapping="Wrap" Text="{Binding FileName, UpdateSourceTrigger=PropertyChanged}" Width="120" KeyDown="TextBox_KeyDown" MaxLength="200" />
+                <Label Content="File Extension:" />
+                <TextBox Height="23" TextWrapping="Wrap" Text="{Binding FileExtension, UpdateSourceTrigger=PropertyChanged}" Width="120" KeyDown="TextBox_KeyDown" MaxLength="21" />
+                <Label Content="File Location:" />
+                <TextBox Height="23" TextWrapping="Wrap" Text="{Binding FileLocation, UpdateSourceTrigger=PropertyChanged}" Width="120" KeyDown="TextBox_KeyDown" MaxLength="1000" />
+                <CheckBox Content=":Case Sensitive" FlowDirection="RightToLeft" IsChecked="{Binding CaseSensitive}" Margin="5 0 15 0" VerticalAlignment="Center">
                     <CheckBox.Resources>
                         <Style TargetType="{x:Type Path}">
                             <Setter Property="FlowDirection" Value="LeftToRight" />
                         </Style>
                     </CheckBox.Resources>
                 </CheckBox>
-                <Label Content="Show Results:"/>
-                <ComboBox SelectedValue="{Binding ShowResultsNumber}" ItemsSource="{Binding Options}" DisplayMemberPath="Name" SelectedValuePath="Value" Width="100" VerticalAlignment="Center"/>
-                <Button x:Name="SearchButton" Margin="10 0 0 0" Content="Search" Command="{Binding SearchIndexCommand}" Style="{StaticResource InfoButton}"/>
-                <Button Margin="10 0 0 0" Content="Stop Search" Command="{Binding StopSearchCommand}" Style="{StaticResource WarnButton}"/>
+                <CheckBox Content=":Phase Query" FlowDirection="RightToLeft" IsChecked="{Binding PhaseQuery}" Margin="5 0 15 0" VerticalAlignment="Center">
+                    <CheckBox.Resources>
+                        <Style TargetType="{x:Type Path}">
+                            <Setter Property="FlowDirection" Value="LeftToRight" />
+                        </Style>
+                    </CheckBox.Resources>
+                </CheckBox>
+                <Label Content="Show Results:" />
+                <ComboBox SelectedValue="{Binding ShowResultsNumber}" ItemsSource="{Binding Options}" DisplayMemberPath="Name" SelectedValuePath="Value" Width="100" VerticalAlignment="Center" />
+                <Button x:Name="SearchButton" Margin="10 0 0 0" Content="Search" Command="{Binding SearchIndexCommand}" Style="{StaticResource InfoButton}" />
+                <Button Margin="10 0 0 0" Content="Stop Search" Command="{Binding StopSearchCommand}" Style="{StaticResource WarnButton}" />
             </WrapPanel>
             <Grid DockPanel.Dock="Top">
                 <Grid.ColumnDefinitions>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="Auto"/>
-                    <ColumnDefinition Width="*"/>
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
-                <Label Content="Service Url:" Grid.Column="0" VerticalAlignment="Center"/>
-                <TextBox Height="23" Grid.Column="1" TextWrapping="NoWrap" Text="{Binding ServiceUrl}" Width="200"/>
-                <Label Content="Index:" Grid.Column="2" VerticalAlignment="Center"/>
-                <ComboBox SelectedValue="{Binding IndexPk}" Grid.Column="3" ItemsSource="{Binding IndexInfos}" DisplayMemberPath="Name" SelectedValuePath="Value" Width="200" VerticalAlignment="Center"/>
-                <Button x:Name="RefreshButton" Grid.Column="4" Margin="10 0 0 0" Content="Refresh Index" Command="{Binding RefreshIndexCommand}" Style="{StaticResource InfoButton}" Height="26" Width="82"/>
-                <Label Content="Result Info:" VerticalAlignment="Center" Grid.Column="5"/>
-                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" MaxHeight="60" Grid.Column="6">
-                    <Label Content="{Binding ResultInfo}" Foreground="Yellow"/>
+                <Label Content="Service Url:" Grid.Column="0" VerticalAlignment="Center" />
+                <TextBox Height="23" Grid.Column="1" TextWrapping="NoWrap" Text="{Binding ServiceUrl}" Width="200" />
+                <Label Content="Index:" Grid.Column="2" VerticalAlignment="Center" />
+                <ComboBox SelectedValue="{Binding IndexPk}" Grid.Column="3" ItemsSource="{Binding IndexInfos}" DisplayMemberPath="Name" SelectedValuePath="Value" Width="200" VerticalAlignment="Center" />
+                <Button x:Name="RefreshButton" Grid.Column="4" Margin="10 0 0 0" Content="Refresh Index" Command="{Binding RefreshIndexCommand}" Style="{StaticResource InfoButton}" Height="26" Width="82" />
+                <Label Content="Result Info:" VerticalAlignment="Center" Grid.Column="5" />
+                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" MaxHeight="100" Grid.Column="6">
+                    <Label Content="{Binding ResultInfo}" Foreground="Yellow" />
                 </ScrollViewer>
             </Grid>
             <DockPanel DockPanel.Dock="Top">
-                <Label Content="Hind Words:" DockPanel.Dock="Left"/>
+                <Label Content="Hind Words:" DockPanel.Dock="Left" />
                 <ScrollViewer DockPanel.Dock="Right" VerticalScrollBarVisibility="Auto" MaxHeight="60">
                     <ItemsControl ItemsSource="{Binding HintWords}" ItemsPanel="{StaticResource ItemsPanelTemplateHorizontal}" HorizontalAlignment="Left">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <Label Margin="10 0 0 0" Content="{Binding Word}"/>
+                                <Label Margin="10 0 0 0" Content="{Binding Word}" />
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
@@ -65,21 +72,21 @@
             </DockPanel>
             <DataGrid Name="MatchedCodeSourceGrid" Background="#FF2D2D30" Margin="0 6 0 0" ItemsSource="{Binding SearchResults}" IsReadOnly="True" HeadersVisibility="Column" AutoGenerateColumns="False">
                 <DataGrid.Columns>
-                    <DataGridTextColumn Header="Name" Width="3*" Binding="{Binding CodeSource.FileName}"/>
-                    <DataGridTextColumn Header="Extension" Width="1*" Binding="{Binding CodeSource.FileExtension}"/>
-                    <DataGridTextColumn Header="Matched Line" Width="1*" Binding="{Binding MatchedLine}"/>
+                    <DataGridTextColumn Header="Name" Width="3*" Binding="{Binding CodeSource.FileName}" />
+                    <DataGridTextColumn Header="Extension" Width="1*" Binding="{Binding CodeSource.FileExtension}" />
+                    <DataGridTextColumn Header="Matched Line" Width="1*" Binding="{Binding MatchedLine}" />
                     <DataGridTemplateColumn Header="Content" Width="6*">
                         <DataGridTemplateColumn.CellTemplate>
                             <DataTemplate>
-                                <ContentControl Content="{Binding MatchedContent, Converter={StaticResource StringToXamlConverter}, Mode=OneWay}"/>
+                                <ContentControl Content="{Binding MatchedContent, Converter={StaticResource StringToXamlConverter}, Mode=OneWay}" />
                             </DataTemplate>
                         </DataGridTemplateColumn.CellTemplate>
                     </DataGridTemplateColumn>
-                    <DataGridTextColumn Header="Path" Width="6*" Binding="{Binding CodeSource.FilePath}"/>
+                    <DataGridTextColumn Header="Path" Width="6*" Binding="{Binding CodeSource.FilePath}" />
                 </DataGrid.Columns>
                 <DataGrid.Resources>
                     <Style TargetType="DataGridRow" BasedOn="{StaticResource BaseGridStyle}">
-                        <EventSetter Event="MouseDoubleClick" Handler="Row_DoubleClick"/>
+                        <EventSetter Event="MouseDoubleClick" Handler="Row_DoubleClick" />
                     </Style>
                 </DataGrid.Resources>
             </DataGrid>

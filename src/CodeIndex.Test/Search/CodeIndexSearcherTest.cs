@@ -1,12 +1,8 @@
 ﻿using System;
-using System.IO;
 using System.Runtime.InteropServices;
-using System.Threading;
 using System.Web;
 using CodeIndex.Common;
 using CodeIndex.MaintainIndex;
-using CodeIndex.Search;
-using Microsoft.Extensions.Logging;
 using NUnit.Framework;
 
 namespace CodeIndex.Test
@@ -20,16 +16,16 @@ namespace CodeIndex.Test
             using var initManagement = new InitManagement(MonitorFolder, Config, true);
             var searcher = initManagement.GetIndexSearcher();
 
-            var results1 = searcher.SearchCode("ABCD", out var query, 10, initManagement.IndexPk);
+            var results1 = searcher.SearchCode(GetSearchRequest("ABCD", initManagement.IndexPk, showResults: 10));
             Assert.That(results1.Length, Is.EqualTo(3));
 
-            var results2 = searcher.SearchCode("ABCD", out query, 2, initManagement.IndexPk);
+            var results2 = searcher.SearchCode(GetSearchRequest("ABCD", initManagement.IndexPk, showResults: 2));
             Assert.That(results2.Length, Is.EqualTo(2));
 
-            var results3 = searcher.SearchCode(QueryGenerator.GetSearchStr("EFGH", false), out query, 2, initManagement.IndexPk);
+            var results3 = searcher.SearchCode(GetSearchRequest("EFGH", initManagement.IndexPk));
             Assert.That(results3.Length, Is.EqualTo(2));
 
-            var results4 = searcher.SearchCode(QueryGenerator.GetSearchStr("\"A.txt\"", null, null, null), out query, 10, initManagement.IndexPk);
+            var results4 = searcher.SearchCode(GetSearchRequest(null, initManagement.IndexPk, "\"A.txt\""));
             Assert.That(results4.Length, Is.EqualTo(1));
             Assert.That(results4[0].FileName, Is.EqualTo("A.txt"));
         }
@@ -41,7 +37,7 @@ namespace CodeIndex.Test
             var searcher = initManagement.GetIndexSearcher();
 
             var content = $"My ABC{Environment.NewLine}Is A ABC CONTENT{Environment.NewLine}It's abc in lowercase{Environment.NewLine}It's Abc in mix{Environment.NewLine}Not AB with C";
-            var result = searcher.GenerateHtmlPreviewText("ABC", content, int.MaxValue, initManagement.IndexPk);
+            var result = searcher.GenerateHtmlPreviewText(GetSearchRequest("ABC", initManagement.IndexPk), content, int.MaxValue);
             Assert.AreEqual(@"My <label class='highlight'>ABC</label>
 Is A <label class='highlight'>ABC</label> CONTENT
 It&#39;s <label class='highlight'>abc</label> in lowercase
@@ -50,7 +46,7 @@ Not AB with C", result);
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
-                result = searcher.GenerateHtmlPreviewText("ABC", content, 10, initManagement.IndexPk);
+                result = searcher.GenerateHtmlPreviewText(GetSearchRequest("ABC", initManagement.IndexPk), content, 10);
                 Assert.AreEqual(@"My <label class='highlight'>ABC</label>
 Is A <label class='highlight'>ABC</label>...s <label class='highlight'>abc</label> in", result);
             }
@@ -63,13 +59,13 @@ Is A <label class='highlight'>ABC</label>...s <label class='highlight'>abc</labe
             var searcher = initManagement.GetIndexSearcher();
 
             var content = $"My ABC{Environment.NewLine}Is A ABC CONTENT{Environment.NewLine}It's abc in lowercase{Environment.NewLine}It's Abc in mix{Environment.NewLine}Not AB with C";
-            var result = searcher.GenerateHtmlPreviewText("NotExistWord", content, int.MaxValue, initManagement.IndexPk);
+            var result = searcher.GenerateHtmlPreviewText(GetSearchRequest("NotExistWord", initManagement.IndexPk), content, int.MaxValue);
             Assert.IsEmpty(result);
 
-            result = searcher.GenerateHtmlPreviewText("NotExistWord", content, 10, initManagement.IndexPk, returnRawContentWhenResultIsEmpty: true);
+            result = searcher.GenerateHtmlPreviewText(GetSearchRequest("NotExistWord", initManagement.IndexPk), content, 10, returnRawContentWhenResultIsEmpty: true);
             Assert.AreEqual(HttpUtility.HtmlEncode(content), result);
 
-            result = searcher.GenerateHtmlPreviewText(null, content, 10, initManagement.IndexPk, returnRawContentWhenResultIsEmpty: true);
+            result = searcher.GenerateHtmlPreviewText(null, content, 10, returnRawContentWhenResultIsEmpty: true);
             Assert.AreEqual(HttpUtility.HtmlEncode(content), result);
         }
 
@@ -80,7 +76,7 @@ Is A <label class='highlight'>ABC</label>...s <label class='highlight'>abc</labe
             var searcher = initManagement.GetIndexSearcher();
 
             var content = $"My ABC{Environment.NewLine}Is A ABC CONTENT{Environment.NewLine}It's abc in lowercase{Environment.NewLine}It's Abc in mix{Environment.NewLine}Not AB with C";
-            var result = searcher.GenerateHtmlPreviewText("ABC", content, int.MaxValue, initManagement.IndexPk);
+            var result = searcher.GenerateHtmlPreviewText(GetSearchRequest("ABC", initManagement.IndexPk), content, int.MaxValue);
             Assert.AreEqual(@"Content is too long to highlight", result);
         }
 
@@ -91,7 +87,7 @@ Is A <label class='highlight'>ABC</label>...s <label class='highlight'>abc</labe
             var searcher = initManagement.GetIndexSearcher();
 
             searcher.GetHints("ABC", initManagement.IndexPk);
-            CollectionAssert.AreEquivalent(new[] { "ABCD" }, searcher.GetHints("Abc", initManagement.IndexPk));
+            CollectionAssert.AreEquivalent(new[] { "ABCD", "ABCE" }, searcher.GetHints("Abc", initManagement.IndexPk));
             CollectionAssert.IsEmpty(searcher.GetHints("Abc", initManagement.IndexPk, caseSensitive: true));
             CollectionAssert.AreEquivalent(new[] { "EFGH" }, searcher.GetHints("EFG", initManagement.IndexPk));
         }
@@ -103,12 +99,12 @@ Is A <label class='highlight'>ABC</label>...s <label class='highlight'>abc</labe
             var searcher = initManagement.GetIndexSearcher();
 
             var content = $"My ABC{Environment.NewLine}Is A ABC CONTENT{Environment.NewLine}ABCD EFG";
-            var results = searcher.GeneratePreviewTextWithLineNumber(searcher.GetContentQueryFromStr("ABC", initManagement.IndexPk, false), content, int.MaxValue, 100, initManagement.IndexPk);
+            var results = searcher.GeneratePreviewTextWithLineNumber(searcher.GetContentQuery(GetSearchRequest("ABC", initManagement.IndexPk)), content, int.MaxValue, 100, initManagement.IndexPk);
             Assert.That(results, Has.Length.EqualTo(2));
             Assert.AreEqual(("My <label class='highlight'>ABC</label>", 1), results[0]);
             Assert.AreEqual(("Is A <label class='highlight'>ABC</label> CONTENT", 2), results[1]);
 
-            results = searcher.GeneratePreviewTextWithLineNumber(searcher.GetContentQueryFromStr("ABC", initManagement.IndexPk, false), content, int.MaxValue, 1, initManagement.IndexPk);
+            results = searcher.GeneratePreviewTextWithLineNumber(searcher.GetContentQuery(GetSearchRequest("ABC", initManagement.IndexPk)), content, int.MaxValue, 1, initManagement.IndexPk);
             Assert.That(results, Has.Length.EqualTo(1));
             Assert.AreEqual(("My <label class='highlight'>ABC</label>", 1), results[0]);
         }
@@ -120,7 +116,7 @@ Is A <label class='highlight'>ABC</label>...s <label class='highlight'>abc</labe
             var searcher = initManagement.GetIndexSearcher();
 
             var content = $"My ABC{Environment.NewLine}Is A ABC CONTENT{Environment.NewLine}ABCD EFG";
-            var results = searcher.GeneratePreviewTextWithLineNumber(searcher.GetContentQueryFromStr("ABC", initManagement.IndexPk, false), content, int.MaxValue, 100, initManagement.IndexPk);
+            var results = searcher.GeneratePreviewTextWithLineNumber(searcher.GetContentQuery(GetSearchRequest("ABC", initManagement.IndexPk)), content, int.MaxValue, 100, initManagement.IndexPk);
             Assert.That(results, Has.Length.EqualTo(1));
             Assert.AreEqual(("Content is too long to highlight", 1), results[0]);
         }
@@ -132,7 +128,7 @@ Is A <label class='highlight'>ABC</label>...s <label class='highlight'>abc</labe
             var searcher = initManagement.GetIndexSearcher();
 
             var content = $"OH ABC{Environment.NewLine}DEF QWE ABC DEF ABC{Environment.NewLine}DEF OOOODD DEF ABC";
-            var results = searcher.GeneratePreviewTextWithLineNumber(searcher.GetContentQueryFromStr("\"ABC DEF\"", initManagement.IndexPk, false), content, int.MaxValue, 100, initManagement.IndexPk);
+            var results = searcher.GeneratePreviewTextWithLineNumber(searcher.GetContentQuery(GetSearchRequest("\"ABC DEF\"", initManagement.IndexPk)), content, int.MaxValue, 100, initManagement.IndexPk);
             Assert.That(results, Has.Length.EqualTo(3));
             Assert.AreEqual(("OH <label class='highlight'>ABC</label>", 1), results[0]);
             Assert.AreEqual(("<label class='highlight'>DEF</label> QWE <label class='highlight'>ABC</label> <label class='highlight'>DEF</label> <label class='highlight'>ABC</label>", 2), results[1]);
@@ -146,59 +142,11 @@ Is A <label class='highlight'>ABC</label>...s <label class='highlight'>abc</labe
             var searcher = initManagement.GetIndexSearcher();
 
             var content = $"{Environment.NewLine}   \t\tABC\t   \t";
-            var results = searcher.GeneratePreviewTextWithLineNumber(searcher.GetContentQueryFromStr("ABC", initManagement.IndexPk, false), content, int.MaxValue, 100, initManagement.IndexPk);
+            var results = searcher.GeneratePreviewTextWithLineNumber(searcher.GetContentQuery(GetSearchRequest("ABC", initManagement.IndexPk)), content, int.MaxValue, 100, initManagement.IndexPk);
             Assert.That(results, Has.Length.EqualTo(1));
             Assert.AreEqual(("<label class='highlight'>ABC</label>", 2), results[0]);
         }
 
-        class InitManagement : IDisposable
-        {
-            readonly IndexManagement management;
-            readonly IndexConfig indexConfig;
-            readonly ILogger<IndexManagement> log1 = new DummyLog<IndexManagement>();
-            readonly ILogger<CodeIndexSearcher> log2 = new DummyLog<CodeIndexSearcher>();
-
-            public InitManagement(string monitorFolder, CodeIndexConfiguration codeIndexConfiguration, bool initFiles = false, int maxContentHighlightLength = Constants.DefaultMaxContentHighlightLength)
-            {
-                indexConfig = new IndexConfig
-                {
-                    IndexName = "ABC",
-                    MonitorFolder = monitorFolder,
-                    MaxContentHighlightLength = maxContentHighlightLength
-                };
-
-                if (initFiles)
-                {
-                    var fileName1 = Path.Combine(monitorFolder, "A.txt");
-                    var fileName2 = Path.Combine(monitorFolder, "B.txt");
-                    var fileName3 = Path.Combine(monitorFolder, "C.txt");
-                    File.AppendAllText(fileName1, "ABCD");
-                    File.AppendAllText(fileName2, "ABCD EFGH");
-                    File.AppendAllText(fileName3, "ABCD EFGH IJKL");
-                }
-
-                management = new IndexManagement(codeIndexConfiguration, log1);
-                management.AddIndex(indexConfig);
-                var maintainer = management.GetIndexMaintainerWrapperAndInitializeIfNeeded(indexConfig.Pk);
-
-                // Wait initialized finished
-                while (maintainer.Result.Status == IndexStatus.Initializing_ComponentInitializeFinished || maintainer.Result.Status == IndexStatus.Initialized)
-                {
-                    Thread.Sleep(100);
-                }
-            }
-
-            public CodeIndexSearcher GetIndexSearcher()
-            {
-                return new CodeIndexSearcher(management, log2);
-            }
-
-            public Guid IndexPk => indexConfig.Pk;
-
-            public void Dispose()
-            {
-                management.Dispose();
-            }
-        }
+        SearchRequest GetSearchRequest(string content, Guid indexPk, string fileName = null, int showResults = 20) => new SearchRequest { Content = content, IndexPk = indexPk, FileName = fileName, ShowResults = showResults };
     }
 }
