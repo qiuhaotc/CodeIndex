@@ -1,7 +1,7 @@
 ﻿using System;
 using System.ComponentModel.DataAnnotations;
 
-namespace CodeIndex.Search
+namespace CodeIndex.Common
 {
     public record SearchRequest
     {

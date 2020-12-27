@@ -1,4 +1,5 @@
 ﻿using System.Linq;
+using CodeIndex.Common;
 using CodeIndex.Search;
 using NUnit.Framework;
 

@@ -66,7 +66,7 @@ namespace CodeIndex.Server.Controllers
             var stringBuilder = new StringBuilder();
             stringBuilder.AppendLine(analyzer.GetType().FullName);
 
-            var tokenStream = analyzer.GetTokenStream("A", content ?? string.Empty);
+            using var tokenStream = analyzer.GetTokenStream("A", content ?? string.Empty);
 
             var termAttr = tokenStream.GetAttribute<ICharTermAttribute>();
 

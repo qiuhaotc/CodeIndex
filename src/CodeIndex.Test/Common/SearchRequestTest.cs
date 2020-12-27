@@ -1,5 +1,5 @@
 ﻿using System;
-using CodeIndex.Search;
+using CodeIndex.Common;
 using NUnit.Framework;
 
 namespace CodeIndex.Test
