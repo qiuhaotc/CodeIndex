@@ -36,6 +36,9 @@ namespace CodeIndex.Test
             request.FileExtension = " ";
             request.FilePath = null;
             request.FileName = null;
+            Assert.IsFalse(request.IsEmpty);
+
+            request.CodePK = null;
             Assert.IsTrue(request.IsEmpty);
         }
     }

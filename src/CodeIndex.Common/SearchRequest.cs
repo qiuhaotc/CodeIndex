@@ -22,7 +22,7 @@ namespace CodeIndex.Common
         public bool ForWeb { get; set; }
         [MaxLength(32)]
         public string CodePK { get; set; }
-        public bool IsEmpty => string.IsNullOrWhiteSpace(Content) && string.IsNullOrWhiteSpace(FileName) && string.IsNullOrWhiteSpace(FileExtension) && string.IsNullOrWhiteSpace(FilePath)
+        public bool IsEmpty => string.IsNullOrWhiteSpace(Content) && string.IsNullOrWhiteSpace(FileName) && string.IsNullOrWhiteSpace(FileExtension) && string.IsNullOrWhiteSpace(FilePath) && string.IsNullOrWhiteSpace(CodePK)
             || IndexPk == Guid.Empty;
     }
 }
