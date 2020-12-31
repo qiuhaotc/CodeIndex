@@ -66,25 +66,31 @@ namespace CodeIndex.MaintainIndex
 
         // TODO: Add Tests
 
+        const string SpecialPrefix = "d780ba3b";
+        const string EncodedSpecialPrefix = SpecialPrefix + "0";
+
+        const string DoubleQuotes = "\"";
         const string EncodedDoubleQuotes = "\\\"";
-        const string ReplaceEncodedDoubleQuotes = "d17d0790bb624053a86e551e6c0a66f6";
+        const string ReplaceEncodedDoubleQuotes = SpecialPrefix + "1";
 
         const string EncodedAsterisk = "\\*";
-        const string ReplaceEncodedAsterisk = "7df41fe6d52a4e62b9175758fe2a5a27";
+        const string ReplaceEncodedAsterisk = SpecialPrefix + "2";
 
         const string WildcardAsterisk = "*";
-        const string ReplaceWildcardAsterisk = "bc3c0e14c1da4c1f82c53f6185c662e7";
+        const string ReplaceWildcardAsterisk = SpecialPrefix + "3";
 
         void AddPhaseQuery(BooleanQuery query, string queryStr, bool caseSensitive, string propertyName)
         {
             if (!string.IsNullOrWhiteSpace(queryStr))
             {
+                queryStr = queryStr.Replace(SpecialPrefix, EncodedSpecialPrefix);
+
                 if (caseSensitive && propertyName == nameof(CodeSource.Content))
                 {
                     propertyName = CodeIndexBuilder.GetCaseSensitiveField(nameof(CodeSource.Content));
                 }
 
-                queryStr = queryStr.Replace(EncodedDoubleQuotes, ReplaceEncodedDoubleQuotes).Replace("\"", string.Empty);
+                queryStr = queryStr.Replace(EncodedDoubleQuotes, ReplaceEncodedDoubleQuotes).Replace(DoubleQuotes, string.Empty);
 
                 if (!string.IsNullOrWhiteSpace(queryStr))
                 {
@@ -92,15 +98,13 @@ namespace CodeIndex.MaintainIndex
                     {
                         queryStr = queryStr.Replace(EncodedAsterisk, ReplaceEncodedAsterisk);
 
-                        var queryFuzzyParts = queryStr.Split(WildcardAsterisk, StringSplitOptions.RemoveEmptyEntries);
-
-                        if (queryFuzzyParts.Length == 0)
+                        if (queryStr.Contains(WildcardAsterisk))
                         {
                             AddPhaseQueryWithoutWildcard(query, queryStr.Replace(ReplaceEncodedAsterisk, EncodedAsterisk), propertyName);
                         }
                         else
                         {
-                            queryStr = queryStr.Replace(WildcardAsterisk, ReplaceWildcardAsterisk).Replace(ReplaceEncodedDoubleQuotes, "\"").Replace(ReplaceEncodedAsterisk, WildcardAsterisk);
+                            queryStr = queryStr.Replace(WildcardAsterisk, ReplaceWildcardAsterisk).Replace(ReplaceEncodedDoubleQuotes, DoubleQuotes).Replace(ReplaceEncodedAsterisk, WildcardAsterisk);
 
                             var words = new List<string>();
 
@@ -129,7 +133,7 @@ namespace CodeIndex.MaintainIndex
                                     }
                                     else
                                     {
-                                        phraseWords.Add(word.Replace(WildcardAsterisk, EncodedAsterisk).Replace(ReplaceWildcardAsterisk, WildcardAsterisk));
+                                        phraseWords.Add(word.Replace(WildcardAsterisk, EncodedAsterisk).Replace(ReplaceWildcardAsterisk, WildcardAsterisk).Replace(EncodedSpecialPrefix, SpecialPrefix));
                                     }
                                 }
 
@@ -168,11 +172,11 @@ namespace CodeIndex.MaintainIndex
 
             if (propertyName == nameof(CodeSource.FilePath))
             {
-                query.Add(GetQueryFromStr($"{propertyName}:{queryStr.Replace("\\", "\\\\").Replace(ReplaceEncodedDoubleQuotes, EncodedDoubleQuotes)}"), Occur.MUST);
+                query.Add(GetQueryFromStr($"{propertyName}:{queryStr.Replace("\\", "\\\\").Replace(ReplaceEncodedDoubleQuotes, EncodedDoubleQuotes).Replace(EncodedSpecialPrefix, SpecialPrefix)}"), Occur.MUST);
             }
             else
             {
-                query.Add(GetQueryFromStr($"{propertyName}:{queryStr.Replace(ReplaceEncodedDoubleQuotes, EncodedDoubleQuotes)}"), Occur.MUST);
+                query.Add(GetQueryFromStr($"{propertyName}:{queryStr.Replace(ReplaceEncodedDoubleQuotes, EncodedDoubleQuotes).Replace(EncodedSpecialPrefix, SpecialPrefix)}"), Occur.MUST);
             }
         }
 
