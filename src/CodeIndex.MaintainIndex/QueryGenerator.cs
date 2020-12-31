@@ -98,7 +98,7 @@ namespace CodeIndex.MaintainIndex
                     {
                         queryStr = queryStr.Replace(EncodedAsterisk, ReplaceEncodedAsterisk);
 
-                        if (queryStr.Contains(WildcardAsterisk))
+                        if (!queryStr.Contains(WildcardAsterisk))
                         {
                             AddPhaseQueryWithoutWildcard(query, queryStr.Replace(ReplaceEncodedAsterisk, EncodedAsterisk), propertyName);
                         }
