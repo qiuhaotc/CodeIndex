@@ -35,10 +35,13 @@ namespace CodeIndex.MaintainIndex
             }
         }
 
-        QueryParser queryParser;
-        public QueryParser CodeIndexQueryParser => queryParser ??= LucenePoolLight.GetQueryParser();
+        QueryParser queryParserNormal;
+        public QueryParser QueryParserNormal => queryParserNormal ??= LucenePoolLight.GetQueryParser();
+
+        QueryParser queryParserCaseSensitive;
+        public QueryParser QueryParserCaseSensitive => queryParserCaseSensitive ??= LucenePoolLight.GetQueryParser(false);
 
         QueryGenerator queryGenerator;
-        public QueryGenerator QueryGenerator => queryGenerator ??= new QueryGenerator(CodeIndexQueryParser);
+        public QueryGenerator QueryGenerator => queryGenerator ??= new QueryGenerator(QueryParserNormal, QueryParserCaseSensitive);
     }
 }

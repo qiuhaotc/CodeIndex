@@ -116,9 +116,12 @@ namespace CodeIndex.IndexBuilder
 
         public static Analyzer Analyzer => analyzer ??= CodeAnalyzer.GetCaseSensitiveAndInsesitiveCodeAnalyzer(CodeIndexBuilder.GetCaseSensitiveField(nameof(CodeSource.Content)));
 
-        public static QueryParser GetQueryParser()
+        public static QueryParser GetQueryParser(bool lowercaseExpandedTerms = true)
         {
-            return new QueryParser(Constants.AppLuceneVersion, nameof(CodeSource.Content), Analyzer);
+            return new QueryParser(Constants.AppLuceneVersion, nameof(CodeSource.Content), Analyzer)
+            {
+                LowercaseExpandedTerms = lowercaseExpandedTerms
+            };
         }
 
         #endregion

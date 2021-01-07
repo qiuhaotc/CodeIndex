@@ -16,7 +16,10 @@ namespace CodeIndex.Test
 
             Assert.AreEqual(IndexStatus.Idle, wrapper.Status);
             Assert.NotNull(wrapper.QueryGenerator);
-            Assert.NotNull(wrapper.CodeIndexQueryParser);
+            Assert.NotNull(wrapper.QueryParserNormal);
+            Assert.IsTrue(wrapper.QueryParserNormal.LowercaseExpandedTerms);
+            Assert.NotNull(wrapper.QueryParserCaseSensitive);
+            Assert.IsFalse(wrapper.QueryParserCaseSensitive.LowercaseExpandedTerms);
         }
     }
 }

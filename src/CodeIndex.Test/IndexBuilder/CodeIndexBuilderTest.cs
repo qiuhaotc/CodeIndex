@@ -38,7 +38,7 @@ namespace CodeIndex.Test
             var failedFiles = indexBuilder.BuildIndexByBatch(new[] { new FileInfo(fileName1), new FileInfo(fileName2) }, true, true, true, CancellationToken.None, true);
             CollectionAssert.IsEmpty(failedFiles);
 
-            var results = indexBuilder.CodeIndexPool.SearchCode(Generator.GetQueryFromStr("ABCD"));
+            var results = indexBuilder.CodeIndexPool.SearchCode(Generator.GetQueryFromStr("ABCD", false));
 
             Assert.AreEqual(2, results.Length);
             Assert.AreEqual("A.txt", results[0].FileName);
@@ -51,7 +51,7 @@ namespace CodeIndex.Test
             Assert.AreEqual(fileName2, results[1].FilePath);
             Assert.AreEqual("ABCD EFGH", results[1].Content);
             Assert.GreaterOrEqual(DateTime.UtcNow, results[1].IndexDate);
-            Assert.AreEqual(1, indexBuilder.CodeIndexPool.SearchCode(Generator.GetQueryFromStr("EFGH")).Length);
+            Assert.AreEqual(1, indexBuilder.CodeIndexPool.SearchCode(Generator.GetQueryFromStr("EFGH", false)).Length);
             Assert.AreEqual(1, indexBuilder.HintIndexPool.SearchWord(new TermQuery(new Term(nameof(CodeWord.Word), "ABCD"))).Length);
             Assert.AreEqual(1, indexBuilder.HintIndexPool.SearchWord(new TermQuery(new Term(nameof(CodeWord.Word), "EFGH"))).Length);
         }
@@ -314,6 +314,11 @@ namespace CodeIndex.Test
         }
 
         QueryGenerator generator;
-        QueryGenerator Generator => generator ??= new QueryGenerator(new QueryParser(Constants.AppLuceneVersion, nameof(CodeSource.Content), new CodeAnalyzer(Constants.AppLuceneVersion, true)));
+        QueryGenerator Generator => generator ??= new QueryGenerator(
+            new QueryParser(Constants.AppLuceneVersion, nameof(CodeSource.Content), new CodeAnalyzer(Constants.AppLuceneVersion, true)),
+            new QueryParser(Constants.AppLuceneVersion, nameof(CodeSource.Content), new CodeAnalyzer(Constants.AppLuceneVersion, true))
+            {
+                LowercaseExpandedTerms = false
+            });
     }
 }

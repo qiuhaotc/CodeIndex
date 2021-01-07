@@ -1,6 +1,5 @@
 ﻿using System;
 using System.Collections.Generic;
-using System.Runtime.CompilerServices;
 using CodeIndex.Common;
 using CodeIndex.IndexBuilder;
 using Lucene.Net.Analysis.TokenAttributes;
@@ -13,24 +12,50 @@ namespace CodeIndex.MaintainIndex
 {
     public class QueryGenerator
     {
-        QueryParser QueryParser { get; }
+        QueryParser QueryParserNormal { get; }
+        QueryParser QueryParserCaseSensitive { get; }
 
-        public QueryGenerator(QueryParser queryParser)
+        public QueryGenerator(QueryParser queryParserNormal, QueryParser queryParserCaseSensitive)
         {
-            queryParser.RequireNotNull(nameof(queryParser));
-            QueryParser = queryParser;
+            queryParserNormal.RequireNotNull(nameof(queryParserNormal));
+            queryParserCaseSensitive.RequireNotNull(nameof(queryParserCaseSensitive));
+            QueryParserNormal = queryParserNormal;
+            QueryParserCaseSensitive = queryParserCaseSensitive;
         }
 
         public Query GetSearchQuery(SearchRequest searchRequest)
         {
             if (!searchRequest.PhaseQuery)
             {
-                return GetQueryFromStr(GetSearchStr(searchRequest.FileName, searchRequest.Content, searchRequest.FileExtension, searchRequest.FilePath, searchRequest.CaseSensitive, searchRequest.CodePK));
+                var searchStr1 = GetSearchStr(searchRequest.FileName, searchRequest.FileExtension, searchRequest.FilePath, searchRequest.CodePK);
+                Query query1 = null;
+                if (!string.IsNullOrWhiteSpace(searchStr1))
+                {
+                    query1 = GetQueryFromStr(searchStr1, false);
+                }
+
+                var searchStr2 = GetContentSearchStr(searchRequest.Content, searchRequest.CaseSensitive);
+                Query query2 = null;
+                if (!string.IsNullOrWhiteSpace(searchStr2) && string.IsNullOrWhiteSpace(searchRequest.CodePK))
+                {
+                    query2 = GetQueryFromStr(searchStr2, searchRequest.CaseSensitive);
+                }
+
+                if (query1 != null && query2 != null)
+                {
+                    var searchQuery = new BooleanQuery();
+                    searchQuery.Add(query1, Occur.MUST);
+                    searchQuery.Add(query2, Occur.MUST);
+
+                    return searchQuery;
+                }
+
+                return query1 ?? query2 ?? throw new ArgumentException("Empty search request");
             }
 
             if (!string.IsNullOrEmpty(searchRequest.CodePK))
             {
-                return GetQueryFromStr($"{nameof(CodeSource.CodePK)}:{searchRequest.CodePK}");
+                return GetQueryFromStr($"{nameof(CodeSource.CodePK)}:{searchRequest.CodePK}", false);
             }
 
             var query = new BooleanQuery();
@@ -52,7 +77,7 @@ namespace CodeIndex.MaintainIndex
 
             if (!searchRequest.PhaseQuery)
             {
-                return GetQueryFromStr(GetContentSearchStr(searchRequest.Content, searchRequest.CaseSensitive));
+                return GetQueryFromStr(GetContentSearchStr(searchRequest.Content, searchRequest.CaseSensitive), searchRequest.CaseSensitive);
             }
 
             var query = new BooleanQuery();
@@ -172,21 +197,28 @@ namespace CodeIndex.MaintainIndex
 
             if (propertyName == nameof(CodeSource.FilePath))
             {
-                query.Add(GetQueryFromStr($"{propertyName}:{queryStr.Replace("\\", "\\\\").Replace(ReplaceEncodedDoubleQuotes, EncodedDoubleQuotes).Replace(EncodedSpecialPrefix, SpecialPrefix)}"), Occur.MUST);
+                query.Add(GetQueryFromStr($"{propertyName}:{queryStr.Replace("\\", "\\\\").Replace(ReplaceEncodedDoubleQuotes, EncodedDoubleQuotes).Replace(EncodedSpecialPrefix, SpecialPrefix)}", false), Occur.MUST);
             }
             else
             {
-                query.Add(GetQueryFromStr($"{propertyName}:{queryStr.Replace(ReplaceEncodedDoubleQuotes, EncodedDoubleQuotes).Replace(EncodedSpecialPrefix, SpecialPrefix)}"), Occur.MUST);
+                if (propertyName == CodeIndexBuilder.GetCaseSensitiveField(nameof(CodeSource.Content)))
+                {
+                    query.Add(GetQueryFromStr($"{propertyName}:{queryStr.Replace(ReplaceEncodedDoubleQuotes, EncodedDoubleQuotes).Replace(EncodedSpecialPrefix, SpecialPrefix)}", true), Occur.MUST);
+                }
+                else
+                {
+                    query.Add(GetQueryFromStr($"{propertyName}:{queryStr.Replace(ReplaceEncodedDoubleQuotes, EncodedDoubleQuotes).Replace(EncodedSpecialPrefix, SpecialPrefix)}", false), Occur.MUST);
+                }
             }
         }
 
         #endregion
 
-        public Query GetQueryFromStr(string searchStr)
+        public Query GetQueryFromStr(string searchStr, bool caseSensitive)
         {
             searchStr.RequireNotNullOrEmpty(nameof(searchStr));
 
-            return QueryParser.Parse(searchStr);
+            return caseSensitive ? QueryParserCaseSensitive.Parse(searchStr) : QueryParserNormal.Parse(searchStr);
         }
 
         bool SurroundWithQuotation(string content)
@@ -194,7 +226,7 @@ namespace CodeIndex.MaintainIndex
             return !string.IsNullOrWhiteSpace(content) && content.StartsWith("\"") && content.EndsWith("\"");
         }
 
-        protected string GetSearchStr(string fileName, string content, string fileExtension, string filePath, bool caseSensitive = false, string codePk = null)
+        protected string GetSearchStr(string fileName, string fileExtension, string filePath, string codePk = null)
         {
             if (!string.IsNullOrWhiteSpace(codePk))
             {
@@ -206,12 +238,6 @@ namespace CodeIndex.MaintainIndex
             if (!string.IsNullOrWhiteSpace(fileName))
             {
                 searchQueries.Add($"{nameof(CodeSource.FileName)}:{fileName}");
-            }
-
-            var contentPart = GetContentSearchStr(content, caseSensitive);
-            if (contentPart != null)
-            {
-                searchQueries.Add(contentPart);
             }
 
             if (!string.IsNullOrWhiteSpace(fileExtension))
@@ -232,7 +258,7 @@ namespace CodeIndex.MaintainIndex
             return string.Join(" AND ", searchQueries);
         }
 
-        string GetContentSearchStr(string content, bool caseSensitive)
+        protected string GetContentSearchStr(string content, bool caseSensitive)
         {
             if (!string.IsNullOrWhiteSpace(content))
             {
@@ -244,7 +270,7 @@ namespace CodeIndex.MaintainIndex
                 return $"{nameof(CodeSource.Content)}:{content}";
             }
 
-            return null;
+            return string.Empty;
         }
     }
 }
