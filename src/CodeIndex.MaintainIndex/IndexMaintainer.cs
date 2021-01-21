@@ -156,7 +156,7 @@ namespace CodeIndex.MaintainIndex
                         break;
 
                     case WatcherChangeTypes.Created:
-                        CreateIndex(changes);
+                        CreateIndex(changes, orderedNeedProcessingChanges);
                         break;
 
                     case WatcherChangeTypes.Deleted:
@@ -178,13 +178,23 @@ namespace CodeIndex.MaintainIndex
             Log.LogInformation($"{IndexConfig.IndexName}: Processing {prefix}Changes finished");
         }
 
-        void CreateIndex(ChangedSource changes)
+        void CreateIndex(ChangedSource changes, IList<ChangedSource> orderedNeedProcessingChanges)
         {
             if (IsFile(changes.FilePath))
             {
                 if (IndexBuilder.CreateIndex(new FileInfo(changes.FilePath)) == IndexBuildResults.FailedWithIOException)
                 {
                     EnqueueToFailedSource(changes);
+                }
+            }
+            else if (IsDirectory(changes.FilePath))
+            {
+                foreach (var file in Directory.GetFiles(changes.FilePath, "*", SearchOption.AllDirectories).Where(file =>
+                    orderedNeedProcessingChanges.All(changedSource => !changedSource.FilePath.Equals(file, StringComparison.InvariantCultureIgnoreCase))
+                    && ChangedSources.All(changedSource => !changedSource.FilePath.Equals(file, StringComparison.InvariantCultureIgnoreCase))))
+                {
+                    Log.LogInformation($"{IndexConfig.IndexName}: Enqueue File {file} Created to changes source");
+                    EnqueueChangeSource(WatcherChangeTypes.Created, file);
                 }
             }
         }
@@ -367,10 +377,15 @@ namespace CodeIndex.MaintainIndex
 
         void OnChange(object sender, FileSystemEventArgs e)
         {
+            EnqueueChangeSource(e.ChangeType, e.FullPath);
+        }
+
+        void EnqueueChangeSource(WatcherChangeTypes changeType, string fullPath)
+        {
             var changeSource = new ChangedSource
             {
-                ChangesType = e.ChangeType,
-                FilePath = e.FullPath
+                ChangesType = changeType,
+                FilePath = fullPath
             };
 
             if (!IsExcludedFromIndex(changeSource.FilePath))
@@ -424,7 +439,7 @@ namespace CodeIndex.MaintainIndex
         {
             var excluded = ExcludedPaths.Any(u => fullPath.ToUpperInvariant().Contains(u))
                            || ExcludedExtensions.Any(u => fullPath.EndsWith(u, StringComparison.InvariantCultureIgnoreCase))
-                           || IncludedExtensions.Length > 0 && !IncludedExtensions.Any(u => fullPath.EndsWith(u, StringComparison.InvariantCultureIgnoreCase));
+                           || fullPath.Contains(".") && IncludedExtensions.Length > 0 && !IncludedExtensions.Any(u => fullPath.EndsWith(u, StringComparison.InvariantCultureIgnoreCase));
 
             if (excluded)
             {

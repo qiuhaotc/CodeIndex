@@ -430,7 +430,7 @@ namespace CodeIndex.IndexBuilder
         {
             try
             {
-                CodeIndexPool.DeleteIndex(GetNoneTokenizeFieldTerm(nameof(CodeSource.FilePath), filePath), out var documentsBeenDeleted);
+                CodeIndexPool.DeleteIndex(new PrefixQuery(GetNoneTokenizeFieldTerm(nameof(CodeSource.FilePath), filePath)), out var documentsBeenDeleted);
 
                 if (documentsBeenDeleted.Length >= 1)
                 {
@@ -445,7 +445,7 @@ namespace CodeIndex.IndexBuilder
 
                     if (documentsBeenDeleted.Length > 1)
                     {
-                        Log.LogError($"{Name}: Find {documentsBeenDeleted.Length} Documents With Path {filePath} To Delete");
+                        Log.LogInformation($"{Name}: Find {documentsBeenDeleted.Length} Documents With Path {filePath} To Delete");
                     }
 
                     foreach (var needToDeleteWord in wordsNeedToRemove)
@@ -458,7 +458,7 @@ namespace CodeIndex.IndexBuilder
                 }
                 else
                 {
-                    Log.LogError($"{Name}: Find No Documents To Delete For {filePath}");
+                    Log.LogWarning($"{Name}: Find No Documents To Delete For {filePath}");
                 }
 
                 Log.LogInformation($"{Name}: Delete index For {filePath} finished");
