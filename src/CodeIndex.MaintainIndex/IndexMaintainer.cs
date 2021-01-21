@@ -156,7 +156,7 @@ namespace CodeIndex.MaintainIndex
                         break;
 
                     case WatcherChangeTypes.Created:
-                        CreateIndex(changes);
+                        CreateIndex(changes, orderedNeedProcessingChanges);
                         break;
 
                     case WatcherChangeTypes.Deleted:
@@ -178,7 +178,7 @@ namespace CodeIndex.MaintainIndex
             Log.LogInformation($"{IndexConfig.IndexName}: Processing {prefix}Changes finished");
         }
 
-        void CreateIndex(ChangedSource changes)
+        void CreateIndex(ChangedSource changes, IList<ChangedSource> orderedNeedProcessingChanges)
         {
             if (IsFile(changes.FilePath))
             {
@@ -189,9 +189,9 @@ namespace CodeIndex.MaintainIndex
             }
             else if (IsDirectory(changes.FilePath))
             {
-                foreach (var file in Directory.GetFiles(changes.FilePath, "*", SearchOption.AllDirectories).Where(
-                    file => ChangedSources.All(changedSource => !changedSource.FilePath.Equals(file, StringComparison.InvariantCultureIgnoreCase))
-                    ))
+                foreach (var file in Directory.GetFiles(changes.FilePath, "*", SearchOption.AllDirectories).Where(file =>
+                    orderedNeedProcessingChanges.All(changedSource => !changedSource.FilePath.Equals(file, StringComparison.InvariantCultureIgnoreCase))
+                    && ChangedSources.All(changedSource => !changedSource.FilePath.Equals(file, StringComparison.InvariantCultureIgnoreCase))))
                 {
                     Log.LogInformation($"{IndexConfig.IndexName}: Enqueue File {file} Created to changes source");
                     EnqueueChangeSource(WatcherChangeTypes.Created, file);
