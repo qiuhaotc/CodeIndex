@@ -60,10 +60,15 @@ namespace CodeIndex.IndexBuilder
 
         public void DeleteIndex(Term term, out Document[] documentsBeenDeleted)
         {
+            DeleteIndex(new TermQuery(term), out documentsBeenDeleted);
+        }
+
+        public void DeleteIndex(Query query, out Document[] documentsBeenDeleted)
+        {
             using var readLock = new EnterReaderWriterLock(readerWriteLock);
             using var searcher = GetUseIndexSearcher();
-            documentsBeenDeleted = searcher.IndexSearcher.Search(new TermQuery(term), int.MaxValue).ScoreDocs.Select(hit => searcher.IndexSearcher.Doc(hit.Doc)).ToArray();
-            IndexWriter.DeleteDocuments(term);
+            documentsBeenDeleted = searcher.IndexSearcher.Search(query, int.MaxValue).ScoreDocs.Select(hit => searcher.IndexSearcher.Doc(hit.Doc)).ToArray();
+            IndexWriter.DeleteDocuments(query);
 
             indexChangeCount++;
         }

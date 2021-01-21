@@ -20,6 +20,8 @@ namespace CodeIndex.IndexBuilder
 
         void DeleteIndex(Term term, out Document[] documentsBeenDeleted);
 
+        void DeleteIndex(Query query, out Document[] documentsBeenDeleted);
+
         void UpdateIndex(Term term, Document document);
 
         void UpdateIndex(Term term, Document document, out Document[] rawDocuments);

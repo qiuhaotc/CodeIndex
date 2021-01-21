@@ -187,6 +187,14 @@ namespace CodeIndex.MaintainIndex
                     EnqueueToFailedSource(changes);
                 }
             }
+            else if (IsDirectory(changes.FilePath))
+            {
+                foreach (var file in Directory.GetFiles(changes.FilePath, "*", SearchOption.AllDirectories).Where(v => ChangedSources.All(u => u.ChangesType != WatcherChangeTypes.Created && !u.FilePath.Equals(v, StringComparison.InvariantCultureIgnoreCase))))
+                {
+                    Log.LogInformation($"{IndexConfig.IndexName}: Enqueue File {file} Created to changes source");
+                    EnqueueChangeSource(WatcherChangeTypes.Created, file);
+                }
+            }
         }
 
         void RenameIndex(ChangedSource changes)
@@ -367,10 +375,15 @@ namespace CodeIndex.MaintainIndex
 
         void OnChange(object sender, FileSystemEventArgs e)
         {
+            EnqueueChangeSource(e.ChangeType, e.FullPath);
+        }
+
+        void EnqueueChangeSource(WatcherChangeTypes changeType, string fullPath)
+        {
             var changeSource = new ChangedSource
             {
-                ChangesType = e.ChangeType,
-                FilePath = e.FullPath
+                ChangesType = changeType,
+                FilePath = fullPath
             };
 
             if (!IsExcludedFromIndex(changeSource.FilePath))
@@ -424,7 +437,7 @@ namespace CodeIndex.MaintainIndex
         {
             var excluded = ExcludedPaths.Any(u => fullPath.ToUpperInvariant().Contains(u))
                            || ExcludedExtensions.Any(u => fullPath.EndsWith(u, StringComparison.InvariantCultureIgnoreCase))
-                           || IncludedExtensions.Length > 0 && !IncludedExtensions.Any(u => fullPath.EndsWith(u, StringComparison.InvariantCultureIgnoreCase));
+                           || fullPath.Contains(".") && IncludedExtensions.Length > 0 && !IncludedExtensions.Any(u => fullPath.EndsWith(u, StringComparison.InvariantCultureIgnoreCase));
 
             if (excluded)
             {
