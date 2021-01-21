@@ -189,7 +189,9 @@ namespace CodeIndex.MaintainIndex
             }
             else if (IsDirectory(changes.FilePath))
             {
-                foreach (var file in Directory.GetFiles(changes.FilePath, "*", SearchOption.AllDirectories).Where(v => ChangedSources.All(u => u.ChangesType != WatcherChangeTypes.Created && !u.FilePath.Equals(v, StringComparison.InvariantCultureIgnoreCase))))
+                foreach (var file in Directory.GetFiles(changes.FilePath, "*", SearchOption.AllDirectories).Where(
+                    file => ChangedSources.All(changedSource => !changedSource.FilePath.Equals(file, StringComparison.InvariantCultureIgnoreCase))
+                    ))
                 {
                     Log.LogInformation($"{IndexConfig.IndexName}: Enqueue File {file} Created to changes source");
                     EnqueueChangeSource(WatcherChangeTypes.Created, file);
