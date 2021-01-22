@@ -9,12 +9,20 @@
     </div>
 </div>
 <div class="row">
-    <div class="col-sm-10">
+    <div class="col-sm-8">
         <div class="input-group mb-3">
             <div class="input-group-prepend">
                 <span class="input-group-text">Content</span>
             </div>
             <input type="text" class="form-control" placeholder="Put Your Content Here" aria-label="Put Your Content Here" @bind-value="@Request.Content" @bind-value:event="oninput" @onkeyup="@(async e => await KeyPressForContent(e))" maxlength="1000" />
+        </div>
+    </div>
+    <div class="col-sm-2">
+        <div class="input-group mb-3">
+            <div class="input-group-prepend">
+                <span class="input-group-text">Case Sensitive</span>
+            </div>
+            <input type="checkbox" class="form-control" @bind="Request.CaseSensitive">
         </div>
     </div>
     <div class="col-sm-2">
@@ -74,7 +82,7 @@
             </select>
         </div>
     </div>
-    <div class="col-sm-2">
+    <div class="col-sm-4">
         <div class="input-group mb-3">
             <div class="input-group-prepend">
                 <span class="input-group-text">Show Results</span>
@@ -85,14 +93,6 @@
                 <option value="50">50</option>
                 <option value="100">100</option>
             </select>
-        </div>
-    </div>
-    <div class="col-sm-2">
-        <div class="input-group mb-3">
-            <div class="input-group-prepend">
-                <span class="input-group-text">Case Sensitive</span>
-            </div>
-            <input type="checkbox" class="form-control" @bind="Request.CaseSensitive">
         </div>
     </div>
 </div>

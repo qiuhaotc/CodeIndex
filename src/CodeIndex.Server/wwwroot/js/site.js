@@ -1,4 +1,4 @@
-﻿function ScorllTextAreaToBottom(itemID) {
+﻿function ScrollTextAreaToBottom(itemID) {
     var textarea = document.getElementById(itemID);
     textarea.scrollTop = textarea.scrollHeight;
 }

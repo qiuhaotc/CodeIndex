@@ -5,10 +5,10 @@
 
 <h3>Logs</h3>
 <div class="input-group mb-3">
-    Fetch Result: @Result?.Status?.Success @Result?.Status?.StatusDesc
+    <button class="btn btn-success btn-sm" @onclick="RefreshLogs">Refresh</button>
+    <label class="m-1">Fetch Result: @Result?.Status?.Success @Result?.Status?.StatusDesc</label>
 </div>
 <div class="form-group">
-    <label for="exampleFormControlTextarea1">Logs</label>
     <textarea class="form-control" id="textAreaForLogs" rows="20">@Result?.Result</textarea>
 </div>
 
@@ -18,12 +18,42 @@
     protected override async Task OnInitializedAsync()
     {
         await base.OnInitializedAsync();
-        Result = await Client.GetJsonAsync<FetchResult<string>>($"{Config.LocalUrl}api/lucene/GetLogs");
+        Result = await GetLogs();
     }
 
     protected override async Task OnAfterRenderAsync(bool firstRender)
     {
         await base.OnAfterRenderAsync(firstRender);
-        await JSRuntime.InvokeVoidAsync("ScorllTextAreaToBottom", "textAreaForLogs");
+        await JSRuntime.InvokeVoidAsync("ScrollTextAreaToBottom", "textAreaForLogs");
+    }
+
+    bool refreshing;
+
+    async Task RefreshLogs()
+    {
+        try
+        {
+            if (refreshing)
+            {
+                return;
+            }
+
+            if (Result != null)
+            {
+                Result.Result = "Refreshing...";
+            }
+
+            refreshing = true;
+            Result = await GetLogs();
+        }
+        finally
+        {
+            refreshing = false;
+        }
+    }
+
+    async Task<FetchResult<string>> GetLogs()
+    {
+        return await Client.GetJsonAsync<FetchResult<string>>($"{Config.LocalUrl}api/lucene/GetLogs");
     }
 }

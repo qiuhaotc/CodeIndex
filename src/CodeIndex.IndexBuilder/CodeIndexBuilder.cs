@@ -267,7 +267,7 @@ namespace CodeIndex.IndexBuilder
         {
             try
             {
-                var documents = CodeIndexPool.Search(new PrefixQuery(GetNoneTokenizeFieldTerm(nameof(CodeSource.FilePath), oldFolderPath)), 1);
+                var documents = CodeIndexPool.Search(new PrefixQuery(GetNoneTokenizeFieldTerm(nameof(CodeSource.FilePath), oldFolderPath)), int.MaxValue);
 
                 foreach (var document in documents)
                 {
@@ -275,7 +275,7 @@ namespace CodeIndex.IndexBuilder
                     RenameIndex(document, oldFolderPath, nowFolderPath);
                 }
 
-                Log.LogInformation($"{Name}: Rename folder index from {oldFolderPath} to {nowFolderPath} successful");
+                Log.LogInformation($"{Name}: Rename folder index from {oldFolderPath} to {nowFolderPath} successful, documents count: {documents.Length}");
                 return true;
             }
             catch (Exception ex)

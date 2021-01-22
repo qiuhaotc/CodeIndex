@@ -203,9 +203,9 @@ namespace CodeIndex.MaintainIndex
         {
             var isDirectory = IsDirectory(changes.FilePath);
 
-            if (IsExcludedFromIndex(changes.FilePath, !isDirectory))
+            if (IsExcludedFromIndex(changes.FilePath, isDirectory))
             {
-                if (!IsExcludedFromIndex(changes.OldPath, !isDirectory))
+                if (!IsExcludedFromIndex(changes.OldPath, isDirectory))
                 {
                     IndexBuilder.DeleteIndex(changes.OldPath);
                 }
@@ -390,7 +390,7 @@ namespace CodeIndex.MaintainIndex
                 FilePath = fullPath
             };
 
-            if (!IsExcludedFromIndex(changeSource.FilePath, changeType == WatcherChangeTypes.Deleted || !IsDirectory(fullPath)))
+            if (!IsExcludedFromIndex(changeSource.FilePath, changeType))
             {
                 ChangedSources.Enqueue(changeSource);
             }
@@ -437,18 +437,46 @@ namespace CodeIndex.MaintainIndex
             }
         }
 
-        bool IsExcludedFromIndex(string fullPath, bool shouldCheckExtension)
+        bool IsExcludedFromIndex(string fullPath, bool isDirectory)
         {
             var excluded = ExcludedPaths.Any(u => fullPath.ToUpperInvariant().Contains(u))
-                           || shouldCheckExtension && (ExcludedExtensions.Any(u => fullPath.EndsWith(u, StringComparison.InvariantCultureIgnoreCase))
-                                               || IncludedExtensions.Length > 0 && !IncludedExtensions.Any(u => fullPath.EndsWith(u, StringComparison.InvariantCultureIgnoreCase)));
+                           || !isDirectory && ContainsExcludedExtension(fullPath);
 
             if (excluded)
             {
-                Log.LogDebug($"{IndexConfig.IndexName}: {fullPath} is excluded from index, {(shouldCheckExtension ? "check extensions" : "not check extensions")}");
+                Log.LogDebug($"{IndexConfig.IndexName}: {fullPath} is excluded from index, {(!isDirectory ? "check extension" : "not check extension")}");
             }
 
             return excluded;
+        }
+
+        bool IsExcludedFromIndex(string fullPath, WatcherChangeTypes changeType)
+        {
+            if (changeType == WatcherChangeTypes.Deleted) // Unable to determine path is folder or file under deleted scenario
+            {
+                var excluded = ExcludedPaths.Any(u => fullPath.ToUpperInvariant().Contains(u));
+                var extension = Path.GetExtension(fullPath).ToUpperInvariant();
+
+                if (extension != string.Empty)
+                {
+                    excluded = excluded || ExcludedExtensions.Contains(extension) || IncludedExtensions.Length > 0 && !IncludedExtensions.Contains(extension);
+                }
+
+                if (excluded)
+                {
+                    Log.LogDebug($"{IndexConfig.IndexName}: {fullPath} is excluded from index, change type: {WatcherChangeTypes.Deleted}");
+                }
+
+                return excluded;
+            }
+
+            return IsExcludedFromIndex(fullPath, IsDirectory(fullPath));
+        }
+
+        bool ContainsExcludedExtension(string fullPath)
+        {
+            var extension = Path.GetExtension(fullPath).ToUpperInvariant();
+            return ExcludedExtensions.Contains(extension) || IncludedExtensions.Length > 0 && !IncludedExtensions.Contains(extension);
         }
 
         protected virtual int FetchIntervalSeconds => 3;
