@@ -201,25 +201,27 @@ namespace CodeIndex.MaintainIndex
 
         void RenameIndex(ChangedSource changes)
         {
-            if (IsExcludedFromIndex(changes.FilePath))
+            var isDirectory = IsDirectory(changes.FilePath);
+
+            if (IsExcludedFromIndex(changes.FilePath, isDirectory))
             {
-                if (!IsExcludedFromIndex(changes.OldPath))
+                if (!IsExcludedFromIndex(changes.OldPath, isDirectory))
                 {
                     IndexBuilder.DeleteIndex(changes.OldPath);
                 }
             }
             else
             {
-                if (IsFile(changes.FilePath))
+                if (isDirectory)
+                {
+                    IndexBuilder.RenameFolderIndexes(changes.OldPath, changes.FilePath, TokenSource.Token);
+                }
+                else if (IsFile(changes.FilePath))
                 {
                     if (IndexBuilder.RenameFileIndex(changes.OldPath, changes.FilePath) == IndexBuildResults.FailedWithIOException)
                     {
                         EnqueueToFailedSource(changes);
                     }
-                }
-                else if (IsDirectory(changes.FilePath))
-                {
-                    IndexBuilder.RenameFolderIndexes(changes.OldPath, changes.FilePath, TokenSource.Token);
                 }
             }
         }
@@ -388,7 +390,7 @@ namespace CodeIndex.MaintainIndex
                 FilePath = fullPath
             };
 
-            if (!IsExcludedFromIndex(changeSource.FilePath))
+            if (!IsExcludedFromIndex(changeSource.FilePath, IsDirectory(fullPath)))
             {
                 ChangedSources.Enqueue(changeSource);
             }
@@ -407,14 +409,14 @@ namespace CodeIndex.MaintainIndex
         }
 
         IndexConfig IndexConfig { get; }
-        public CodeIndexConfiguration CodeIndexConfiguration { get; }
-        public ILogger Log { get; }
+        CodeIndexConfiguration CodeIndexConfiguration { get; }
+        ILogger Log { get; }
         public IndexStatus Status { get; private set; }
         public CodeIndexBuilder IndexBuilder { get; private set; }
-        public string Description { get; set; }
-        public bool IsDisposing { get; private set; }
+        string Description { get; set; }
+        bool IsDisposing { get; set; }
         FileSystemWatcher FilesWatcher { get; set; }
-        public CancellationTokenSource TokenSource { get; }
+        CancellationTokenSource TokenSource { get; }
         ConcurrentQueue<ChangedSource> ChangedSources { get; set; }
         ConcurrentQueue<PendingRetrySource> PendingRetryCodeSources { get; set; }
         string[] ExcludedExtensions { get; }
@@ -435,15 +437,15 @@ namespace CodeIndex.MaintainIndex
             }
         }
 
-        bool IsExcludedFromIndex(string fullPath)
+        bool IsExcludedFromIndex(string fullPath, bool isDirectory)
         {
             var excluded = ExcludedPaths.Any(u => fullPath.ToUpperInvariant().Contains(u))
-                           || ExcludedExtensions.Any(u => fullPath.EndsWith(u, StringComparison.InvariantCultureIgnoreCase))
-                           || fullPath.Contains(".") && IncludedExtensions.Length > 0 && !IncludedExtensions.Any(u => fullPath.EndsWith(u, StringComparison.InvariantCultureIgnoreCase));
+                           || !isDirectory && (ExcludedExtensions.Any(u => fullPath.EndsWith(u, StringComparison.InvariantCultureIgnoreCase))
+                                               || IncludedExtensions.Length > 0 && !IncludedExtensions.Any(u => fullPath.EndsWith(u, StringComparison.InvariantCultureIgnoreCase)));
 
             if (excluded)
             {
-                Log.LogDebug($"{IndexConfig.IndexName}: {fullPath} is excluded from index");
+                Log.LogDebug($"{IndexConfig.IndexName}: {(isDirectory ? "Directory" : "File")} {fullPath} is excluded from index");
             }
 
             return excluded;

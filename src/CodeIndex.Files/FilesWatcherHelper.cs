@@ -5,10 +5,10 @@ namespace CodeIndex.Files
 {
     public static class FilesWatcherHelper
     {
-        public static FileSystemWatcher StartWatch(string path, FileSystemEventHandler onchangedHandler, RenamedEventHandler onRenameHandler)
+        public static FileSystemWatcher StartWatch(string path, FileSystemEventHandler onChangedHandler, RenamedEventHandler onRenameHandler)
         {
             path.RequireNotNullOrEmpty(nameof(path));
-            onchangedHandler.RequireNotNull(nameof(onchangedHandler));
+            onChangedHandler.RequireNotNull(nameof(onChangedHandler));
             onRenameHandler.RequireNotNull(nameof(onRenameHandler));
 
             var watcher = new FileSystemWatcher();
@@ -23,9 +23,9 @@ namespace CodeIndex.Files
             watcher.Filter = "*.*";
 
             // Add event handlers.
-            watcher.Changed += onchangedHandler;
-            watcher.Created += onchangedHandler;
-            watcher.Deleted += onchangedHandler;
+            watcher.Changed += onChangedHandler;
+            watcher.Created += onChangedHandler;
+            watcher.Deleted += onChangedHandler;
             watcher.Renamed += onRenameHandler;
 
             // Include Sub Dir
