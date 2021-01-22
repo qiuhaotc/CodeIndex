@@ -203,9 +203,9 @@ namespace CodeIndex.MaintainIndex
         {
             var isDirectory = IsDirectory(changes.FilePath);
 
-            if (IsExcludedFromIndex(changes.FilePath, isDirectory))
+            if (IsExcludedFromIndex(changes.FilePath, !isDirectory))
             {
-                if (!IsExcludedFromIndex(changes.OldPath, isDirectory))
+                if (!IsExcludedFromIndex(changes.OldPath, !isDirectory))
                 {
                     IndexBuilder.DeleteIndex(changes.OldPath);
                 }
@@ -390,7 +390,7 @@ namespace CodeIndex.MaintainIndex
                 FilePath = fullPath
             };
 
-            if (!IsExcludedFromIndex(changeSource.FilePath, IsDirectory(fullPath)))
+            if (!IsExcludedFromIndex(changeSource.FilePath, changeType == WatcherChangeTypes.Deleted || !IsDirectory(fullPath)))
             {
                 ChangedSources.Enqueue(changeSource);
             }
@@ -437,15 +437,15 @@ namespace CodeIndex.MaintainIndex
             }
         }
 
-        bool IsExcludedFromIndex(string fullPath, bool isDirectory)
+        bool IsExcludedFromIndex(string fullPath, bool shouldCheckExtension)
         {
             var excluded = ExcludedPaths.Any(u => fullPath.ToUpperInvariant().Contains(u))
-                           || !isDirectory && (ExcludedExtensions.Any(u => fullPath.EndsWith(u, StringComparison.InvariantCultureIgnoreCase))
+                           || shouldCheckExtension && (ExcludedExtensions.Any(u => fullPath.EndsWith(u, StringComparison.InvariantCultureIgnoreCase))
                                                || IncludedExtensions.Length > 0 && !IncludedExtensions.Any(u => fullPath.EndsWith(u, StringComparison.InvariantCultureIgnoreCase)));
 
             if (excluded)
             {
-                Log.LogDebug($"{IndexConfig.IndexName}: {(isDirectory ? "Directory" : "File")} {fullPath} is excluded from index");
+                Log.LogDebug($"{IndexConfig.IndexName}: {fullPath} is excluded from index, {(shouldCheckExtension ? "check extensions" : "not check extensions")}");
             }
 
             return excluded;
