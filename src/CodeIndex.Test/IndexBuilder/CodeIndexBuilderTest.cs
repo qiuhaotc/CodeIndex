@@ -192,6 +192,28 @@ namespace CodeIndex.Test
         }
 
         [Test]
+        public void TestDeleteIndex_FolderDelete()
+        {
+            using var indexBuilder = new CodeIndexBuilder("ABC", new LucenePoolLight(TempCodeIndexDir), new LucenePoolLight(TempHintIndexDir), Log);
+
+            Directory.CreateDirectory(Path.Combine(MonitorFolder, "SubDir"));
+            File.AppendAllText(Path.Combine(MonitorFolder, "SubDir.txt"), "1234");
+            File.AppendAllText(Path.Combine(MonitorFolder, "SubDir", "A.txt"), "5678");
+            File.AppendAllText(Path.Combine(MonitorFolder, "SubDir", "B.txt"), "5678");
+
+            Assert.AreEqual(IndexBuildResults.Successful, indexBuilder.CreateIndex(new FileInfo(Path.Combine(MonitorFolder, "SubDir.txt"))));
+            Assert.AreEqual(IndexBuildResults.Successful, indexBuilder.CreateIndex(new FileInfo(Path.Combine(MonitorFolder, "SubDir", "A.txt"))));
+            Assert.AreEqual(IndexBuildResults.Successful, indexBuilder.CreateIndex(new FileInfo(Path.Combine(MonitorFolder, "SubDir", "B.txt"))));
+            Assert.AreEqual(3, indexBuilder.CodeIndexPool.SearchCode(new MatchAllDocsQuery()).Length);
+
+            Assert.IsTrue(indexBuilder.DeleteIndex(Path.Combine(MonitorFolder, "SubDir")));
+
+            var results = indexBuilder.CodeIndexPool.SearchCode(new MatchAllDocsQuery());
+            Assert.AreEqual(1, results.Length, "Should not delete the index of SubDir.txt");
+            Assert.AreEqual("SubDir.txt", results[0].FileName);
+        }
+
+        [Test]
         public void TestGetNoneTokenizeFieldTerm()
         {
             using var indexBuilder = new CodeIndexBuilder("ABC", new LucenePoolLight(TempCodeIndexDir), new LucenePoolLight(TempHintIndexDir), Log);

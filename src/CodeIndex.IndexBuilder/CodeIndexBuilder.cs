@@ -426,11 +426,17 @@ namespace CodeIndex.IndexBuilder
             return HintIndexPool.Search(new MatchAllDocsQuery(), int.MaxValue).Select(u => u.Get(nameof(CodeWord.Word))).ToHashSet();
         }
 
-        public bool DeleteIndex(string filePath)
+        public bool DeleteIndex(string fileOrFolderPath)
         {
             try
             {
-                CodeIndexPool.DeleteIndex(new PrefixQuery(GetNoneTokenizeFieldTerm(nameof(CodeSource.FilePath), filePath)), out var documentsBeenDeleted);
+                var query = new BooleanQuery
+                {
+                    { new TermQuery(GetNoneTokenizeFieldTerm(nameof(CodeSource.FilePath), fileOrFolderPath)), Occur.SHOULD },
+                    { new PrefixQuery(GetNoneTokenizeFieldTerm(nameof(CodeSource.FilePath), fileOrFolderPath + Path.DirectorySeparatorChar)), Occur.SHOULD }
+                };
+
+                CodeIndexPool.DeleteIndex(query, out var documentsBeenDeleted);
 
                 if (documentsBeenDeleted.Length >= 1)
                 {
@@ -441,11 +447,11 @@ namespace CodeIndex.IndexBuilder
                         AddHintWords(wordsNeedToRemove, GetCodeSourceFromDocument(document).Content);
                     }
 
-                    Log.LogInformation($"{Name}: Find {wordsNeedToRemove.Count} Delete Candidates Words With Path {filePath}");
+                    Log.LogInformation($"{Name}: Find {wordsNeedToRemove.Count} Delete Candidates Words With Path {fileOrFolderPath}");
 
                     if (documentsBeenDeleted.Length > 1)
                     {
-                        Log.LogInformation($"{Name}: Find {documentsBeenDeleted.Length} Documents With Path {filePath} To Delete");
+                        Log.LogInformation($"{Name}: Find {documentsBeenDeleted.Length} Documents With Path {fileOrFolderPath} To Delete");
                     }
 
                     foreach (var needToDeleteWord in wordsNeedToRemove)
@@ -458,16 +464,16 @@ namespace CodeIndex.IndexBuilder
                 }
                 else
                 {
-                    Log.LogWarning($"{Name}: Find No Documents To Delete For {filePath}");
+                    Log.LogWarning($"{Name}: Find No Documents To Delete For {fileOrFolderPath}");
                 }
 
-                Log.LogInformation($"{Name}: Delete index For {filePath} finished");
+                Log.LogInformation($"{Name}: Delete index For {fileOrFolderPath} finished");
 
                 return true;
             }
             catch (Exception ex)
             {
-                Log.LogError($"{Name}: Delete index for {filePath} failed, exception: " + ex);
+                Log.LogError($"{Name}: Delete index for {fileOrFolderPath} failed, exception: " + ex);
                 return false;
             }
         }
