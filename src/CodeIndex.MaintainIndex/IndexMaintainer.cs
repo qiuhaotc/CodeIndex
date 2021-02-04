@@ -145,37 +145,39 @@ namespace CodeIndex.MaintainIndex
 
             Log.LogInformation($"{IndexConfig.IndexName}: Processing {prefix}Changes start, changes count: {orderedNeedProcessingChanges.Count}");
 
-            foreach (var changes in orderedNeedProcessingChanges)
+            for (var changesIndex = 0; changesIndex < orderedNeedProcessingChanges.Count; changesIndex++)
             {
                 TokenSource.Token.ThrowIfCancellationRequested();
 
-                switch (changes.ChangesType)
+                var change = orderedNeedProcessingChanges[changesIndex];
+
+                switch (change.ChangesType)
                 {
                     case WatcherChangeTypes.Changed:
-                        UpdateIndex(changes);
+                        UpdateIndex(change);
                         break;
 
                     case WatcherChangeTypes.Created:
-                        CreateIndex(changes, orderedNeedProcessingChanges);
+                        CreateIndex(change, orderedNeedProcessingChanges);
                         break;
 
                     case WatcherChangeTypes.Deleted:
-                        DeleteIndex(changes);
+                        DeleteIndex(change);
                         break;
 
                     case WatcherChangeTypes.Renamed:
-                        RenameIndex(changes);
+                        RenameIndex(change);
                         break;
 
                     default:
-                        Log.LogError($"{IndexConfig.IndexName}: Unknown changes type {changes}");
+                        Log.LogError($"{IndexConfig.IndexName}: Unknown change type {change}");
                         break;
                 }
 
-                Log.LogInformation($"{IndexConfig.IndexName}: Processing {changes} finished");
+                Log.LogInformation($"{IndexConfig.IndexName}: Processing {change} finished, progress rate: {changesIndex + 1}/{orderedNeedProcessingChanges.Count}");
             }
 
-            Log.LogInformation($"{IndexConfig.IndexName}: Processing {prefix}Changes finished");
+            Log.LogInformation($"{IndexConfig.IndexName}: Processing {orderedNeedProcessingChanges.Count} {prefix}Changes finished");
         }
 
         void CreateIndex(ChangedSource changes, IList<ChangedSource> orderedNeedProcessingChanges)
