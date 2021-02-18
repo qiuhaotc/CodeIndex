@@ -38,17 +38,17 @@ namespace CodeIndex.Test
 
             var content = $"My ABC{Environment.NewLine}Is A ABC CONTENT{Environment.NewLine}It's abc in lowercase{Environment.NewLine}It's Abc in mix{Environment.NewLine}Not AB with C";
             var result = searcher.GenerateHtmlPreviewText(GetSearchRequest("ABC", initManagement.IndexPk), content, int.MaxValue);
-            Assert.AreEqual(@"My <label class='highlight'>ABC</label>
-Is A <label class='highlight'>ABC</label> CONTENT
-It&#39;s <label class='highlight'>abc</label> in lowercase
-It&#39;s <label class='highlight'>Abc</label> in mix
+            Assert.AreEqual(@"My <span class='highlight'>ABC</span>
+Is A <span class='highlight'>ABC</span> CONTENT
+It&#39;s <span class='highlight'>abc</span> in lowercase
+It&#39;s <span class='highlight'>Abc</span> in mix
 Not AB with C", result);
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 result = searcher.GenerateHtmlPreviewText(GetSearchRequest("ABC", initManagement.IndexPk), content, 10);
-                Assert.AreEqual(@"My <label class='highlight'>ABC</label>
-Is A <label class='highlight'>ABC</label>...s <label class='highlight'>abc</label> in", result);
+                Assert.AreEqual(@"My <span class='highlight'>ABC</span>
+Is A <span class='highlight'>ABC</span>...s <span class='highlight'>abc</span> in", result);
             }
         }
 
@@ -101,12 +101,12 @@ Is A <label class='highlight'>ABC</label>...s <label class='highlight'>abc</labe
             var content = $"My ABC{Environment.NewLine}Is A ABC CONTENT{Environment.NewLine}ABCD EFG";
             var results = searcher.GeneratePreviewTextWithLineNumber(searcher.GetContentQuery(GetSearchRequest("ABC", initManagement.IndexPk)), content, int.MaxValue, 100, initManagement.IndexPk);
             Assert.That(results, Has.Length.EqualTo(2));
-            Assert.AreEqual(("My <label class='highlight'>ABC</label>", 1), results[0]);
-            Assert.AreEqual(("Is A <label class='highlight'>ABC</label> CONTENT", 2), results[1]);
+            Assert.AreEqual(("My <span class='highlight'>ABC</span>", 1), results[0]);
+            Assert.AreEqual(("Is A <span class='highlight'>ABC</span> CONTENT", 2), results[1]);
 
             results = searcher.GeneratePreviewTextWithLineNumber(searcher.GetContentQuery(GetSearchRequest("ABC", initManagement.IndexPk)), content, int.MaxValue, 1, initManagement.IndexPk);
             Assert.That(results, Has.Length.EqualTo(1));
-            Assert.AreEqual(("My <label class='highlight'>ABC</label>", 1), results[0]);
+            Assert.AreEqual(("My <span class='highlight'>ABC</span>", 1), results[0]);
         }
 
         [Test]
@@ -130,9 +130,9 @@ Is A <label class='highlight'>ABC</label>...s <label class='highlight'>abc</labe
             var content = $"OH ABC{Environment.NewLine}DEF QWE ABC DEF ABC{Environment.NewLine}DEF OOOODD DEF ABC";
             var results = searcher.GeneratePreviewTextWithLineNumber(searcher.GetContentQuery(GetSearchRequest("\"ABC DEF\"", initManagement.IndexPk)), content, int.MaxValue, 100, initManagement.IndexPk);
             Assert.That(results, Has.Length.EqualTo(3));
-            Assert.AreEqual(("OH <label class='highlight'>ABC</label>", 1), results[0]);
-            Assert.AreEqual(("<label class='highlight'>DEF</label> QWE <label class='highlight'>ABC</label> <label class='highlight'>DEF</label> <label class='highlight'>ABC</label>", 2), results[1]);
-            Assert.AreEqual(("<label class='highlight'>DEF</label> OOOODD DEF ABC", 3), results[2]);
+            Assert.AreEqual(("OH <span class='highlight'>ABC</span>", 1), results[0]);
+            Assert.AreEqual(("<span class='highlight'>DEF</span> QWE <span class='highlight'>ABC</span> <span class='highlight'>DEF</span> <span class='highlight'>ABC</span>", 2), results[1]);
+            Assert.AreEqual(("<span class='highlight'>DEF</span> OOOODD DEF ABC", 3), results[2]);
         }
 
         [Test]
@@ -144,7 +144,7 @@ Is A <label class='highlight'>ABC</label>...s <label class='highlight'>abc</labe
             var content = $"{Environment.NewLine}   \t\tABC\t   \t";
             var results = searcher.GeneratePreviewTextWithLineNumber(searcher.GetContentQuery(GetSearchRequest("ABC", initManagement.IndexPk)), content, int.MaxValue, 100, initManagement.IndexPk);
             Assert.That(results, Has.Length.EqualTo(1));
-            Assert.AreEqual(("<label class='highlight'>ABC</label>", 2), results[0]);
+            Assert.AreEqual(("<span class='highlight'>ABC</span>", 2), results[0]);
         }
 
         SearchRequest GetSearchRequest(string content, Guid indexPk, string fileName = null, int showResults = 20) => new SearchRequest { Content = content, IndexPk = indexPk, FileName = fileName, ShowResults = showResults };

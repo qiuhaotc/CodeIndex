@@ -47,7 +47,7 @@ namespace CodeIndex.Search
             return maintainer.Maintainer.IndexBuilder.CodeIndexPool.Search(query, searchRequest.ShowResults.Value).Select(CodeIndexBuilder.GetCodeSourceFromDocument).ToArray();
         }
 
-        public string GenerateHtmlPreviewText(SearchRequest searchRequest, string text, int length, string prefix = "<label class='highlight'>", string suffix = "</label>", bool returnRawContentWhenResultIsEmpty = false)
+        public string GenerateHtmlPreviewText(SearchRequest searchRequest, string text, int length, string prefix = "<span class='highlight'>", string suffix = "</span>", bool returnRawContentWhenResultIsEmpty = false)
         {
             if (searchRequest == null)
             {
@@ -145,7 +145,7 @@ namespace CodeIndex.Search
             return null;
         }
 
-        public (string MatchedLineContent, int LineNumber)[] GeneratePreviewTextWithLineNumber(Query query, string text, int length, int maxResults, Guid pk, bool forWeb = true, bool needReplaceSuffixAndPrefix = true, string prefix = "<label class='highlight'>", string suffix = "</label>", bool caseSensitive = false)
+        public (string MatchedLineContent, int LineNumber)[] GeneratePreviewTextWithLineNumber(Query query, string text, int length, int maxResults, Guid pk, bool forWeb = true, bool needReplaceSuffixAndPrefix = true, string prefix = "<span class='highlight'>", string suffix = "</span>", bool caseSensitive = false)
         {
             (string, int)[] results;
 
