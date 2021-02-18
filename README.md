@@ -1,6 +1,14 @@
 # CodeIndex
 
-A fast code searching tools based on Lucene.Net
+A fast full-text searching tools based on Lucene.Net
+
+## Feature
+
+1. Support multiple indexes
+2. Auto monitoring indexed files changes
+3. Support various search (etc: fuzzy, wildcard, case-sensitive) on file content, name, location, extension
+4. Support Docker
+5. Support Visual Studio
 
 ## Demonstrate Site
 
@@ -45,6 +53,8 @@ dotnet CodeIndex.Server.dll --urls "http://:5000;https://:5001"
 
 #### Config Indexes
 
+In this page, you can add/remove/delete and config the index folder you want to monitoring and searching.
+
 ![Config Indexes](https://raw.githubusercontent.com/qiuhaotc/CodeIndex/master/doc/ConfigAndSearching.gif)
 
 #### Doing Search
@@ -64,7 +74,6 @@ It will return the matched infos with highlight and matched line number
 ### Run With Docker
 
 Support docker container, [Docker hub](https://hub.docker.com/r/qiuhaotc/codeindex)
-
 
 #### Docker Command Format
 
@@ -102,9 +111,21 @@ Notice: in the docker container, when add the index config, the monitor folder s
 
 ![Code Index Search Extension](https://raw.githubusercontent.com/qiuhaotc/CodeIndex/master/doc/UseExtension.gif)
 
-## Search Syntax
+### Search Syntax
 
-Refer [http://www.lucenetutorial.com/lucene-query-syntax.html](http://www.lucenetutorial.com/lucene-query-syntax.html)
+#### Phase Query
+
+When Phase Query been ticked, we can search the content via the query like: str*ng abc, it will give the result such as "string abc", "strdummyng abc" as the search results, the results like "abc string" or "stng abc" won't return.
+
+In Phase Query mode, currently only support wildcard matching for word like stri*, organi*tion
+
+![Phase Query Search](https://raw.githubusercontent.com/qiuhaotc/CodeIndex/master/doc/PhaseQuerySearch.gif)
+
+When Phase Quuery not been ticked, you can follow the sytax under [http://www.lucenetutorial.com/lucene-query-syntax.html](http://www.lucenetutorial.com/lucene-query-syntax.html) to doing the search
+
+#### Case-Sensitive
+
+When Case-Sensitive been ticked, we can search the content in case-sensitive mode. When search the content like String, it won't return the content that contains string
 
 ## Misc
 
