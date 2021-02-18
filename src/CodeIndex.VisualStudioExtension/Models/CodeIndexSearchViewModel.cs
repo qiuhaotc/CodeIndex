@@ -55,7 +55,7 @@ namespace CodeIndex.VisualStudioExtension
 
         public bool CaseSensitive { get; set; }
 
-        public bool PhaseQuery { get; set; }
+        public bool PhaseQuery { get; set; } = true;
 
         CancellationTokenSource tokenToLoadIndexInfos;
 

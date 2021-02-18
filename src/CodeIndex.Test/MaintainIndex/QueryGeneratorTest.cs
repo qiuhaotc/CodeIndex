@@ -117,6 +117,15 @@ namespace CodeIndex.Test
             query = Generator.GetSearchQuery(new SearchRequest
             {
                 PhaseQuery = true,
+                Content = "\"\\\"",
+            });
+
+            Assert.NotNull(query);
+            Assert.AreEqual("+Content:\"\" \"\"", query.ToString());
+
+            query = Generator.GetSearchQuery(new SearchRequest
+            {
+                PhaseQuery = true,
                 Content = "ABC* DEF",
                 FileName = "EFG",
                 CodePK = "123"

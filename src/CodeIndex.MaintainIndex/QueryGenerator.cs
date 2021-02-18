@@ -115,7 +115,7 @@ namespace CodeIndex.MaintainIndex
                     propertyName = CodeIndexBuilder.GetCaseSensitiveField(nameof(CodeSource.Content));
                 }
 
-                queryStr = queryStr.Replace(EncodedDoubleQuotes, ReplaceEncodedDoubleQuotes).Replace(DoubleQuotes, string.Empty);
+                queryStr = queryStr.Replace(EncodedDoubleQuotes, ReplaceEncodedDoubleQuotes).Replace(DoubleQuotes, ReplaceEncodedDoubleQuotes);
 
                 if (!string.IsNullOrWhiteSpace(queryStr))
                 {
