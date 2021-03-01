@@ -38,11 +38,58 @@ namespace CodeIndex.Test
                 }
             };
 
-            listChanges.PreProcessingChanges(string.Empty, indexConfig, _ => { });
+            listChanges.PreProcessingChanges(string.Empty, indexConfig, _ => { }, (u, v) => false);
             CollectionAssert.AreEquivalent(new[]
                 {
                     (new DateTime(2020, 1, 1), WatcherChangeTypes.Changed, "D:\\b.txt", (string)null),
                     (new DateTime(2020, 1, 3), WatcherChangeTypes.Renamed, "D:\\d.txt", "D:\\e.txt")
+                },
+                listChanges.Select(u => (u.ChangedUTCDate, u.ChangesType, u.FilePath, u.OldPath)));
+        }
+
+        [Test]
+        public void TestRemoveTemplateChanges_RenameSourceIsExcludedFromIndex()
+        {
+            var listChanges = new List<ChangedSource>
+            {
+                new ()
+                {
+                    ChangedUTCDate = new DateTime(2020, 1, 1),
+                    ChangesType = WatcherChangeTypes.Renamed,
+                    FilePath = "D:\\A.txt",
+                    OldPath = "D:\\b.gif"
+                },
+                new ()
+                {
+                    ChangedUTCDate = new DateTime(2020, 1, 2),
+                    ChangesType = WatcherChangeTypes.Renamed,
+                    FilePath = "D:\\B.gif",
+                    OldPath = "D:\\a.txt"
+                },
+                new ()
+                {
+                    ChangedUTCDate = new DateTime(2020, 1, 3),
+                    ChangesType = WatcherChangeTypes.Renamed,
+                    FilePath = "D:\\d.txt",
+                    OldPath = "D:\\e.jpg"
+                },
+                new ()
+                {
+                    ChangedUTCDate = new DateTime(2020, 1, 4),
+                    ChangesType = WatcherChangeTypes.Renamed,
+                    FilePath = "D:\\e.jpg",
+                    OldPath = "D:\\d.txt"
+                }
+            };
+
+            listChanges.PreProcessingChanges(string.Empty, indexConfig, _ => { }, (u, v) =>
+            {
+                return u.EndsWith("gif");
+            });
+
+            CollectionAssert.AreEquivalent(new[]
+                {
+                    (new DateTime(2020, 1, 3), WatcherChangeTypes.Changed, "D:\\e.jpg", (string)null)
                 },
                 listChanges.Select(u => (u.ChangedUTCDate, u.ChangesType, u.FilePath, u.OldPath)));
         }
@@ -81,7 +128,7 @@ namespace CodeIndex.Test
                 }
             };
 
-            listChanges.PreProcessingChanges(string.Empty, indexConfig, _ => { });
+            listChanges.PreProcessingChanges(string.Empty, indexConfig, _ => { }, (u, v) => false);
             CollectionAssert.AreEquivalent(new[]
                 {
                     (new DateTime(2020, 1, 1), WatcherChangeTypes.Changed, "D:\\B.txt", (string)null),
@@ -142,7 +189,7 @@ namespace CodeIndex.Test
                 }
             };
 
-            listChanges.PreProcessingChanges(string.Empty, indexConfig, _ => { });
+            listChanges.PreProcessingChanges(string.Empty, indexConfig, _ => { }, (u, v) => false);
             CollectionAssert.AreEquivalent(new[]
                 {
                     (new DateTime(2020, 1, 1), WatcherChangeTypes.Changed, "D:\\B.txt", (string)null),

@@ -141,7 +141,7 @@ namespace CodeIndex.MaintainIndex
         {
             var prefix = isFailedChangedSource ? "Failed " : string.Empty;
 
-            orderedNeedProcessingChanges.PreProcessingChanges(prefix, IndexConfig, u => Log.LogInformation(u));
+            orderedNeedProcessingChanges.PreProcessingChanges(prefix, IndexConfig, u => Log.LogInformation(u), IsExcludedFromIndex);
 
             Log.LogInformation($"{IndexConfig.IndexName}: Processing {prefix}Changes start, changes count: {orderedNeedProcessingChanges.Count}");
 

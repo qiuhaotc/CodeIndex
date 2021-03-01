@@ -8,11 +8,11 @@ namespace CodeIndex.Files
 {
     public static class FileChangesPreProcessing
     {
-        public static void PreProcessingChanges(this IList<ChangedSource> orderedNeedProcessingChanges, string prefix, IndexConfig indexConfig, Action<string> doLog)
+        public static void PreProcessingChanges(this IList<ChangedSource> orderedNeedProcessingChanges, string prefix, IndexConfig indexConfig, Action<string> doLog, Func<string, WatcherChangeTypes, bool> renameChangeIsExcludedFromIndex)
         {
             doLog.Invoke($"{indexConfig.IndexName}: Pre Processing {prefix}Changes Start, changes count: {orderedNeedProcessingChanges.Count}");
 
-            RemoveTemplateChanges(orderedNeedProcessingChanges, indexConfig, doLog);
+            RemoveTemplateChanges(orderedNeedProcessingChanges, indexConfig, doLog, renameChangeIsExcludedFromIndex);
 
             RemoveTemplateDeletedChanges(orderedNeedProcessingChanges, indexConfig, doLog);
 
@@ -21,7 +21,7 @@ namespace CodeIndex.Files
             doLog.Invoke($"{indexConfig.IndexName}: Pre Processing {prefix}Changes Finished");
         }
 
-        static void RemoveTemplateChanges(IList<ChangedSource> orderedNeedProcessingChanges, IndexConfig indexConfig, Action<string> doLog)
+        static void RemoveTemplateChanges(IList<ChangedSource> orderedNeedProcessingChanges, IndexConfig indexConfig, Action<string> doLog, Func<string, WatcherChangeTypes, bool> renameChangeIsExcludedFromIndex)
         {
             var needDeleted = new List<ChangedSource>();
 
@@ -35,12 +35,21 @@ namespace CodeIndex.Files
 
                     if (templateRenameChange != null)
                     {
-                        change.ChangesType = WatcherChangeTypes.Changed;
-                        change.FilePath = change.OldPath;
-                        change.OldPath = null;
                         needDeleted.Add(templateRenameChange);
 
-                        doLog.Invoke($"{indexConfig.IndexName}: Template Change Found {templateRenameChange}, remove this and update {change} from Renamed to Changed");
+                        if (renameChangeIsExcludedFromIndex.Invoke(change.OldPath, WatcherChangeTypes.Changed))
+                        {
+                            needDeleted.Add(change);
+                            doLog.Invoke($"{indexConfig.IndexName}: Template Change Found {templateRenameChange}, remove template change and {change} as path is excluded from index");
+                        }
+                        else
+                        {
+                            change.ChangesType = WatcherChangeTypes.Changed;
+                            change.FilePath = change.OldPath;
+                            change.OldPath = null;
+
+                            doLog.Invoke($"{indexConfig.IndexName}: Template Change Found {templateRenameChange}, remove this and update {change} from Renamed to Changed");
+                        }
                     }
                 }
             }
