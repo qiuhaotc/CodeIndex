@@ -28,7 +28,7 @@ namespace CodeIndex.Test
             {
                 var fileName1 = Path.Combine(monitorFolder, "A.txt");
                 var fileName2 = Path.Combine(monitorFolder, "B.txt");
-                var fileName3 = Path.Combine(monitorFolder, "C.txt");
+                var fileName3 = Path.Combine(monitorFolder, "C.TXT");
                 File.AppendAllText(fileName1, "ABCD");
                 File.AppendAllText(fileName2, "ABCD EFGH");
                 File.AppendAllText(fileName3, "ABCD EFGH IJKL" + Environment.NewLine + "ABCD ABCE");

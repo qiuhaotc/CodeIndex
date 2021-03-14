@@ -272,7 +272,7 @@ namespace CodeIndex.IndexBuilder
                 foreach (var document in documents)
                 {
                     cancellationToken.ThrowIfCancellationRequested();
-                    RenameIndex(document, oldFolderPath, nowFolderPath);
+                    CodeIndexPool.UpdateIndex(new Term(nameof(CodeSource.CodePK), documents[0].Get(nameof(CodeSource.CodePK))), documents[0].RenameIndexForFolder(oldFolderPath, nowFolderPath));
                 }
 
                 Log.LogInformation($"{Name}: Rename folder index from {oldFolderPath} to {nowFolderPath} successful, documents count: {documents.Length}");
@@ -293,7 +293,7 @@ namespace CodeIndex.IndexBuilder
 
                 if (documents.Length == 1)
                 {
-                    RenameIndex(documents[0], oldFilePath, nowFilePath);
+                    CodeIndexPool.UpdateIndex(new Term(nameof(CodeSource.CodePK), documents[0].Get(nameof(CodeSource.CodePK))), documents[0].RenameIndexForFile(nowFilePath));
 
                     Log.LogInformation($"{Name}: Rename file index from {oldFilePath} to {nowFilePath} successful");
 
@@ -320,17 +320,6 @@ namespace CodeIndex.IndexBuilder
 
                 return IndexBuildResults.FailedWithError;
             }
-        }
-
-        void RenameIndex(Document document, string oldFilePath, string nowFilePath)
-        {
-            var pathField = document.Get(nameof(CodeSource.FilePath));
-            var nowPath = pathField.Replace(oldFilePath, nowFilePath);
-            document.RemoveField(nameof(CodeSource.FilePath));
-            document.RemoveField(nameof(CodeSource.FilePath) + Constants.NoneTokenizeFieldSuffix);
-            document.Add(new TextField(nameof(CodeSource.FilePath), nowPath, Field.Store.YES));
-            document.Add(new StringField(nameof(CodeSource.FilePath) + Constants.NoneTokenizeFieldSuffix, nowPath, Field.Store.YES));
-            CodeIndexPool.UpdateIndex(new Term(nameof(CodeSource.CodePK), document.Get(nameof(CodeSource.CodePK))), document);
         }
 
         public bool IsDisposing { get; private set; }

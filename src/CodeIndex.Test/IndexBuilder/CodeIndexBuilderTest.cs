@@ -131,20 +131,26 @@ namespace CodeIndex.Test
         {
             using var indexBuilder = new CodeIndexBuilder("ABC", new LucenePoolLight(TempCodeIndexDir), new LucenePoolLight(TempHintIndexDir), Log);
 
-            var oldFileName = Path.Combine(MonitorFolder, "A.txt");
-            var newFileName = Path.Combine(MonitorFolder, "B.txt");
+            var oldFileName = Path.Combine(MonitorFolder, "A.TXT");
+            var newFileName = Path.Combine(MonitorFolder, "B.SQL");
             File.AppendAllText(oldFileName, "ABCD EEEE");
             Assert.AreEqual(IndexBuildResults.Successful, indexBuilder.CreateIndex(new FileInfo(oldFileName)));
-            Assert.AreEqual(oldFileName, indexBuilder.CodeIndexPool.SearchCode(new MatchAllDocsQuery()).First().FilePath);
+
+            var results = indexBuilder.CodeIndexPool.SearchCode(new TermQuery(indexBuilder.GetNoneTokenizeFieldTerm(nameof(CodeSource.FilePath), oldFileName)));
+            Assert.AreEqual("txt", results[0].FileExtension);
+            Assert.AreEqual("A.TXT", results[0].FileName);
+            Assert.AreEqual("ABCD EEEE", results[0].Content);
+            Assert.AreEqual(oldFileName, results[0].FilePath);
 
             Directory.Move(oldFileName, newFileName);
             Assert.AreEqual(IndexBuildResults.Successful, indexBuilder.RenameFileIndex(oldFileName, newFileName));
-            Assert.AreEqual(newFileName, indexBuilder.CodeIndexPool.SearchCode(new MatchAllDocsQuery()).First().FilePath);
 
-            var results = indexBuilder.CodeIndexPool.SearchCode(new TermQuery(indexBuilder.GetNoneTokenizeFieldTerm(nameof(CodeSource.FilePath), newFileName)));
+            results = indexBuilder.CodeIndexPool.SearchCode(new TermQuery(indexBuilder.GetNoneTokenizeFieldTerm(nameof(CodeSource.FilePath), newFileName)));
             Assert.AreEqual(1, results.Length);
-            Assert.AreEqual(newFileName, results[0].FilePath);
+            Assert.AreEqual("sql", results[0].FileExtension);
+            Assert.AreEqual("B.SQL", results[0].FileName);
             Assert.AreEqual("ABCD EEEE", results[0].Content);
+            Assert.AreEqual(newFileName, results[0].FilePath);
         }
 
         [Test]
@@ -336,6 +342,7 @@ namespace CodeIndex.Test
         }
 
         QueryGenerator generator;
+
         QueryGenerator Generator => generator ??= new QueryGenerator(
             new QueryParser(Constants.AppLuceneVersion, nameof(CodeSource.Content), new CodeAnalyzer(Constants.AppLuceneVersion, true)),
             new QueryParser(Constants.AppLuceneVersion, nameof(CodeSource.Content), new CodeAnalyzer(Constants.AppLuceneVersion, true))

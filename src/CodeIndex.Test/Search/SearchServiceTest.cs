@@ -75,5 +75,44 @@ namespace CodeIndex.Test
             Assert.IsTrue(result.Status.Success);
             CollectionAssert.AreEquivalent(new[] { "EFGH" }, result.Result);
         }
+
+        [Test]
+        public void TestSearchExtension()
+        {
+            using var initManagement = new InitManagement(MonitorFolder, Config, true);
+            var searcher = initManagement.GetIndexSearcher();
+            var searchService = new SearchService(Config, new DummyLog<SearchService>(), searcher);
+
+            var result = searchService.GetCodeSources(new SearchRequest
+            {
+                FileExtension = "TXT",
+                ShowResults = int.MaxValue,
+                IndexPk = initManagement.IndexPk,
+                CaseSensitive = true
+            });
+
+            Assert.IsTrue(result.Status.Success);
+            Assert.AreEqual(3, result.Result.Count(), "Extension is case-insensitive");
+
+            result = searchService.GetCodeSources(new SearchRequest
+            {
+                FileExtension = "txt",
+                ShowResults = int.MaxValue,
+                IndexPk = initManagement.IndexPk,
+                CaseSensitive = true
+            });
+
+            Assert.AreEqual(3, result.Result.Count(), "Extension is case-insensitive");
+
+            result = searchService.GetCodeSources(new SearchRequest
+            {
+                FileExtension = "sql",
+                ShowResults = int.MaxValue,
+                IndexPk = initManagement.IndexPk,
+                CaseSensitive = true
+            });
+
+            Assert.AreEqual(0, result.Result.Count());
+        }
     }
 }
