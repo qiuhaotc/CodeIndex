@@ -1,4 +1,5 @@
 ﻿using System;
+using System.IO;
 using CodeIndex.Common;
 using CodeIndex.IndexBuilder;
 using Lucene.Net.Documents;
@@ -85,30 +86,34 @@ namespace CodeIndex.Test
         [Test]
         public void TestRenameIndex_FileChanged()
         {
+            var filePath = Path.Combine(Path.GetTempPath(), "Dummy File 2.cs");
+
             var codeSource = new CodeSource
             {
                 FileName = "Dummy File 2.cs",
                 FileExtension = "cs",
-                FilePath = @"C:\Dummy File 2.cs",
+                FilePath = filePath,
                 Content = "Test Content" + Environment.NewLine + "A New Line For Test"
             };
 
             var document = IndexBuilderHelper.GetDocumentFromSource(codeSource);
             Assert.AreEqual("cs", document.Get(nameof(CodeSource.FileExtension)));
 
-            document = IndexBuilderHelper.RenameIndexForFile(document, @"C:\Dummy File 2.CS");
+            var newPath = Path.Combine(Path.GetTempPath(), "Dummy File 2.CS");
+            document = IndexBuilderHelper.RenameIndexForFile(document, newPath);
             AssertFields(document);
             Assert.AreEqual("cs", document.Get(nameof(CodeSource.FileExtension)), "Extension is case-insensitive, still 'cs'");
             Assert.AreEqual("Dummy File 2.CS", document.Get(nameof(CodeSource.FileName)), "File name changed");
-            Assert.AreEqual(@"C:\Dummy File 2.CS", document.Get(nameof(CodeSource.FilePath)));
-            Assert.AreEqual(@"C:\Dummy File 2.CS", document.Get(nameof(CodeSource.FilePath) + Constants.NoneTokenizeFieldSuffix));
+            Assert.AreEqual(newPath, document.Get(nameof(CodeSource.FilePath)));
+            Assert.AreEqual(newPath, document.Get(nameof(CodeSource.FilePath) + Constants.NoneTokenizeFieldSuffix));
 
-            document = IndexBuilderHelper.RenameIndexForFile(document, @"C:\Dummy File 3.TXT");
+            newPath = Path.Combine(Path.GetTempPath(), "Dummy File 3.TXT");
+            document = IndexBuilderHelper.RenameIndexForFile(document, newPath);
             AssertFields(document);
             Assert.AreEqual("txt", document.Get(nameof(CodeSource.FileExtension)), "Extension is changed to 'txt' and lowercase");
             Assert.AreEqual("Dummy File 3.TXT", document.Get(nameof(CodeSource.FileName)), "File name changed");
-            Assert.AreEqual(@"C:\Dummy File 3.TXT", document.Get(nameof(CodeSource.FilePath)));
-            Assert.AreEqual(@"C:\Dummy File 3.TXT", document.Get(nameof(CodeSource.FilePath) + Constants.NoneTokenizeFieldSuffix));
+            Assert.AreEqual(newPath, document.Get(nameof(CodeSource.FilePath)));
+            Assert.AreEqual(newPath, document.Get(nameof(CodeSource.FilePath) + Constants.NoneTokenizeFieldSuffix));
         }
 
         void AssertFields(Document document)
