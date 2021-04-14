@@ -8,10 +8,6 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <None Remove="Pages\LuceneWithLineNumber.razor~RF1a20608c.TMP" />
-  </ItemGroup>
-
-  <ItemGroup>
     <None Update="nlog.config">
       <CopyToOutputDirectory>PreserveNewest</CopyToOutputDirectory>
     </None>
