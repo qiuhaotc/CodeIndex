@@ -6,10 +6,11 @@
   </PropertyGroup>
 
   <ItemGroup>
-    <PackageReference Include="Lucene.Net" Version="4.8.0-beta00013" />
-    <PackageReference Include="Lucene.Net.Analysis.Common" Version="4.8.0-beta00013" />
-    <PackageReference Include="Lucene.Net.ICU" Version="4.8.0-beta00013" />
-    <PackageReference Include="Lucene.Net.QueryParser" Version="4.8.0-beta00013" />
+    <PackageReference Include="Lucene.Net" Version="4.8.0-beta00014" />
+    <PackageReference Include="Lucene.Net.Analysis.Common" Version="4.8.0-beta00014" />
+    <PackageReference Include="Lucene.Net.ICU" Version="4.8.0-beta00014" />
+    <PackageReference Include="Lucene.Net.QueryParser" Version="4.8.0-beta00014" />
+    <PackageReference Include="Microsoft.Extensions.Logging" Version="5.0.0" />
   </ItemGroup>
 
   <ItemGroup>
