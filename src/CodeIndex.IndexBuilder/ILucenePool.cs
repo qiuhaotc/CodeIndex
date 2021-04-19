@@ -28,6 +28,8 @@ namespace CodeIndex.IndexBuilder
 
         void DeleteAllIndex();
 
+        void Commit();
+
         bool Exists(Query query);
 
         string LuceneIndex { get; }

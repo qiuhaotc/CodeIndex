@@ -7,12 +7,12 @@ namespace CodeIndex.Test
 {
     public static class SearcherForTest
     {
-        public static CodeSource[] SearchCode(this LucenePoolLight lucenePool, Query searchQuery, int maxResults = int.MaxValue)
+        public static CodeSource[] SearchCode(this ILucenePool lucenePool, Query searchQuery, int maxResults = int.MaxValue)
         {
             return lucenePool.Search(searchQuery, maxResults).Select(CodeIndexBuilder.GetCodeSourceFromDocument).ToArray();
         }
 
-        public static CodeWord[] SearchWord(this LucenePoolLight lucenePool, Query searchQuery, int maxResults = int.MaxValue)
+        public static CodeWord[] SearchWord(this ILucenePool lucenePool, Query searchQuery, int maxResults = int.MaxValue)
         {
             return lucenePool.Search(searchQuery, maxResults).Select(u => new CodeWord
             {

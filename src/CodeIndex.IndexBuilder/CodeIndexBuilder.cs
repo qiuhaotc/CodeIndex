@@ -15,7 +15,7 @@ namespace CodeIndex.IndexBuilder
 {
     public class CodeIndexBuilder : IDisposable
     {
-        public CodeIndexBuilder(string name, LucenePoolLight codeIndexPool, LucenePoolLight hintIndexPool, ILogger log)
+        public CodeIndexBuilder(string name, ILucenePool codeIndexPool, ILucenePool hintIndexPool, ILogger log)
         {
             name.RequireNotNullOrEmpty(nameof(name));
             codeIndexPool.RequireNotNull(nameof(codeIndexPool));
@@ -29,8 +29,8 @@ namespace CodeIndex.IndexBuilder
         }
 
         public string Name { get; }
-        public LucenePoolLight CodeIndexPool { get; }
-        public LucenePoolLight HintIndexPool { get; }
+        public ILucenePool CodeIndexPool { get; }
+        public ILucenePool HintIndexPool { get; }
         public ILogger Log { get; }
 
         public void InitIndexFolderIfNeeded()
