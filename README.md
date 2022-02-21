@@ -1,4 +1,4 @@
-# CodeIndex
+# Code Index
 
 A fast full-text searching tools based on Lucene.Net
 
