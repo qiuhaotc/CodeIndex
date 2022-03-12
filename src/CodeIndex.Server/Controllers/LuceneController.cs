@@ -8,7 +8,6 @@ using CodeIndex.Common;
 using CodeIndex.IndexBuilder;
 using CodeIndex.MaintainIndex;
 using CodeIndex.Search;
-using Lucene.Net.Analysis;
 using Lucene.Net.Analysis.Core;
 using Lucene.Net.Analysis.Standard;
 using Lucene.Net.Analysis.TokenAttributes;
@@ -17,7 +16,7 @@ using Microsoft.Extensions.Logging;
 
 namespace CodeIndex.Server.Controllers
 {
-    [Route("api/[controller]/[action]")]
+  [Route("api/[controller]/[action]")]
     [ApiController]
     public class LuceneController : ControllerBase
     {
@@ -61,7 +60,7 @@ namespace CodeIndex.Server.Controllers
             };
         }
 
-        string GetTokenStr(Analyzer analyzer, string content)
+        string GetTokenStr(Lucene.Net.Analysis.Analyzer analyzer, string content)
         {
             var stringBuilder = new StringBuilder();
             stringBuilder.AppendLine(analyzer.GetType().FullName);
