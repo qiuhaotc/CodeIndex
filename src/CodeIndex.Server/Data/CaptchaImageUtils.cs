@@ -51,8 +51,9 @@ namespace CodeIndex.Server
 
         static void DrawCaptchaCode(int width, int height, string captchaCode, Random random, SKCanvas graphics)
         {
+            var typeface = SKFontManager.Default.MatchCharacter('A');
             var fontSize = GetFontSize(width, captchaCode.Length);
-            var font = new SKFont(SKTypeface.Default, fontSize);
+            var font = new SKFont(typeface, fontSize);
             var fontBrush = new SKPaint(font);
             fontBrush.FakeBoldText = true;
             for (int i = 0; i < captchaCode.Length; i++)
