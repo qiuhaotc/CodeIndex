@@ -1,9 +1,6 @@
-﻿#pragma warning disable CA1416 // Verify platform compatibility
-
-using System;
-using System.Drawing;
-using System.Drawing.Imaging;
+﻿using System;
 using System.IO;
+using SkiaSharp;
 
 namespace CodeIndex.Server
 {
@@ -11,15 +8,16 @@ namespace CodeIndex.Server
     {
         public static byte[] GenerateCaptchaImage(int width, int height, string captchaCode, Random random)
         {
-            using var baseMap = new Bitmap(width, height);
-            using var graphics = Graphics.FromImage(baseMap);
-            graphics.Clear(GetRandomLightColor(random));
+            using var bitmap = new SKBitmap(width, height); ;
+            using var graphics = new SKCanvas(bitmap);
+            graphics.DrawColor(GetRandomLightColor(random));
             DrawCaptchaCode(width, height, captchaCode, random, graphics);
             DrawDisorderLine(random, width, height, graphics);
-            AdjustRippleEffect(baseMap);
+            AdjustRippleEffect(bitmap);
 
             using var ms = new MemoryStream();
-            baseMap.Save(ms, ImageFormat.Png);
+            using var data = SKImage.FromBitmap(bitmap).Encode(SKEncodedImageFormat.Png, 100);
+            data.SaveTo(ms);
 
             return ms.ToArray();
         }
@@ -31,15 +29,15 @@ namespace CodeIndex.Server
             return Convert.ToInt32(averageSize);
         }
 
-        static Color GetRandomDeepColor(Random random)
+        static SKColor GetRandomDeepColor(Random random)
         {
             var redlow = 160;
             var greenLow = 100;
             var blueLow = 160;
-            return Color.FromArgb(random.Next(redlow), random.Next(greenLow), random.Next(blueLow));
+            return new SKColor((byte)random.Next(redlow), (byte)random.Next(greenLow), (byte)random.Next(blueLow));
         }
 
-        static Color GetRandomLightColor(Random random)
+        static SKColor GetRandomLightColor(Random random)
         {
             var low = 200;
             var high = 255;
@@ -48,54 +46,57 @@ namespace CodeIndex.Server
             var nGreen = random.Next(high) % (high - low) + low;
             var nBlue = random.Next(high) % (high - low) + low;
 
-            return Color.FromArgb(nRend, nGreen, nBlue);
+            return new SKColor((byte)nRend, (byte)nGreen, (byte)nBlue);
         }
 
-        static void DrawCaptchaCode(int width, int height, string captchaCode, Random random, Graphics graphics)
+        static void DrawCaptchaCode(int width, int height, string captchaCode, Random random, SKCanvas graphics)
         {
-            SolidBrush fontBrush = new SolidBrush(Color.Black);
             var fontSize = GetFontSize(width, captchaCode.Length);
-            var font = new Font(FontFamily.GenericSerif, fontSize, FontStyle.Bold, GraphicsUnit.Pixel);
+            var font = new SKFont(SKTypeface.Default, fontSize);
+            var fontBrush = new SKPaint(font);
+            fontBrush.FakeBoldText = true;
             for (int i = 0; i < captchaCode.Length; i++)
             {
+                var shiftPx1 = i == 0 ? 0 : -fontSize / 6;
+                var shiftPx2 = i == captchaCode.Length - 1 ? 0 : fontSize / 6;
                 fontBrush.Color = GetRandomDeepColor(random);
+                fontBrush.TextSkewX = random.Next(-shiftPx2, -shiftPx1) / 10.0f;
 
-                int shiftPx = fontSize / 6;
-
-                var x = i * fontSize + random.Next(-shiftPx, shiftPx) + random.Next(-shiftPx, shiftPx);
+                var x = i * fontSize + random.Next(shiftPx1, shiftPx2) + random.Next(shiftPx1, shiftPx2);
                 var maxY = height - fontSize;
-                if (maxY < 0)
+                if (maxY < 15)
                 {
-                    maxY = 0;
+                    maxY = 15;
                 }
 
                 var y = random.Next(0, maxY);
-
-                graphics.DrawString(captchaCode[i].ToString(), font, fontBrush, x, y);
+                graphics.DrawText(captchaCode[i].ToString(), x, height - y, fontBrush);
             }
         }
 
-        static void DrawDisorderLine(Random random, int width, int height, Graphics graphics)
+        static void DrawDisorderLine(Random random, int width, int height, SKCanvas graphics)
         {
-            var linePen = new Pen(new SolidBrush(Color.Black), 3);
+            var linePen = new SKPaint
+            {
+                StrokeWidth = 3
+            };
+
             for (int i = 0; i < random.Next(3, 5); i++)
             {
                 linePen.Color = GetRandomLightColor(random);
 
-                var startPoint = new Point(random.Next(0, width), random.Next(0, height));
-                var endPoint = new Point(random.Next(0, width), random.Next(0, height));
-                graphics.DrawLine(linePen, startPoint, endPoint);
+                var startPoint = new SKPoint(random.Next(0, width), random.Next(0, height));
+                var endPoint = new SKPoint(random.Next(0, width), random.Next(0, height));
+                graphics.DrawLine(startPoint, endPoint, linePen);
 
-                //var bezierPoint1 = new Point(random.Next(0, width), random.Next(0, height));
-                //var bezierPoint2 = new Point(random.Next(0, width), random.Next(0, height));
+                //var bezierPoint1 = new SKPoint(random.Next(0, width), random.Next(0, height));
+                //var bezierPoint2 = new SKPoint(random.Next(0, width), random.Next(0, height));
                 //graphics.DrawBezier(linePen, startPoint, bezierPoint1, bezierPoint2, endPoint);
             }
         }
 
-        static void AdjustRippleEffect(Bitmap baseMap)
+        static void AdjustRippleEffect(SKBitmap baseMap)
         {
         }
     }
 }
-
-#pragma warning restore CA1416 // Verify platform compatibility
