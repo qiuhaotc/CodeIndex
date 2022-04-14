@@ -1,6 +1,4 @@
-﻿#pragma warning disable CA1416 // Verify platform compatibility
-
-using System;
+﻿using System;
 using System.Drawing;
 using System.Drawing.Imaging;
 using System.IO;
@@ -97,5 +95,3 @@ namespace CodeIndex.Server
         }
     }
 }
-
-#pragma warning restore CA1416 // Verify platform compatibility
