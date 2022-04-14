@@ -226,7 +226,7 @@ namespace CodeIndex.Test
 
             var term = indexBuilder.GetNoneTokenizeFieldTerm("ABC", "Value");
             Assert.AreEqual("ABC" + Constants.NoneTokenizeFieldSuffix, term.Field);
-            Assert.AreEqual("Value", term.Text);
+            Assert.AreEqual("Value", term.Text());
         }
 
         [Test]
