@@ -12,7 +12,7 @@ A fast full-text searching tools based on Lucene.Net
 
 ## Demonstrate Site
 
-[https://codeindex.qhnetdisk.tk/](https://codeindex.qhnetdisk.tk/)
+[https://coderindex.azurewebsites.net/](https://coderindex.azurewebsites.net/)
 
 ## Guide
 
