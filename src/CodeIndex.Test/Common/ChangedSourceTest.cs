@@ -17,7 +17,7 @@ namespace CodeIndex.Test
                 OldPath = "B"
             };
 
-            Assert.AreEqual(new DateTime(2021,1,1), source.ChangedUTCDate);
+            Assert.Equals(new DateTime(2021,1,1), source.ChangedUTCDate);
             Assert.AreEqual(System.IO.WatcherChangeTypes.Renamed, source.ChangesType);
             Assert.AreEqual("A", source.FilePath);
             Assert.AreEqual("B", source.OldPath);
