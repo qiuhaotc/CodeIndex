@@ -79,14 +79,14 @@ Support docker container, [Docker hub](https://hub.docker.com/r/qiuhaotc/codeind
 
 ```bash
 docker pull qiuhaotc/codeindex
-docker run -d --name codeindex -p 8080:80 -v "Your index folder":/luceneindex -v "Your code folder":/monitorfolder -v "Your logs folder":/app/Logs -e CodeIndex__MonitorFolderRealPath="Your real folder path" -e CodeIndex__ManagerUsers__0__UserName="Your Management User Name" -e CodeIndex__ManagerUsers__0__Password="Your Management Password" --restart=always qiuhaotc/codeindex
+docker run -d --name codeindex -p 8080:8080 -v "Your index folder":/luceneindex -v "Your code folder":/monitorfolder -v "Your logs folder":/app/Logs -e CodeIndex__MonitorFolderRealPath="Your real folder path" -e CodeIndex__ManagerUsers__0__UserName="Your Management User Name" -e CodeIndex__ManagerUsers__0__Password="Your Management Password" --restart=always qiuhaotc/codeindex
 ```
 
 ##### Example
 
 ```bash
 docker pull qiuhaotc/codeindex
-docker run -d --name codeindex -p 8080:80 -v /home/user/luceneindex:/luceneindex -v /home/user/codefolder:/monitorfolder -v /home/user/logs:/app/Logs -e CodeIndex__MonitorFolderRealPath="/home/user/codefolder" -e CodeIndex__ManagerUsers__0__UserName="Test" -e CodeIndex__ManagerUsers__0__Password="Dummy" --restart=always qiuhaotc/codeindex
+docker run -d --name codeindex -p 8080:8080 -v /home/user/luceneindex:/luceneindex -v /home/user/codefolder:/monitorfolder -v /home/user/logs:/app/Logs -e CodeIndex__MonitorFolderRealPath="/home/user/codefolder" -e CodeIndex__ManagerUsers__0__UserName="Test" -e CodeIndex__ManagerUsers__0__Password="Dummy" --restart=always qiuhaotc/codeindex
 ```
 
 Notice: in the docker container, when add the index config, the monitor folder should replace the actual path to start with "/monitorfolder", like the actually path is "/home/user/codefolder/mysourceA", the monitor folder should be "/monitorfolder/mysourceA"
