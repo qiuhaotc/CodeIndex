@@ -1,6 +1,6 @@
 #See https://aka.ms/customizecontainer to learn how to customize your debug container and how Visual Studio uses this Dockerfile to build your images for faster debugging.
 
-FROM mcr.microsoft.com/dotnet/aspnet:8.0 AS base
+FROM mcr.microsoft.com/dotnet/aspnet:9.0 AS base
 WORKDIR /app
 ENV ASPNETCORE_ENVIRONMENT Production
 ENV CodeIndex__LuceneIndex /luceneindex
@@ -10,7 +10,7 @@ ENV CodeIndex__LocalUrl http://localhost:80/
 EXPOSE 80
 EXPOSE 443
 
-FROM mcr.microsoft.com/dotnet/sdk:8.0 AS build
+FROM mcr.microsoft.com/dotnet/sdk:9.0 AS build
 WORKDIR /src
 COPY ["CodeIndex.Server/CodeIndex.Server.csproj", "CodeIndex.Server/"]
 COPY ["CodeIndex.Common/CodeIndex.Common.csproj", "CodeIndex.Common/"]
@@ -19,7 +19,7 @@ COPY ["CodeIndex.Files/CodeIndex.Files.csproj", "CodeIndex.Files/"]
 COPY ["CodeIndex.IndexBuilder/CodeIndex.IndexBuilder.csproj", "CodeIndex.IndexBuilder/"]
 COPY ["CodeIndex.Search/CodeIndex.Search.csproj", "CodeIndex.Search/"]
 RUN dotnet restore "CodeIndex.Server/CodeIndex.Server.csproj"
-COPY . .
+COPY . . 
 WORKDIR "/src/CodeIndex.Server"
 RUN dotnet build "CodeIndex.Server.csproj" -c Release -o /app/build
 
