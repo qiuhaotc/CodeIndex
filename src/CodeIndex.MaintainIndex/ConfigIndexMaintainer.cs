@@ -22,7 +22,28 @@ namespace CodeIndex.MaintainIndex
             if (!Directory.Exists(folder))
             {
                 Log.LogInformation($"Create Configuraion index folder {folder}");
-                Directory.CreateDirectory(folder);
+
+                try
+                {
+                    Directory.CreateDirectory(folder);
+                }
+                catch (Exception ex)
+                {
+                    var newFolder = Path.Combine(AppContext.BaseDirectory, CodeIndexConfiguration.ConfigurationIndexFolder);
+
+                    Log.LogWarning(ex, $"Create Configuraion index folder {folder} failed, fallback to create index folder under {newFolder}");
+
+                    try
+                    {
+                        Directory.CreateDirectory(newFolder);
+                        CodeIndexConfiguration.LuceneIndex = AppContext.BaseDirectory;
+                        folder = newFolder;
+                    }
+                    catch (Exception ex2)
+                    {
+                        Log.LogError(ex2, $"Create Configuraion index folder {folder} failed");
+                    }
+                }
             }
 
             ConfigIndexBuilder = new ConfigIndexBuilder(folder);

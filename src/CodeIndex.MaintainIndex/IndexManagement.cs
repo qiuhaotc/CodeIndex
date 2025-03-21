@@ -437,7 +437,7 @@ namespace CodeIndex.MaintainIndex
             }
             else if (!Directory.Exists(indexConfig.MonitorFolder))
             {
-                validationMessage += "Monitor Folder Not Exist;" + Environment.NewLine;
+                validationMessage += $"Monitor Folder Not Exist; Base Dir: {AppContext.BaseDirectory}" + Environment.NewLine;
             }
 
             return string.IsNullOrEmpty(validationMessage);
