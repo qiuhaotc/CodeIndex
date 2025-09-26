@@ -25,7 +25,7 @@ namespace CodeIndex.VisualStudioExtension
             }
             else
             {
-                SearchViewModel?.GetHintWordsAsync();
+                _ = SearchViewModel?.GetHintWordsAsync();
             }
         }
 

@@ -21,7 +21,8 @@ namespace CodeIndex.VisualStudioExtension
 
         public static void InvokeDispatcher(Action action, Dispatcher dispatcher, DispatcherPriority dispatcherPriority = DispatcherPriority.Normal)
         {
-            dispatcher?.BeginInvoke(dispatcherPriority, action);
+            // Use Task.Run to avoid potential deadlocks and properly observe the result
+            _ = dispatcher?.BeginInvoke(dispatcherPriority, action);
         }
     }
 }
