@@ -15,9 +15,9 @@ namespace CodeIndex.Test
                 UserName = "EDF"
             };
 
-            Assert.AreEqual(1, userInfo.Id);
-            Assert.AreEqual("ABC", userInfo.Password);
-            Assert.AreEqual("EDF", userInfo.UserName);
+            Assert.That(userInfo.Id, Is.EqualTo(1));
+            Assert.That(userInfo.Password, Is.EqualTo("ABC"));
+            Assert.That(userInfo.UserName, Is.EqualTo("EDF"));
         }
     }
 }

@@ -12,9 +12,9 @@ namespace CodeIndex.Test
             var codeWithMatchedLine = new CodeSourceWithMatchedLine(new CodeSource() { Content = "ABD" }, 1, "ABC");
             Assert.Multiple(() =>
             {
-                Assert.AreEqual(1, codeWithMatchedLine.MatchedLine);
-                Assert.AreEqual("ABC", codeWithMatchedLine.MatchedContent);
-                Assert.AreEqual("ABD", codeWithMatchedLine.CodeSource.Content);
+                Assert.That(codeWithMatchedLine.MatchedLine, Is.EqualTo(1));
+                Assert.That(codeWithMatchedLine.MatchedContent, Is.EqualTo("ABC"));
+                Assert.That(codeWithMatchedLine.CodeSource.Content, Is.EqualTo("ABD"));
             });
 
             Assert.DoesNotThrow(() => new CodeSourceWithMatchedLine());

@@ -8,23 +8,23 @@ namespace CodeIndex.Test
         [Test]
         public void TestSubStringSafe()
         {
-            Assert.IsEmpty("123".SubStringSafe(3, 4));
-            Assert.IsEmpty("123".SubStringSafe(5, 1));
-            Assert.AreEqual("3", "123".SubStringSafe(2, 4));
-            Assert.AreEqual("123", "123".SubStringSafe(0, 4));
-            Assert.AreEqual("12", "123".SubStringSafe(0, 2));
-            Assert.AreEqual("12", "123".SubStringSafe(-10, 2));
+            Assert.That("123".SubStringSafe(3, 4), Is.Empty);
+            Assert.That("123".SubStringSafe(5, 1), Is.Empty);
+            Assert.That("123".SubStringSafe(2, 4), Is.EqualTo("3"));
+            Assert.That("123".SubStringSafe(0, 4), Is.EqualTo("123"));
+            Assert.That("123".SubStringSafe(0, 2), Is.EqualTo("12"));
+            Assert.That("123".SubStringSafe(-10, 2), Is.EqualTo("12"));
         }
 
         [Test]
         public void TestSubStringSafeWithEllipsis()
         {
-            Assert.AreEqual("...", "123".SubStringSafeWithEllipsis(3, 4));
-            Assert.AreEqual("###", "123".SubStringSafeWithEllipsis(5, 1, "###"));
-            Assert.AreEqual("...3", "123".SubStringSafeWithEllipsis(2, 4));
-            Assert.AreEqual("123", "123".SubStringSafeWithEllipsis(0, 4));
-            Assert.AreEqual("12...", "123".SubStringSafeWithEllipsis(0, 2));
-            Assert.AreEqual("12...", "123".SubStringSafeWithEllipsis(-10, 2));
+            Assert.That("123".SubStringSafeWithEllipsis(3, 4), Is.EqualTo("..."));
+            Assert.That("123".SubStringSafeWithEllipsis(5, 1, "###"), Is.EqualTo("###"));
+            Assert.That("123".SubStringSafeWithEllipsis(2, 4), Is.EqualTo("...3"));
+            Assert.That("123".SubStringSafeWithEllipsis(0, 4), Is.EqualTo("123"));
+            Assert.That("123".SubStringSafeWithEllipsis(0, 2), Is.EqualTo("12..."));
+            Assert.That("123".SubStringSafeWithEllipsis(-10, 2), Is.EqualTo("12..."));
         }
     }
 }

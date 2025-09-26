@@ -23,22 +23,22 @@ namespace CodeIndex.Test
                 SaveIntervalSeconds = 10
             };
 
-            Assert.AreNotEqual(Guid.Empty, config.Pk);
-            Assert.AreEqual("A|B|C", config.ExcludedExtensions);
-            Assert.AreEqual("B|C|D", config.ExcludedPaths);
-            Assert.AreEqual("E|F", config.IncludedExtensions);
-            CollectionAssert.AreEquivalent(config.ExcludedExtensionsArray, new[] { "A", "B", "C" });
-            CollectionAssert.AreEquivalent(config.ExcludedPathsArray, new[] { "B", "C", "D" });
-            CollectionAssert.AreEquivalent(config.IncludedExtensionsArray, new[] { "E", "F" });
-            Assert.AreEqual("ABC", config.IndexName);
-            Assert.AreEqual(100, config.MaxContentHighlightLength);
-            Assert.AreEqual("BCA", config.MonitorFolder);
-            Assert.AreEqual("AAA", config.MonitorFolderRealPath);
-            Assert.AreEqual("BBB", config.OpenIDEUriFormat);
-            Assert.AreEqual(10, config.SaveIntervalSeconds);
+            Assert.That(config.Pk, Is.Not.EqualTo(Guid.Empty));
+            Assert.That(config.ExcludedExtensions, Is.EqualTo("A|B|C"));
+            Assert.That(config.ExcludedPaths, Is.EqualTo("B|C|D"));
+            Assert.That(config.IncludedExtensions, Is.EqualTo("E|F"));
+            Assert.That(config.ExcludedExtensionsArray, Is.EquivalentTo(new[] { "A", "B", "C" }));
+            Assert.That(config.ExcludedPathsArray, Is.EquivalentTo(new[] { "B", "C", "D" }));
+            Assert.That(config.IncludedExtensionsArray, Is.EquivalentTo(new[] { "E", "F" }));
+            Assert.That(config.IndexName, Is.EqualTo("ABC"));
+            Assert.That(config.MaxContentHighlightLength, Is.EqualTo(100));
+            Assert.That(config.MonitorFolder, Is.EqualTo("BCA"));
+            Assert.That(config.MonitorFolderRealPath, Is.EqualTo("AAA"));
+            Assert.That(config.OpenIDEUriFormat, Is.EqualTo("BBB"));
+            Assert.That(config.SaveIntervalSeconds, Is.EqualTo(10));
 
             config.IncludedExtensions = null;
-            Assert.AreEqual(0, config.IncludedExtensionsArray.Count());
+            Assert.That(config.IncludedExtensionsArray.Count(), Is.EqualTo(0));
         }
     }
 }

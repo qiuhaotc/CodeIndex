@@ -30,18 +30,18 @@ namespace CodeIndex.Test
             File.AppendAllText(fileName2, "ABCD EFGH");
 
             using var maintainer = new IndexMaintainer(indexConfig, Config, Log);
-            Assert.AreEqual(IndexStatus.Idle, maintainer.Status);
+            Assert.That(maintainer.Status, Is.EqualTo(IndexStatus.Idle));
 
             await maintainer.InitializeIndex(false);
-            Assert.AreEqual(IndexStatus.Initialized, maintainer.Status);
+            Assert.That(maintainer.Status, Is.EqualTo(IndexStatus.Initialized));
 
             var codeDocuments = maintainer.IndexBuilder.CodeIndexPool.Search(new MatchAllDocsQuery(), int.MaxValue);
-            Assert.AreEqual(2, codeDocuments.Length);
-            CollectionAssert.AreEquivalent(new[] { "ABCD ABCD" + Environment.NewLine + "ABCD", "ABCD EFGH" }, codeDocuments.Select(u => u.Get(nameof(CodeSource.Content))));
+            Assert.That(codeDocuments.Length, Is.EqualTo(2));
+            Assert.That(codeDocuments.Select(u => u.Get(nameof(CodeSource.Content))), Is.EquivalentTo(new[] { "ABCD ABCD" + Environment.NewLine + "ABCD", "ABCD EFGH" }));
 
             var hintDocuments = maintainer.IndexBuilder.HintIndexPool.Search(new MatchAllDocsQuery(), int.MaxValue);
-            Assert.AreEqual(2, hintDocuments.Length);
-            CollectionAssert.AreEquivalent(new[] { "ABCD", "EFGH" }, hintDocuments.Select(u => u.Get(nameof(CodeWord.Word))));
+            Assert.That(hintDocuments.Length, Is.EqualTo(2));
+            Assert.That(hintDocuments.Select(u => u.Get(nameof(CodeWord.Word))), Is.EquivalentTo(new[] { "ABCD", "EFGH" }));
         }
 
         [Test]
@@ -65,7 +65,7 @@ namespace CodeIndex.Test
             using (var maintainer = new IndexMaintainer(indexConfig, Config, Log))
             {
                 await maintainer.InitializeIndex(false);
-                Assert.IsTrue(Log.LogsContent.Contains("Add index for"));
+                Assert.That(Log.LogsContent.Contains("Add index for"), Is.True);
             }
 
             Log.ClearLog();
@@ -74,14 +74,14 @@ namespace CodeIndex.Test
             {
                 await maintainer.InitializeIndex(false);
 
-                Assert.IsFalse(Log.LogsContent.Contains("Delete All Index"), "Don't delete all indexes when not force rebuild");
-                Assert.IsFalse(Log.LogsContent.Contains("Add index for"), "Do not generate already up to date file");
+                Assert.That(Log.LogsContent.Contains("Delete All Index"), Is.False, "Don't delete all indexes when not force rebuild");
+                Assert.That(Log.LogsContent.Contains("Add index for"), Is.False, "Do not generate already up to date file");
 
                 var codeDocuments = maintainer.IndexBuilder.CodeIndexPool.Search(new MatchAllDocsQuery(), int.MaxValue);
-                CollectionAssert.AreEquivalent(new[] { "ABCD ABCD" + Environment.NewLine + "ABCD", "ABCD" }, codeDocuments.Select(u => u.Get(nameof(CodeSource.Content))));
+                Assert.That(codeDocuments.Select(u => u.Get(nameof(CodeSource.Content))), Is.EquivalentTo(new[] { "ABCD ABCD" + Environment.NewLine + "ABCD", "ABCD" }));
 
                 var hintDocuments = maintainer.IndexBuilder.HintIndexPool.Search(new MatchAllDocsQuery(), int.MaxValue);
-                CollectionAssert.AreEquivalent(new[] { "ABCD" }, hintDocuments.Select(u => u.Get(nameof(CodeWord.Word))));
+                Assert.That(hintDocuments.Select(u => u.Get(nameof(CodeWord.Word))), Is.EquivalentTo(new[] { "ABCD" }));
             }
 
             Log.ClearLog();
@@ -95,10 +95,10 @@ namespace CodeIndex.Test
                 await maintainer.InitializeIndex(false);
 
                 var codeDocuments = maintainer.IndexBuilder.CodeIndexPool.Search(new MatchAllDocsQuery(), int.MaxValue);
-                CollectionAssert.AreEquivalent(new[] { "ABCD ABCD" + Environment.NewLine + "ABCD WOWOWO", "File3" }, codeDocuments.Select(u => u.Get(nameof(CodeSource.Content))));
+                Assert.That(codeDocuments.Select(u => u.Get(nameof(CodeSource.Content))), Is.EquivalentTo(new[] { "ABCD ABCD" + Environment.NewLine + "ABCD WOWOWO", "File3" }));
 
                 var hintDocuments = maintainer.IndexBuilder.HintIndexPool.Search(new MatchAllDocsQuery(), int.MaxValue);
-                CollectionAssert.AreEquivalent(new[] { "ABCD", "WOWOWO", "File3" }, hintDocuments.Select(u => u.Get(nameof(CodeWord.Word))));
+                Assert.That(hintDocuments.Select(u => u.Get(nameof(CodeWord.Word))), Is.EquivalentTo(new[] { "ABCD", "WOWOWO", "File3" }));
             }
 
             Log.ClearLog();
@@ -106,13 +106,13 @@ namespace CodeIndex.Test
             using (var maintainer = new IndexMaintainer(indexConfig, Config, Log))
             {
                 await maintainer.InitializeIndex(true);
-                Assert.IsTrue(Log.LogsContent.Contains("Delete All Index"), "Delete existing indexes when force rebuild");
+                Assert.That(Log.LogsContent.Contains("Delete All Index"), Is.True, "Delete existing indexes when force rebuild");
 
                 var codeDocuments = maintainer.IndexBuilder.CodeIndexPool.Search(new MatchAllDocsQuery(), int.MaxValue);
-                CollectionAssert.AreEquivalent(new[] { "ABCD ABCD" + Environment.NewLine + "ABCD WOWOWO", "File3" }, codeDocuments.Select(u => u.Get(nameof(CodeSource.Content))));
+                Assert.That(codeDocuments.Select(u => u.Get(nameof(CodeSource.Content))), Is.EquivalentTo(new[] { "ABCD ABCD" + Environment.NewLine + "ABCD WOWOWO", "File3" }));
 
                 var hintDocuments = maintainer.IndexBuilder.HintIndexPool.Search(new MatchAllDocsQuery(), int.MaxValue);
-                CollectionAssert.AreEquivalent(new[] { "ABCD", "WOWOWO", "File3" }, hintDocuments.Select(u => u.Get(nameof(CodeWord.Word))));
+                Assert.That(hintDocuments.Select(u => u.Get(nameof(CodeWord.Word))), Is.EquivalentTo(new[] { "ABCD", "WOWOWO", "File3" }));
             }
         }
 
@@ -142,15 +142,15 @@ namespace CodeIndex.Test
             File.AppendAllText(fileName3, "Created");
 
             var codeDocuments = maintainer.IndexBuilder.CodeIndexPool.Search(new MatchAllDocsQuery(), int.MaxValue);
-            CollectionAssert.AreEquivalent(new[] { fileName1, fileName2 }, codeDocuments.Select(u => u.Get(nameof(CodeSource.FilePath))));
-            CollectionAssert.AreEquivalent(new[] { "ABCD ABCD", "ABCD" }, codeDocuments.Select(u => u.Get(nameof(CodeSource.Content))));
+            Assert.That(codeDocuments.Select(u => u.Get(nameof(CodeSource.FilePath))), Is.EquivalentTo(new[] { fileName1, fileName2 }));
+            Assert.That(codeDocuments.Select(u => u.Get(nameof(CodeSource.Content))), Is.EquivalentTo(new[] { "ABCD ABCD", "ABCD" }));
 
             resetEvent.WaitOne(20000);
 
-            Assert.AreEqual(IndexStatus.Monitoring, maintainer.Status);
+            Assert.That(maintainer.Status, Is.EqualTo(IndexStatus.Monitoring));
             codeDocuments = maintainer.IndexBuilder.CodeIndexPool.Search(new MatchAllDocsQuery(), int.MaxValue);
-            CollectionAssert.AreEquivalent(new[] { fileName1, fileName3 }, codeDocuments.Select(u => u.Get(nameof(CodeSource.FilePath))));
-            CollectionAssert.AreEquivalent(new[] { "ABCD ABCD NewContent", "Created" }, codeDocuments.Select(u => u.Get(nameof(CodeSource.Content))));
+            Assert.That(codeDocuments.Select(u => u.Get(nameof(CodeSource.FilePath))), Is.EquivalentTo(new[] { fileName1, fileName3 }));
+            Assert.That(codeDocuments.Select(u => u.Get(nameof(CodeSource.Content))), Is.EquivalentTo(new[] { "ABCD ABCD NewContent", "Created" }));
         }
 
         protected new DummyLog<IndexMaintainerForTest> Log => log ??= new DummyLog<IndexMaintainerForTest>();

@@ -23,53 +23,53 @@ namespace CodeIndex.Test
 
                 File.Create(Path.Combine(TempDir, "AAA.cs")).Close();
                 Thread.Sleep(waitMS);
-                Assert.AreEqual(1, changeHit);
-                Assert.AreEqual(0, renameHit);
+                Assert.That(changeHit, Is.EqualTo(1));
+                Assert.That(renameHit, Is.EqualTo(0));
 
                 File.AppendAllText(Path.Combine(TempDir, "AAA.cs"), "12345");
                 Thread.Sleep(waitMS);
-                Assert.AreEqual(2, changeHit);
-                Assert.AreEqual(0, renameHit);
+                Assert.That(changeHit, Is.EqualTo(2));
+                Assert.That(renameHit, Is.EqualTo(0));
 
                 File.Move(Path.Combine(TempDir, "AAA.cs"), Path.Combine(TempDir, "BBB.cs"));
                 Thread.Sleep(waitMS);
-                Assert.AreEqual(2, changeHit);
-                Assert.AreEqual(1, renameHit);
+                Assert.That(changeHit, Is.EqualTo(2));
+                Assert.That(renameHit, Is.EqualTo(1));
 
                 File.Delete(Path.Combine(TempDir, "BBB.cs"));
                 Thread.Sleep(waitMS);
-                Assert.AreEqual(3, changeHit);
-                Assert.AreEqual(1, renameHit);
+                Assert.That(changeHit, Is.EqualTo(3));
+                Assert.That(renameHit, Is.EqualTo(1));
 
                 File.Create(Path.Combine(TempDir, "SubDir", "AAA.cs")).Close();
                 Thread.Sleep(waitMS);
-                Assert.IsTrue(changeHit == 4 || changeHit == 5, "Different behavior under different machines, not important due to logic doesn't care about the folder change events");
-                Assert.AreEqual(1, renameHit);
+                Assert.That(changeHit, Is.EqualTo(4).Or.EqualTo(5), "Different behavior under different machines, not important due to logic doesn't care about the folder change events");
+                Assert.That(renameHit, Is.EqualTo(1));
 
                 File.AppendAllText(Path.Combine(TempDir, "SubDir", "AAA.cs"), "AA BB");
                 Thread.Sleep(waitMS);
-                Assert.AreEqual(6, changeHit, "One for folder, one for file");
-                Assert.AreEqual(1, renameHit);
+                Assert.That(changeHit, Is.EqualTo(6), "One for folder, one for file");
+                Assert.That(renameHit, Is.EqualTo(1));
 
                 Directory.Move(Path.Combine(TempDir, "SubDir"), Path.Combine(TempDir, "SubDir2"));
                 Thread.Sleep(waitMS);
-                Assert.AreEqual(6, changeHit);
-                Assert.AreEqual(2, renameHit);
+                Assert.That(changeHit, Is.EqualTo(6));
+                Assert.That(renameHit, Is.EqualTo(2));
 
                 Directory.CreateDirectory(Path.Combine(TempDir, "SubDir3"));
                 Thread.Sleep(waitMS);
-                Assert.AreEqual(7, changeHit);
-                Assert.AreEqual(2, renameHit);
+                Assert.That(changeHit, Is.EqualTo(7));
+                Assert.That(renameHit, Is.EqualTo(2));
 
                 File.Create(Path.Combine(TempDir, "CCCC")).Close();
                 Thread.Sleep(waitMS);
-                Assert.AreEqual(8, changeHit);
-                Assert.AreEqual(2, renameHit);
+                Assert.That(changeHit, Is.EqualTo(8));
+                Assert.That(renameHit, Is.EqualTo(2));
 
                 File.SetLastAccessTime(Path.Combine(TempDir, "CCCC"), DateTime.Now.AddDays(1));
                 Thread.Sleep(waitMS);
-                Assert.AreEqual(8, changeHit, "Do not watch last access time for file");
-                Assert.AreEqual(2, renameHit);
+                Assert.That(changeHit, Is.EqualTo(8), "Do not watch last access time for file");
+                Assert.That(renameHit, Is.EqualTo(2));
 
                 void OnRenameHandler(object sender, RenamedEventArgs e)
                 {

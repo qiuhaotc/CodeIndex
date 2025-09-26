@@ -9,13 +9,13 @@ namespace CodeIndex.Test
         public void TestGetPaths()
         {
             var results = FilePathHelper.GetPaths(new[] { "\\BIN\\1.txt", "/home/etc" }, true);
-            CollectionAssert.AreEquivalent(new[] { "/BIN/1.TXT", "/HOME/ETC" }, results);
+            Assert.That(results, Is.EquivalentTo(new[] { "/BIN/1.TXT", "/HOME/ETC" }));
 
             results = FilePathHelper.GetPaths(new[] { "\\BIN\\1.txt", "/home/etc" }, false);
-            CollectionAssert.AreEquivalent(new[] { "\\BIN\\1.TXT", "\\HOME\\ETC" }, results);
+            Assert.That(results, Is.EquivalentTo(new[] { "\\BIN\\1.TXT", "\\HOME\\ETC" }));
 
-            Assert.IsNull(FilePathHelper.GetPaths(null, true));
-            Assert.IsNull(FilePathHelper.GetPaths(null, false));
+            Assert.That(FilePathHelper.GetPaths(null, true), Is.Null);
+            Assert.That(FilePathHelper.GetPaths(null, false), Is.Null);
         }
     }
 }

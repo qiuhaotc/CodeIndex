@@ -15,7 +15,7 @@ namespace CodeIndex.Test
             var dmp = new Diff_Match_Patch();
             var differents = dmp.Diff_Main(content1, content2);
             dmp.Diff_CleanupSemantic(differents);
-            Assert.AreEqual(6, differents.Count);
+            Assert.That(differents.Count, Is.EqualTo(6));
         }
     }
 }

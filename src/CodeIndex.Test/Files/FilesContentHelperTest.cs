@@ -16,12 +16,8 @@ namespace CodeIndex.Test
             stream1.Close();
 
             using var stream2 = new FileStream(Path.Combine(TempDir, "AAA.cs"), FileMode.Open, FileAccess.Write);
-
-            Assert.DoesNotThrow(() =>
-            {
-                var content = FilesContentHelper.ReadAllText(Path.Combine(TempDir, "AAA.cs"));
-                Assert.AreEqual("这是一个例句", content);
-            }, "Can read file content used by another process");
+            var content = FilesContentHelper.ReadAllText(Path.Combine(TempDir, "AAA.cs"));
+            Assert.That(content, Is.EqualTo("这是一个例句"), "Can read file content used by another process");
         }
 
         [Test]
@@ -32,7 +28,7 @@ namespace CodeIndex.Test
             File.WriteAllText(filePath, "这是一个例句", encodingWithName.Encoding);
 
             var content = FilesContentHelper.ReadAllText(Path.Combine(TempDir, "AAA.cs"));
-            Assert.AreEqual("这是一个例句", content, $"Test Under {encodingWithName.Name}");
+            Assert.That(content, Is.EqualTo("这是一个例句"), $"Test Under {encodingWithName.Name}");
         }
 
         static IEnumerable<(Encoding Encoding, string Name)> EncodingTestCases()

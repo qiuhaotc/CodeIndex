@@ -13,18 +13,18 @@ namespace CodeIndex.Test
         public void TestToStringSafe()
         {
             string a = null;
-            Assert.AreEqual(string.Empty, a.ToStringSafe());
-            Assert.AreEqual(string.Empty, string.Empty.ToStringSafe());
-            Assert.AreEqual("ABC", "ABC".ToStringSafe());
+            Assert.That(a.ToStringSafe(), Is.EqualTo(string.Empty));
+            Assert.That(string.Empty.ToStringSafe(), Is.EqualTo(string.Empty));
+            Assert.That("ABC".ToStringSafe(), Is.EqualTo("ABC"));
         }
 
         [Test]
         public void TestToLowerSafe()
         {
             string a = null;
-            Assert.AreEqual(string.Empty, a.ToLowerSafe());
-            Assert.AreEqual(string.Empty, string.Empty.ToLowerSafe());
-            Assert.AreEqual("abc", "ABC".ToLowerSafe());
+            Assert.That(a.ToLowerSafe(), Is.EqualTo(string.Empty));
+            Assert.That(string.Empty.ToLowerSafe(), Is.EqualTo(string.Empty));
+            Assert.That("ABC".ToLowerSafe(), Is.EqualTo("abc"));
         }
 
         [Test]
@@ -42,14 +42,17 @@ namespace CodeIndex.Test
             AssertFields(document);
 
             var convertBack = document.GetObject<CodeSource>();
-            Assert.AreEqual(codeSource.FilePath, convertBack.FilePath);
-            Assert.AreEqual(codeSource.Content, convertBack.Content);
-            Assert.AreEqual(codeSource.IndexDate, convertBack.IndexDate);
-            Assert.AreEqual(codeSource.LastWriteTimeUtc, convertBack.LastWriteTimeUtc);
-            Assert.AreEqual(codeSource.CodePK, convertBack.CodePK);
-            Assert.AreEqual(codeSource.FileName, convertBack.FileName);
-            Assert.AreEqual(codeSource.FileExtension, convertBack.FileExtension);
-            Assert.AreEqual(codeSource.Info, convertBack.Info);
+            Assert.Multiple(() =>
+            {
+                Assert.That(convertBack.FilePath, Is.EqualTo(codeSource.FilePath));
+                Assert.That(convertBack.Content, Is.EqualTo(codeSource.Content));
+                Assert.That(convertBack.IndexDate, Is.EqualTo(codeSource.IndexDate));
+                Assert.That(convertBack.LastWriteTimeUtc, Is.EqualTo(codeSource.LastWriteTimeUtc));
+                Assert.That(convertBack.CodePK, Is.EqualTo(codeSource.CodePK));
+                Assert.That(convertBack.FileName, Is.EqualTo(codeSource.FileName));
+                Assert.That(convertBack.FileExtension, Is.EqualTo(codeSource.FileExtension));
+                Assert.That(convertBack.Info, Is.EqualTo(codeSource.Info));
+            });
 
             codeSource = new CodeSource
             {
@@ -60,7 +63,7 @@ namespace CodeIndex.Test
             };
 
             document = IndexBuilderHelper.GetDocumentFromSource(codeSource);
-            Assert.AreEqual("cs", document.Get(nameof(CodeSource.FileExtension)), "Lowercase the extension");
+            Assert.That(document.Get(nameof(CodeSource.FileExtension)), Is.EqualTo("cs"), "Lowercase the extension");
         }
 
         [Test]
@@ -76,11 +79,11 @@ namespace CodeIndex.Test
 
             var document = IndexBuilderHelper.GetDocumentFromSource(codeSource);
             AssertFields(document);
-            Assert.AreEqual(@"C:\AAAA\Dummy File 2.cs", document.Get(nameof(CodeSource.FilePath)));
+            Assert.That(document.Get(nameof(CodeSource.FilePath)), Is.EqualTo(@"C:\AAAA\Dummy File 2.cs"));
 
             document = IndexBuilderHelper.RenameIndexForFolder(document, @"C:\AAAA", @"C:\BBBB");
             AssertFields(document);
-            Assert.AreEqual(@"C:\BBBB\Dummy File 2.cs", document.Get(nameof(CodeSource.FilePath)));
+            Assert.That(document.Get(nameof(CodeSource.FilePath)), Is.EqualTo(@"C:\BBBB\Dummy File 2.cs"));
         }
 
         [Test]
@@ -97,39 +100,39 @@ namespace CodeIndex.Test
             };
 
             var document = IndexBuilderHelper.GetDocumentFromSource(codeSource);
-            Assert.AreEqual("cs", document.Get(nameof(CodeSource.FileExtension)));
+            Assert.That(document.Get(nameof(CodeSource.FileExtension)), Is.EqualTo("cs"));
 
             var newPath = Path.Combine(Path.GetTempPath(), "Dummy File 2.CS");
             document = IndexBuilderHelper.RenameIndexForFile(document, newPath);
             AssertFields(document);
-            Assert.AreEqual("cs", document.Get(nameof(CodeSource.FileExtension)), "Extension is case-insensitive, still 'cs'");
-            Assert.AreEqual("Dummy File 2.CS", document.Get(nameof(CodeSource.FileName)), "File name changed");
-            Assert.AreEqual(newPath, document.Get(nameof(CodeSource.FilePath)));
-            Assert.AreEqual(newPath, document.Get(nameof(CodeSource.FilePath) + Constants.NoneTokenizeFieldSuffix));
+            Assert.That(document.Get(nameof(CodeSource.FileExtension)), Is.EqualTo("cs"), "Extension is case-insensitive, still 'cs'");
+            Assert.That(document.Get(nameof(CodeSource.FileName)), Is.EqualTo("Dummy File 2.CS"), "File name changed");
+            Assert.That(document.Get(nameof(CodeSource.FilePath)), Is.EqualTo(newPath));
+            Assert.That(document.Get(nameof(CodeSource.FilePath) + Constants.NoneTokenizeFieldSuffix), Is.EqualTo(newPath));
 
             newPath = Path.Combine(Path.GetTempPath(), "Dummy File 3.TXT");
             document = IndexBuilderHelper.RenameIndexForFile(document, newPath);
             AssertFields(document);
-            Assert.AreEqual("txt", document.Get(nameof(CodeSource.FileExtension)), "Extension is changed to 'txt' and lowercase");
-            Assert.AreEqual("Dummy File 3.TXT", document.Get(nameof(CodeSource.FileName)), "File name changed");
-            Assert.AreEqual(newPath, document.Get(nameof(CodeSource.FilePath)));
-            Assert.AreEqual(newPath, document.Get(nameof(CodeSource.FilePath) + Constants.NoneTokenizeFieldSuffix));
+            Assert.That(document.Get(nameof(CodeSource.FileExtension)), Is.EqualTo("txt"), "Extension is changed to 'txt' and lowercase");
+            Assert.That(document.Get(nameof(CodeSource.FileName)), Is.EqualTo("Dummy File 3.TXT"), "File name changed");
+            Assert.That(document.Get(nameof(CodeSource.FilePath)), Is.EqualTo(newPath));
+            Assert.That(document.Get(nameof(CodeSource.FilePath) + Constants.NoneTokenizeFieldSuffix), Is.EqualTo(newPath));
         }
 
         void AssertFields(Document document)
         {
-            Assert.AreEqual(9, document.Fields.Count);
+            Assert.That(document.Fields.Count, Is.EqualTo(9));
             Assert.Multiple(() =>
             {
-                Assert.IsTrue(document.GetField(nameof(CodeSource.CodePK)) is StringField);
-                Assert.IsTrue(document.GetField(nameof(CodeSource.Content)) is TextField);
-                Assert.IsTrue(document.GetField(nameof(CodeSource.Content) + Constants.CaseSensitive) is TextField);
-                Assert.IsTrue(document.GetField(nameof(CodeSource.IndexDate)) is Int64Field);
-                Assert.IsTrue(document.GetField(nameof(CodeSource.LastWriteTimeUtc)) is Int64Field);
-                Assert.IsTrue(document.GetField(nameof(CodeSource.FileName)) is TextField);
-                Assert.IsTrue(document.GetField(nameof(CodeSource.FileExtension)) is StringField);
-                Assert.IsTrue(document.GetField(nameof(CodeSource.FilePath)) is TextField);
-                Assert.IsTrue(document.GetField(nameof(CodeSource.FilePath) + Constants.NoneTokenizeFieldSuffix) is StringField);
+                Assert.That(document.GetField(nameof(CodeSource.CodePK)) is StringField, Is.True);
+                Assert.That(document.GetField(nameof(CodeSource.Content)) is TextField, Is.True);
+                Assert.That(document.GetField(nameof(CodeSource.Content) + Constants.CaseSensitive) is TextField, Is.True);
+                Assert.That(document.GetField(nameof(CodeSource.IndexDate)) is Int64Field, Is.True);
+                Assert.That(document.GetField(nameof(CodeSource.LastWriteTimeUtc)) is Int64Field, Is.True);
+                Assert.That(document.GetField(nameof(CodeSource.FileName)) is TextField, Is.True);
+                Assert.That(document.GetField(nameof(CodeSource.FileExtension)) is StringField, Is.True);
+                Assert.That(document.GetField(nameof(CodeSource.FilePath)) is TextField, Is.True);
+                Assert.That(document.GetField(nameof(CodeSource.FilePath) + Constants.NoneTokenizeFieldSuffix) is StringField, Is.True);
             });
         }
     }

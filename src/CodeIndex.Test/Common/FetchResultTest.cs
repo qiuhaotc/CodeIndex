@@ -22,9 +22,9 @@ namespace CodeIndex.Test
                 }
             };
 
-            Assert.AreEqual("ABC", result.Status.StatusDesc);
-            Assert.AreEqual(true, result.Status.Success);
-            CollectionAssert.AreEqual(new[] { "1", "2", "3" }, result.Result);
+            Assert.That(result.Status.StatusDesc, Is.EqualTo("ABC"));
+            Assert.That(result.Status.Success, Is.True);
+            Assert.That(result.Result, Is.EqualTo(new[] { "1", "2", "3" }));
         }
     }
 }

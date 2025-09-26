@@ -19,11 +19,11 @@ namespace CodeIndex.Test
 
             var files = FilesFetcher.FetchAllFiles(TempDir, new[] { ".xml" }, new[] { "BIN\\" }).ToArray();
             Assert.That(files.Length, Is.EqualTo(2));
-            CollectionAssert.AreEquivalent(files.Select(u => u.Name), new[] { "AAA.cs", "ddd.txt" });
+            Assert.That(files.Select(u => u.Name), Is.EquivalentTo(new[] { "AAA.cs", "ddd.txt" }));
 
             files = FilesFetcher.FetchAllFiles(TempDir, new[] { ".xml" }, new[] { "BIN\\" }, "*.cs").ToArray();
             Assert.That(files.Length, Is.EqualTo(1));
-            CollectionAssert.AreEquivalent(files.Select(u => u.Name), new[] { "AAA.cs" });
+            Assert.That(files.Select(u => u.Name), Is.EquivalentTo(new[] { "AAA.cs" }));
         }
     }
 }

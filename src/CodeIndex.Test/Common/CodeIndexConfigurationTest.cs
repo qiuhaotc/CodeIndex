@@ -27,17 +27,17 @@ namespace CodeIndex.Test
 
             Assert.Multiple(() =>
             {
-                Assert.AreEqual(true, config.IsInLinux);
-                Assert.AreEqual("http://localhost:1234", config.LocalUrl);
-                Assert.AreEqual("AAA/BBB", config.LuceneIndex);
-                Assert.AreEqual(234, config.MaximumResults);
-                CollectionAssert.AreEquivalent(new[] { new UserInfo
+                Assert.That(config.IsInLinux, Is.True);
+                Assert.That(config.LocalUrl, Is.EqualTo("http://localhost:1234"));
+                Assert.That(config.LuceneIndex, Is.EqualTo("AAA/BBB"));
+                Assert.That(config.MaximumResults, Is.EqualTo(234));
+                Assert.That(config.ManagerUsers, Is.EquivalentTo(new[] { new UserInfo
                     {
                         Id = 1,
                         Password = "ABC",
                         UserName = "DEF"
                     }
-                }, config.ManagerUsers);
+                }));
             });
         }
     }

@@ -11,14 +11,14 @@ namespace CodeIndex.Test
         public void TestConstructor()
         {
             using var maintainer = new ConfigIndexMaintainer(Config, Log);
-            DirectoryAssert.Exists(Path.Combine(Config.LuceneIndex, CodeIndexConfiguration.ConfigurationIndexFolder));
+            Assert.That(Directory.Exists(Path.Combine(Config.LuceneIndex, CodeIndexConfiguration.ConfigurationIndexFolder)), Is.True);
         }
 
         [Test]
         public void TestGetConfigs()
         {
             using var maintainer = new ConfigIndexMaintainer(Config, Log);
-            CollectionAssert.IsEmpty(maintainer.GetConfigs());
+            Assert.That(maintainer.GetConfigs(), Is.Empty);
 
             var indexConfig = new IndexConfig
             {
@@ -27,14 +27,14 @@ namespace CodeIndex.Test
 
             maintainer.AddIndexConfig(indexConfig);
 
-            CollectionAssert.AreEquivalent(new[] { indexConfig }, maintainer.GetConfigs());
+            Assert.That(maintainer.GetConfigs(), Is.EquivalentTo(new[] { indexConfig }));
         }
 
         [Test]
         public void TestAddConfig()
         {
             using var maintainer = new ConfigIndexMaintainer(Config, Log);
-            CollectionAssert.IsEmpty(maintainer.GetConfigs());
+            Assert.That(maintainer.GetConfigs(), Is.Empty);
 
             var indexConfig1 = new IndexConfig
             {
@@ -47,10 +47,10 @@ namespace CodeIndex.Test
             };
 
             maintainer.AddIndexConfig(indexConfig1);
-            CollectionAssert.AreEquivalent(new[] { indexConfig1 }, maintainer.GetConfigs());
+            Assert.That(maintainer.GetConfigs(), Is.EquivalentTo(new[] { indexConfig1 }));
 
             maintainer.AddIndexConfig(indexConfig2);
-            CollectionAssert.AreEquivalent(new[] { indexConfig1, indexConfig2 }, maintainer.GetConfigs());
+            Assert.That(maintainer.GetConfigs(), Is.EquivalentTo(new[] { indexConfig1, indexConfig2 }));
         }
 
         [Test]
@@ -63,10 +63,10 @@ namespace CodeIndex.Test
             };
 
             maintainer.AddIndexConfig(indexConfig);
-            CollectionAssert.AreEquivalent(new[] { indexConfig }, maintainer.GetConfigs());
+            Assert.That(maintainer.GetConfigs(), Is.EquivalentTo(new[] { indexConfig }));
 
             maintainer.EditIndexConfig(indexConfig with { IndexName = "EFG" });
-            CollectionAssert.AreEquivalent(new[] { indexConfig with { IndexName = "EFG" } }, maintainer.GetConfigs());
+            Assert.That(maintainer.GetConfigs(), Is.EquivalentTo(new[] { indexConfig with { IndexName = "EFG" } }));
         }
 
         [Test]
@@ -79,10 +79,10 @@ namespace CodeIndex.Test
             };
 
             maintainer.AddIndexConfig(indexConfig);
-            CollectionAssert.AreEquivalent(new[] { indexConfig }, maintainer.GetConfigs());
+            Assert.That(maintainer.GetConfigs(), Is.EquivalentTo(new[] { indexConfig }));
 
             maintainer.DeleteIndexConfig(indexConfig.Pk);
-            CollectionAssert.IsEmpty(maintainer.GetConfigs());
+            Assert.That(maintainer.GetConfigs(), Is.Empty);
         }
 
         [Test]
@@ -96,12 +96,12 @@ namespace CodeIndex.Test
             using (var maintainer = new ConfigIndexMaintainer(Config, Log))
             {
                 maintainer.AddIndexConfig(indexConfig);
-                CollectionAssert.AreEquivalent(new[] { indexConfig }, maintainer.GetConfigs());
+                Assert.That(maintainer.GetConfigs(), Is.EquivalentTo(new[] { indexConfig }));
             }
 
             using (var maintainer = new ConfigIndexMaintainer(Config, Log))
             {
-                CollectionAssert.AreEquivalent(new[] { indexConfig }, maintainer.GetConfigs());
+                Assert.That(maintainer.GetConfigs(), Is.EquivalentTo(new[] { indexConfig }));
             }
         }
     }

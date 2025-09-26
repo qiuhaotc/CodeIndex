@@ -25,21 +25,21 @@ namespace CodeIndex.Test
                 ShowResults = 10
             };
 
-            Assert.AreEqual(request, request with { });
-            Assert.IsFalse(request.IsEmpty);
+            Assert.That(request, Is.EqualTo(request with { }));
+            Assert.That(request.IsEmpty, Is.False);
 
             request.IndexPk = Guid.Empty;
-            Assert.IsTrue(request.IsEmpty);
+            Assert.That(request.IsEmpty, Is.True);
 
             request.IndexPk = Guid.NewGuid();
             request.Content = string.Empty;
             request.FileExtension = " ";
             request.FilePath = null;
             request.FileName = null;
-            Assert.IsFalse(request.IsEmpty);
+            Assert.That(request.IsEmpty, Is.False);
 
             request.CodePK = null;
-            Assert.IsTrue(request.IsEmpty);
+            Assert.That(request.IsEmpty, Is.True);
         }
     }
 }

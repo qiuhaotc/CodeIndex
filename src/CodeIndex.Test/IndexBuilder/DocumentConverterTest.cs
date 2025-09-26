@@ -25,14 +25,14 @@ namespace CodeIndex.Test
             };
 
             var dummyForTest = document.GetObject<DummyForTest>();
-            Assert.AreNotEqual(Guid.Empty, dummyForTest.Pk);
-            Assert.AreEqual("AAA", dummyForTest.AAA);
-            Assert.AreEqual(32, dummyForTest.BBB);
-            Assert.AreEqual(32.3, dummyForTest.CCC);
-            Assert.AreEqual(120.0f, dummyForTest.DDD);
-            Assert.AreNotEqual(new DateTime(), dummyForTest.EEE);
-            CollectionAssert.AreEquivalent(new[] { "A", "B", "C", "D", "E" }, dummyForTest.FFF);
-            Assert.IsNull(dummyForTest.ReadonlyProperty, "Don't set readonly property");
+            Assert.That(dummyForTest.Pk, Is.Not.EqualTo(Guid.Empty));
+            Assert.That(dummyForTest.AAA, Is.EqualTo("AAA"));
+            Assert.That(dummyForTest.BBB, Is.EqualTo(32));
+            Assert.That(dummyForTest.CCC, Is.EqualTo(32.3));
+            Assert.That(dummyForTest.DDD, Is.EqualTo(120.0f));
+            Assert.That(dummyForTest.EEE, Is.Not.EqualTo(new DateTime()));
+            Assert.That(dummyForTest.FFF, Is.EquivalentTo(new[] { "A", "B", "C", "D", "E" }));
+            Assert.That(dummyForTest.ReadonlyProperty, Is.Null, "Don't set readonly property");
 
             var config = new IndexConfig
             {
@@ -49,7 +49,7 @@ namespace CodeIndex.Test
             };
 
             document = ConfigIndexBuilder.GetDocument(config);
-            Assert.AreEqual(config.ToString(), document.GetObject<IndexConfig>().ToString());
+            Assert.That(document.GetObject<IndexConfig>().ToString(), Is.EqualTo(config.ToString()));
         }
 
         [Test]
@@ -61,8 +61,8 @@ namespace CodeIndex.Test
                 new StringField(nameof(DummyForTest3.BlaBlaEnum), "32|12", Field.Store.YES),
             };
 
-            Assert.Throws<NotImplementedException>(() => document.GetObject<DummyForTest2>());
-            Assert.Throws<NotImplementedException>(() => document.GetObject<DummyForTest3>());
+            Assert.That(() => document.GetObject<DummyForTest2>(), Throws.TypeOf<NotImplementedException>());
+            Assert.That(() => document.GetObject<DummyForTest3>(), Throws.TypeOf<NotImplementedException>());
         }
 
         class DummyForTest

@@ -20,13 +20,13 @@ namespace CodeIndex.Test
             };
 
             using var management1 = new IndexManagement(Config, Log);
-            CollectionAssert.IsEmpty(management1.GetIndexList().Result);
+            Assert.That(management1.GetIndexList().Result, Is.Empty);
 
             management1.AddIndex(indexConfig);
 
             management1.Dispose();
             using var management2 = new IndexManagement(Config, Log);
-            CollectionAssert.AreEquivalent(new[] { indexConfig.ToString() }, management2.GetIndexList().Result.Select(u => u.IndexConfig.ToString()));
+            Assert.That(management2.GetIndexList().Result.Select(u => u.IndexConfig.ToString()), Is.EquivalentTo(new[] { indexConfig.ToString() }));
         }
 
         [Test]
@@ -39,19 +39,19 @@ namespace CodeIndex.Test
             };
 
             using var management = new IndexManagement(Config, Log);
-            CollectionAssert.IsEmpty(management.GetIndexList().Result);
+            Assert.That(management.GetIndexList().Result, Is.Empty);
 
-            Assert.IsTrue(management.AddIndex(indexConfig).Status.Success);
-            CollectionAssert.AreEquivalent(new[] { indexConfig.ToString() }, management.GetIndexList().Result.Select(u => u.IndexConfig.ToString()));
+            Assert.That(management.AddIndex(indexConfig).Status.Success, Is.True);
+            Assert.That(management.GetIndexList().Result.Select(u => u.IndexConfig.ToString()), Is.EquivalentTo(new[] { indexConfig.ToString() }));
 
-            Assert.IsFalse(management.AddIndex(indexConfig).Status.Success);
-            Assert.IsFalse(management.AddIndex(indexConfig with { IndexName = null }).Status.Success);
-            Assert.IsFalse(management.AddIndex(indexConfig with { IndexName = "BBB" }).Status.Success);
-            Assert.IsFalse(management.AddIndex(indexConfig with { IndexName = "A".PadLeft(101, 'C') }).Status.Success);
-            Assert.IsFalse(management.AddIndex(indexConfig with { Pk = Guid.NewGuid(), IndexName = "BBB", MonitorFolder = string.Empty }).Status.Success);
-            Assert.IsFalse(management.AddIndex(indexConfig with { Pk = Guid.NewGuid(), IndexName = "BBB" }).Status.Success);
-            Assert.IsFalse(management.AddIndex(indexConfig with { Pk = Guid.NewGuid(), IndexName = "BBB", MonitorFolder = "Dummy" }).Status.Success);
-            CollectionAssert.AreEquivalent(new[] { indexConfig.ToString() }, management.GetIndexList().Result.Select(u => u.IndexConfig.ToString()));
+            Assert.That(management.AddIndex(indexConfig).Status.Success, Is.False);
+            Assert.That(management.AddIndex(indexConfig with { IndexName = null }).Status.Success, Is.False);
+            Assert.That(management.AddIndex(indexConfig with { IndexName = "BBB" }).Status.Success, Is.False);
+            Assert.That(management.AddIndex(indexConfig with { IndexName = "A".PadLeft(101, 'C') }).Status.Success, Is.False);
+            Assert.That(management.AddIndex(indexConfig with { Pk = Guid.NewGuid(), IndexName = "BBB", MonitorFolder = string.Empty }).Status.Success, Is.False);
+            Assert.That(management.AddIndex(indexConfig with { Pk = Guid.NewGuid(), IndexName = "BBB" }).Status.Success, Is.False);
+            Assert.That(management.AddIndex(indexConfig with { Pk = Guid.NewGuid(), IndexName = "BBB", MonitorFolder = "Dummy" }).Status.Success, Is.False);
+            Assert.That(management.GetIndexList().Result.Select(u => u.IndexConfig.ToString()), Is.EquivalentTo(new[] { indexConfig.ToString() }));
         }
 
         [Test]
@@ -64,23 +64,23 @@ namespace CodeIndex.Test
             };
 
             using var management = new IndexManagement(Config, Log);
-            CollectionAssert.IsEmpty(management.GetIndexList().Result);
+            Assert.That(management.GetIndexList().Result, Is.Empty);
 
-            Assert.IsFalse(management.EditIndex(indexConfig).Status.Success);
-            Assert.IsTrue(management.AddIndex(indexConfig).Status.Success);
-            CollectionAssert.AreEquivalent(new[] { indexConfig.ToString() }, management.GetIndexList().Result.Select(u => u.IndexConfig.ToString()));
+            Assert.That(management.EditIndex(indexConfig).Status.Success, Is.False);
+            Assert.That(management.AddIndex(indexConfig).Status.Success, Is.True);
+            Assert.That(management.GetIndexList().Result.Select(u => u.IndexConfig.ToString()), Is.EquivalentTo(new[] { indexConfig.ToString() }));
 
-            Assert.IsFalse(management.EditIndex(indexConfig with { IndexName = null }).Status.Success);
-            Assert.IsFalse(management.EditIndex(indexConfig with { IndexName = "A".PadLeft(101, 'C') }).Status.Success);
-            Assert.IsFalse(management.EditIndex(indexConfig with { Pk = Guid.NewGuid(), IndexName = "BBB", MonitorFolder = string.Empty }).Status.Success);
-            Assert.IsFalse(management.EditIndex(indexConfig with { Pk = Guid.NewGuid(), IndexName = "BBB" }).Status.Success);
-            Assert.IsFalse(management.EditIndex(indexConfig with { Pk = Guid.NewGuid(), IndexName = "BBB", MonitorFolder = "Dummy" }).Status.Success);
-            CollectionAssert.AreEquivalent(new[] { indexConfig.ToString() }, management.GetIndexList().Result.Select(u => u.IndexConfig.ToString()));
+            Assert.That(management.EditIndex(indexConfig with { IndexName = null }).Status.Success, Is.False);
+            Assert.That(management.EditIndex(indexConfig with { IndexName = "A".PadLeft(101, 'C') }).Status.Success, Is.False);
+            Assert.That(management.EditIndex(indexConfig with { Pk = Guid.NewGuid(), IndexName = "BBB", MonitorFolder = string.Empty }).Status.Success, Is.False);
+            Assert.That(management.EditIndex(indexConfig with { Pk = Guid.NewGuid(), IndexName = "BBB" }).Status.Success, Is.False);
+            Assert.That(management.EditIndex(indexConfig with { Pk = Guid.NewGuid(), IndexName = "BBB", MonitorFolder = "Dummy" }).Status.Success, Is.False);
+            Assert.That(management.GetIndexList().Result.Select(u => u.IndexConfig.ToString()), Is.EquivalentTo(new[] { indexConfig.ToString() }));
 
-            Assert.IsTrue(management.EditIndex(indexConfig with { IndexName = "BBB" }).Status.Success);
-            CollectionAssert.AreEquivalent(new[] { (indexConfig with { IndexName = "BBB" }).ToString() }, management.GetIndexList().Result.Select(u => u.IndexConfig.ToString()));
-            Assert.IsTrue(management.GetIndexMaintainerWrapperAndInitializeIfNeeded(indexConfig.Pk).Status.Success);
-            Assert.IsFalse(management.EditIndex(indexConfig).Status.Success);
+            Assert.That(management.EditIndex(indexConfig with { IndexName = "BBB" }).Status.Success, Is.True);
+            Assert.That(management.GetIndexList().Result.Select(u => u.IndexConfig.ToString()), Is.EquivalentTo(new[] { (indexConfig with { IndexName = "BBB" }).ToString() }));
+            Assert.That(management.GetIndexMaintainerWrapperAndInitializeIfNeeded(indexConfig.Pk).Status.Success, Is.True);
+            Assert.That(management.EditIndex(indexConfig).Status.Success, Is.False);
         }
 
         [Test]
@@ -93,15 +93,15 @@ namespace CodeIndex.Test
             };
 
             using var management = new IndexManagement(Config, Log);
-            CollectionAssert.IsEmpty(management.GetIndexList().Result);
+            Assert.That(management.GetIndexList().Result, Is.Empty);
 
-            Assert.IsTrue(management.AddIndex(indexConfig).Status.Success);
-            Assert.AreEqual(IndexStatus.Idle, management.GetIndexList().Result.Select(u => u.IndexStatus).First());
+            Assert.That(management.AddIndex(indexConfig).Status.Success, Is.True);
+            Assert.That(management.GetIndexList().Result.Select(u => u.IndexStatus).First(), Is.EqualTo(IndexStatus.Idle));
 
             var maintainer = management.GetIndexMaintainerWrapperAndInitializeIfNeeded(indexConfig.Pk);
-            Assert.IsTrue(maintainer.Status.Success);
-            Assert.AreNotEqual(IndexStatus.Idle, maintainer.Result.Status);
-            Assert.IsFalse(management.GetIndexMaintainerWrapperAndInitializeIfNeeded(Guid.NewGuid()).Status.Success);
+            Assert.That(maintainer.Status.Success, Is.True);
+            Assert.That(maintainer.Result.Status, Is.Not.EqualTo(IndexStatus.Idle));
+            Assert.That(management.GetIndexMaintainerWrapperAndInitializeIfNeeded(Guid.NewGuid()).Status.Success, Is.False);
         }
 
         [Test]
@@ -114,13 +114,13 @@ namespace CodeIndex.Test
             };
 
             using var management = new IndexManagement(Config, Log);
-            CollectionAssert.IsEmpty(management.GetIndexList().Result);
+            Assert.That(management.GetIndexList().Result, Is.Empty);
 
-            Assert.IsTrue(management.AddIndex(indexConfig).Status.Success);
-            CollectionAssert.AreEquivalent(new[] { indexConfig.ToString() }, management.GetIndexList().Result.Select(u => u.IndexConfig.ToString()));
-            Assert.IsTrue(management.DeleteIndex(indexConfig.Pk).Status.Success);
-            Assert.IsFalse(management.DeleteIndex(indexConfig.Pk).Status.Success);
-            CollectionAssert.IsEmpty(management.GetIndexList().Result);
+            Assert.That(management.AddIndex(indexConfig).Status.Success, Is.True);
+            Assert.That(management.GetIndexList().Result.Select(u => u.IndexConfig.ToString()), Is.EquivalentTo(new[] { indexConfig.ToString() }));
+            Assert.That(management.DeleteIndex(indexConfig.Pk).Status.Success, Is.True);
+            Assert.That(management.DeleteIndex(indexConfig.Pk).Status.Success, Is.False);
+            Assert.That(management.GetIndexList().Result, Is.Empty);
         }
 
         [Test]
@@ -133,13 +133,13 @@ namespace CodeIndex.Test
             };
 
             using var management = new IndexManagement(Config, Log);
-            CollectionAssert.IsEmpty(management.GetIndexList().Result);
+            Assert.That(management.GetIndexList().Result, Is.Empty);
 
-            Assert.IsTrue(management.AddIndex(indexConfig).Status.Success);
-            CollectionAssert.AreEquivalent(new[] { indexConfig.ToString() }, management.GetIndexList().Result.Select(u => u.IndexConfig.ToString()));
+            Assert.That(management.AddIndex(indexConfig).Status.Success, Is.True);
+            Assert.That(management.GetIndexList().Result.Select(u => u.IndexConfig.ToString()), Is.EquivalentTo(new[] { indexConfig.ToString() }));
 
-            Assert.AreEqual(indexConfig.IndexName, management.GetIndexView(indexConfig.Pk).IndexName);
-            Assert.AreEqual(new IndexConfigForView().IndexName, management.GetIndexView(Guid.NewGuid()).IndexName);
+            Assert.That(management.GetIndexView(indexConfig.Pk).IndexName, Is.EqualTo(indexConfig.IndexName));
+            Assert.That(management.GetIndexView(Guid.NewGuid()).IndexName, Is.EqualTo(new IndexConfigForView().IndexName));
         }
 
         [Test]
@@ -160,15 +160,15 @@ namespace CodeIndex.Test
             };
 
             using var management = new IndexManagement(Config, Log);
-            CollectionAssert.IsEmpty(management.GetIndexList().Result);
+            Assert.That(management.GetIndexList().Result, Is.Empty);
 
-            Assert.IsTrue(management.AddIndex(indexConfig1).Status.Success);
-            Assert.IsTrue(management.AddIndex(indexConfig2).Status.Success);
+            Assert.That(management.AddIndex(indexConfig1).Status.Success, Is.True);
+            Assert.That(management.AddIndex(indexConfig2).Status.Success, Is.True);
 
-            CollectionAssert.AreEquivalent(new[] { "ABC", "EFG" }, management.GetIndexViewList().Result.Select(u => u.IndexName));
+            Assert.That(management.GetIndexViewList().Result.Select(u => u.IndexName), Is.EquivalentTo(new[] { "ABC", "EFG" }));
 
             management.StopIndex(indexConfig1.Pk);
-            CollectionAssert.AreEquivalent(new[] { "EFG" }, management.GetIndexViewList().Result.Select(u => u.IndexName));
+            Assert.That(management.GetIndexViewList().Result.Select(u => u.IndexName), Is.EquivalentTo(new[] { "EFG" }));
         }
 
         [Test]
@@ -189,15 +189,15 @@ namespace CodeIndex.Test
             };
 
             using var management = new IndexManagement(Config, Log);
-            CollectionAssert.IsEmpty(management.GetIndexList().Result);
+            Assert.That(management.GetIndexList().Result, Is.Empty);
 
-            Assert.IsTrue(management.AddIndex(indexConfig1).Status.Success);
-            Assert.IsTrue(management.AddIndex(indexConfig2).Status.Success);
+            Assert.That(management.AddIndex(indexConfig1).Status.Success, Is.True);
+            Assert.That(management.AddIndex(indexConfig2).Status.Success, Is.True);
 
-            CollectionAssert.AreEquivalent(new[] { "ABC", "EFG" }, management.GetIndexList().Result.Select(u => u.IndexConfig.IndexName));
+            Assert.That(management.GetIndexList().Result.Select(u => u.IndexConfig.IndexName), Is.EquivalentTo(new[] { "ABC", "EFG" }));
 
             management.DeleteIndex(indexConfig1.Pk);
-            CollectionAssert.AreEquivalent(new[] { "EFG" }, management.GetIndexList().Result.Select(u => u.IndexConfig.IndexName));
+            Assert.That(management.GetIndexList().Result.Select(u => u.IndexConfig.IndexName), Is.EquivalentTo(new[] { "EFG" }));
         }
 
         [Test]
@@ -210,12 +210,12 @@ namespace CodeIndex.Test
             };
 
             using var management = new IndexManagement(Config, Log);
-            CollectionAssert.IsEmpty(management.GetIndexList().Result);
+            Assert.That(management.GetIndexList().Result, Is.Empty);
 
-            Assert.IsTrue(management.AddIndex(indexConfig).Status.Success);
-            Assert.AreEqual(IndexStatus.Idle, management.GetIndexList().Result.Select(u => u.IndexStatus).First());
-            Assert.IsTrue(management.StartIndex(indexConfig.Pk).Status.Success);
-            Assert.AreNotEqual(IndexStatus.Idle, management.GetIndexList().Result.Select(u => u.IndexStatus).First());
+            Assert.That(management.AddIndex(indexConfig).Status.Success, Is.True);
+            Assert.That(management.GetIndexList().Result.Select(u => u.IndexStatus).First(), Is.EqualTo(IndexStatus.Idle));
+            Assert.That(management.StartIndex(indexConfig.Pk).Status.Success, Is.True);
+            Assert.That(management.GetIndexList().Result.Select(u => u.IndexStatus).First(), Is.Not.EqualTo(IndexStatus.Idle));
         }
 
         [Test]
@@ -236,15 +236,15 @@ namespace CodeIndex.Test
             };
 
             using var management = new IndexManagement(Config, Log);
-            CollectionAssert.IsEmpty(management.GetIndexList().Result);
+            Assert.That(management.GetIndexList().Result, Is.Empty);
 
-            Assert.IsTrue(management.AddIndex(indexConfig1).Status.Success);
-            Assert.IsTrue(management.AddIndex(indexConfig2).Status.Success);
-            CollectionAssert.AreEquivalent(new[] { "ABC", "EFG" }, management.GetIndexViewList().Result.Select(u => u.IndexName));
+            Assert.That(management.AddIndex(indexConfig1).Status.Success, Is.True);
+            Assert.That(management.AddIndex(indexConfig2).Status.Success, Is.True);
+            Assert.That(management.GetIndexViewList().Result.Select(u => u.IndexName), Is.EquivalentTo(new[] { "ABC", "EFG" }));
 
-            Assert.IsTrue(management.StopIndex(indexConfig2.Pk).Status.Success);
-            Assert.IsFalse(management.StopIndex(indexConfig2.Pk).Status.Success);
-            CollectionAssert.AreEquivalent(new[] { "ABC" }, management.GetIndexViewList().Result.Select(u => u.IndexName));
+            Assert.That(management.StopIndex(indexConfig2.Pk).Status.Success, Is.True);
+            Assert.That(management.StopIndex(indexConfig2.Pk).Status.Success, Is.False);
+            Assert.That(management.GetIndexViewList().Result.Select(u => u.IndexName), Is.EquivalentTo(new[] { "ABC" }));
         }
 
         protected new ILogger<IndexManagement> Log => log ??= new DummyLog<IndexManagement>();

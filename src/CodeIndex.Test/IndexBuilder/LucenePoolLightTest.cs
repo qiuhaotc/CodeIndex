@@ -37,10 +37,10 @@ namespace CodeIndex.Test
                 })}, true, true, true);
 
             var documents = light.Search(new MatchAllDocsQuery(), int.MaxValue);
-            Assert.AreEqual(2, documents.Length);
+            Assert.That(documents.Length, Is.EqualTo(2));
 
             documents = light.Search(new TermQuery(new Term(nameof(CodeSource.FileName), "2")), int.MaxValue);
-            Assert.AreEqual(1, documents.Length);
+            Assert.That(documents.Length, Is.EqualTo(1));
         }
 
         [Test]
@@ -65,20 +65,20 @@ namespace CodeIndex.Test
                 })}, true, true, true);
 
             var documents = light.SearchWithSpecificFields(new TermQuery(new Term(nameof(CodeSource.FileName), "2")), int.MaxValue, nameof(CodeSource.FileName), nameof(CodeSource.FileExtension));
-            Assert.AreEqual(1, documents.Length);
-            Assert.AreEqual("Dummy File 2", documents[0].Get(nameof(CodeSource.FileName)));
-            Assert.AreEqual("cs", documents[0].Get(nameof(CodeSource.FileExtension)));
-            Assert.IsNull(documents[0].Get(nameof(CodeSource.Content)));
+            Assert.That(documents.Length, Is.EqualTo(1));
+            Assert.That(documents[0].Get(nameof(CodeSource.FileName)), Is.EqualTo("Dummy File 2"));
+            Assert.That(documents[0].Get(nameof(CodeSource.FileExtension)), Is.EqualTo("cs"));
+            Assert.That(documents[0].Get(nameof(CodeSource.Content)), Is.Null);
 
             documents = light.SearchWithSpecificFields(new TermQuery(new Term(nameof(CodeSource.FileName), "2")), int.MaxValue, nameof(CodeSource.Content));
-            Assert.AreEqual(1, documents.Length);
-            Assert.IsNull(documents[0].Get(nameof(CodeSource.FileName)));
-            Assert.IsNull(documents[0].Get(nameof(CodeSource.FileExtension)));
-            Assert.AreEqual("Test Content" + Environment.NewLine + "A New Line For Test", documents[0].Get(nameof(CodeSource.Content)));
+            Assert.That(documents.Length, Is.EqualTo(1));
+            Assert.That(documents[0].Get(nameof(CodeSource.FileName)), Is.Null);
+            Assert.That(documents[0].Get(nameof(CodeSource.FileExtension)), Is.Null);
+            Assert.That(documents[0].Get(nameof(CodeSource.Content)), Is.EqualTo("Test Content" + Environment.NewLine + "A New Line For Test"));
 
             documents = light.SearchWithSpecificFields(new MatchAllDocsQuery(), int.MaxValue, nameof(CodeSource.FileName));
-            Assert.AreEqual(2, documents.Length);
-            CollectionAssert.AreEquivalent(new[] { "Dummy File 1", "Dummy File 2" }, documents.Select(u => u.Get(nameof(CodeSource.FileName))));
+            Assert.That(documents.Length, Is.EqualTo(2));
+            Assert.That(documents.Select(u => u.Get(nameof(CodeSource.FileName))), Is.EquivalentTo(new[] { "Dummy File 1", "Dummy File 2" }));
         }
 
         [Test]
@@ -103,15 +103,15 @@ namespace CodeIndex.Test
                 })}, true, true, true);
 
             var documents = light.Search(new MatchAllDocsQuery(), int.MaxValue);
-            Assert.AreEqual(2, documents.Length);
+            Assert.That(documents.Length, Is.EqualTo(2));
 
             light.DeleteIndex(new TermQuery(new Term(nameof(CodeSource.FileName), "2")));
             documents = light.Search(new MatchAllDocsQuery(), int.MaxValue);
-            Assert.AreEqual(1, documents.Length);
+            Assert.That(documents.Length, Is.EqualTo(1));
 
             light.DeleteIndex(new Term(nameof(CodeSource.FileName), "1"));
             documents = light.Search(new MatchAllDocsQuery(), int.MaxValue);
-            Assert.AreEqual(0, documents.Length);
+            Assert.That(documents.Length, Is.EqualTo(0));
         }
 
         [Test]
@@ -136,24 +136,24 @@ namespace CodeIndex.Test
                 })}, true, true, true);
 
             var documents = light.Search(new MatchAllDocsQuery(), int.MaxValue);
-            Assert.AreEqual(2, documents.Length);
+            Assert.That(documents.Length, Is.EqualTo(2));
 
             light.DeleteIndex(new Term(nameof(CodeSource.FileName), "2"), out documents);
-            Assert.AreEqual(1, documents.Length);
-            Assert.AreEqual("Dummy File 2", documents[0].Get(nameof(CodeSource.FileName)));
+            Assert.That(documents.Length, Is.EqualTo(1));
+            Assert.That(documents[0].Get(nameof(CodeSource.FileName)), Is.EqualTo("Dummy File 2"));
 
             documents = light.Search(new MatchAllDocsQuery(), int.MaxValue);
-            Assert.AreEqual(1, documents.Length);
+            Assert.That(documents.Length, Is.EqualTo(1));
 
             light.DeleteIndex(new Term(nameof(CodeSource.FileName), "1"), out documents);
-            Assert.AreEqual(1, documents.Length);
-            Assert.AreEqual("Dummy File 1", documents[0].Get(nameof(CodeSource.FileName)));
+            Assert.That(documents.Length, Is.EqualTo(1));
+            Assert.That(documents[0].Get(nameof(CodeSource.FileName)), Is.EqualTo("Dummy File 1"));
 
             documents = light.Search(new MatchAllDocsQuery(), int.MaxValue);
-            Assert.AreEqual(0, documents.Length);
+            Assert.That(documents.Length, Is.EqualTo(0));
 
             light.DeleteIndex(new Term(nameof(CodeSource.FileName), "1"), out documents);
-            Assert.AreEqual(0, documents.Length);
+            Assert.That(documents.Length, Is.EqualTo(0));
 
             light.BuildIndex(new[] {
                 GetDocument(new CodeSource
@@ -172,27 +172,27 @@ namespace CodeIndex.Test
                 })}, true, true, true);
 
             documents = light.Search(new MatchAllDocsQuery(), int.MaxValue);
-            Assert.AreEqual(2, documents.Length);
+            Assert.That(documents.Length, Is.EqualTo(2));
 
             light.DeleteIndex(new TermQuery(new Term(nameof(CodeSource.FileName), "2")), out documents);
-            Assert.AreEqual(1, documents.Length);
-            Assert.AreEqual("Dummy File 2", documents[0].Get(nameof(CodeSource.FileName)));
+            Assert.That(documents.Length, Is.EqualTo(1));
+            Assert.That(documents[0].Get(nameof(CodeSource.FileName)), Is.EqualTo("Dummy File 2"));
 
             documents = light.Search(new MatchAllDocsQuery(), int.MaxValue);
-            Assert.AreEqual(1, documents.Length);
+            Assert.That(documents.Length, Is.EqualTo(1));
 
             light.DeleteIndex(new TermQuery(new Term(nameof(CodeSource.FileName), "1")), out documents);
-            Assert.AreEqual(1, documents.Length);
-            Assert.AreEqual("Dummy File 1", documents[0].Get(nameof(CodeSource.FileName)));
+            Assert.That(documents.Length, Is.EqualTo(1));
+            Assert.That(documents[0].Get(nameof(CodeSource.FileName)), Is.EqualTo("Dummy File 1"));
 
             documents = light.Search(new MatchAllDocsQuery(), int.MaxValue);
-            Assert.AreEqual(0, documents.Length);
+            Assert.That(documents.Length, Is.EqualTo(0));
         }
 
         [Test]
         public void TestAnalyzer()
         {
-            Assert.NotNull(LucenePoolLight.Analyzer);
+            Assert.That(LucenePoolLight.Analyzer, Is.Not.Null);
         }
 
         [Test]
@@ -217,11 +217,11 @@ namespace CodeIndex.Test
                 })}, true, true, true);
 
             var documents = light.Search(new MatchAllDocsQuery(), int.MaxValue);
-            Assert.AreEqual(2, documents.Length);
+            Assert.That(documents.Length, Is.EqualTo(2));
 
             light.DeleteAllIndex();
             documents = light.Search(new MatchAllDocsQuery(), int.MaxValue);
-            Assert.AreEqual(0, documents.Length);
+            Assert.That(documents.Length, Is.EqualTo(0));
         }
 
         [Test]
@@ -237,7 +237,7 @@ namespace CodeIndex.Test
             });
 
             var documents = light.Search(new MatchAllDocsQuery(), int.MaxValue);
-            Assert.AreEqual(1, documents.Length);
+            Assert.That(documents.Length, Is.EqualTo(1));
 
             var wordB = "Abc";
             light.UpdateIndex(new Term(nameof(CodeWord.Word), wordB), new Document
@@ -247,7 +247,7 @@ namespace CodeIndex.Test
             });
 
             documents = light.Search(new MatchAllDocsQuery(), int.MaxValue);
-            Assert.AreEqual(2, documents.Length);
+            Assert.That(documents.Length, Is.EqualTo(2));
 
             light.UpdateIndex(new Term(nameof(CodeWord.Word), wordB), new Document
             {
@@ -256,8 +256,8 @@ namespace CodeIndex.Test
             });
 
             documents = light.Search(new MatchAllDocsQuery(), int.MaxValue);
-            Assert.AreEqual(2, documents.Length);
-            CollectionAssert.AreEquivalent(new[] { "ABC", "Abc" }, documents.Select(u => u.Get(nameof(CodeWord.Word))));
+            Assert.That(documents.Length, Is.EqualTo(2));
+            Assert.That(documents.Select(u => u.Get(nameof(CodeWord.Word))), Is.EquivalentTo(new[] { "ABC", "Abc" }));
         }
 
         [Test]
@@ -290,16 +290,16 @@ namespace CodeIndex.Test
                     Content = "New Content"
                 }), out var rawDocuments);
 
-            Assert.AreEqual(1, rawDocuments.Length);
-            Assert.AreEqual("Test Content" + Environment.NewLine + "A New Line For Test", rawDocuments[0].Get(nameof(CodeSource.Content)), "Still old value");
+            Assert.That(rawDocuments.Length, Is.EqualTo(1));
+            Assert.That(rawDocuments[0].Get(nameof(CodeSource.Content)), Is.EqualTo("Test Content" + Environment.NewLine + "A New Line For Test"), "Still old value");
 
             var documents = light.Search(new TermQuery(new Term(nameof(CodeSource.FileName), "1")), 10);
-            Assert.AreEqual(1, documents.Length);
-            Assert.AreEqual("New Content", documents[0].Get(nameof(CodeSource.Content)), "Content updated");
+            Assert.That(documents.Length, Is.EqualTo(1));
+            Assert.That(documents[0].Get(nameof(CodeSource.Content)), Is.EqualTo("New Content"), "Content updated");
         }
 
         [Test]
-        [Timeout(60000)]
+        [CancelAfter(60000)]
         public void TestThreadSafeForIndexReader()
         {
             using var light = new LucenePoolLight(TempIndexDir);
@@ -367,9 +367,9 @@ namespace CodeIndex.Test
 
             var parserA = LucenePoolLight.GetQueryParser();
             var parserB = LucenePoolLight.GetQueryParser();
-            Assert.AreNotEqual(parserA, parserB);
-            Assert.AreEqual(parserA.Analyzer, parserB.Analyzer);
-            Assert.IsTrue(parserA.Analyzer is PerFieldAnalyzerWrapper);
+            Assert.That(parserA, Is.Not.EqualTo(parserB));
+            Assert.That(parserB.Analyzer, Is.EqualTo(parserA.Analyzer));
+            Assert.That(parserA.Analyzer is PerFieldAnalyzerWrapper, Is.True);
         }
 
         [Test]
@@ -393,9 +393,9 @@ namespace CodeIndex.Test
                     Content = "Test Content" + Environment.NewLine + "A New Line For Test"
                 })}, true, true, true);
 
-            Assert.IsTrue(light.Exists(new TermQuery(new Term(nameof(CodeSource.FileName), "1"))));
-            Assert.IsTrue(light.Exists(new TermQuery(new Term(nameof(CodeSource.FileName), "2"))));
-            Assert.IsFalse(light.Exists(new TermQuery(new Term(nameof(CodeSource.FileName), "3"))));
+            Assert.That(light.Exists(new TermQuery(new Term(nameof(CodeSource.FileName), "1"))), Is.True);
+            Assert.That(light.Exists(new TermQuery(new Term(nameof(CodeSource.FileName), "2"))), Is.True);
+            Assert.That(light.Exists(new TermQuery(new Term(nameof(CodeSource.FileName), "3"))), Is.False);
         }
 
         Document GetDocument(CodeSource codeSource)

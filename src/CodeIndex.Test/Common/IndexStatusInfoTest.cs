@@ -10,8 +10,8 @@ namespace CodeIndex.Test
         public void TestConstructor()
         {
             var statusInfo = new IndexStatusInfo(IndexStatus.Initializing, new IndexConfig());
-            Assert.IsNotNull(statusInfo.IndexConfig);
-            Assert.AreEqual(IndexStatus.Initializing, statusInfo.IndexStatus);
+            Assert.That(statusInfo.IndexConfig, Is.Not.Null);
+            Assert.That(statusInfo.IndexStatus, Is.EqualTo(IndexStatus.Initializing));
             Assert.Throws<ArgumentException>(() => _ = new IndexStatusInfo(default, null));
         }
     }

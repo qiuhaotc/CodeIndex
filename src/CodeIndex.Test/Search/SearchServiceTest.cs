@@ -5,7 +5,7 @@ using NUnit.Framework;
 
 namespace CodeIndex.Test
 {
-    [Timeout(10000)]
+    [CancelAfter(10000)]
     public class SearchServiceTest : BaseTest
     {
         [Test]
@@ -22,8 +22,8 @@ namespace CodeIndex.Test
                 IndexPk = initManagement.IndexPk
             });
 
-            Assert.IsTrue(result.Status.Success);
-            Assert.AreEqual(1, result.Result.Count());
+            Assert.That(result.Status.Success, Is.True);
+            Assert.That(result.Result.Count(), Is.EqualTo(1));
 
             result = searchService.GetCodeSources(new SearchRequest
             {
@@ -31,7 +31,7 @@ namespace CodeIndex.Test
                 ShowResults = 10,
                 IndexPk = initManagement.IndexPk
             });
-            Assert.AreEqual(3, result.Result.Count());
+            Assert.That(result.Result.Count(), Is.EqualTo(3));
         }
 
         [Test]
@@ -48,8 +48,8 @@ namespace CodeIndex.Test
                 IndexPk = initManagement.IndexPk
             });
 
-            Assert.IsTrue(result.Status.Success);
-            Assert.AreEqual(1, result.Result.Count());
+            Assert.That(result.Status.Success, Is.True);
+            Assert.That(result.Result.Count(), Is.EqualTo(1));
 
             result = searchService.GetCodeSourcesWithMatchedLine(new SearchRequest
             {
@@ -58,7 +58,7 @@ namespace CodeIndex.Test
                 IndexPk = initManagement.IndexPk
             });
 
-            CollectionAssert.AreEquivalent(new[] { 1, 1, 1, 2 }, result.Result.Select(u => u.MatchedLine));
+            Assert.That(result.Result.Select(u => u.MatchedLine), Is.EquivalentTo(new[] { 1, 1, 1, 2 }));
         }
 
         [Test]
@@ -68,12 +68,12 @@ namespace CodeIndex.Test
             var searcher = initManagement.GetIndexSearcher();
             var searchService = new SearchService(Config, new DummyLog<SearchService>(), searcher);
             var result = searchService.GetHints("abc", initManagement.IndexPk);
-            Assert.IsTrue(result.Status.Success);
-            CollectionAssert.AreEquivalent(new[] { "ABCD", "ABCE" }, result.Result);
+            Assert.That(result.Status.Success, Is.True);
+            Assert.That(result.Result, Is.EquivalentTo(new[] { "ABCD", "ABCE" }));
 
             result = searchService.GetHints("efg", initManagement.IndexPk);
-            Assert.IsTrue(result.Status.Success);
-            CollectionAssert.AreEquivalent(new[] { "EFGH" }, result.Result);
+            Assert.That(result.Status.Success, Is.True);
+            Assert.That(result.Result, Is.EquivalentTo(new[] { "EFGH" }));
         }
 
         [Test]
@@ -91,8 +91,8 @@ namespace CodeIndex.Test
                 CaseSensitive = true
             });
 
-            Assert.IsTrue(result.Status.Success);
-            Assert.AreEqual(3, result.Result.Count(), "Extension is case-insensitive");
+            Assert.That(result.Status.Success, Is.True);
+            Assert.That(result.Result.Count(), Is.EqualTo(3), "Extension is case-insensitive");
 
             result = searchService.GetCodeSources(new SearchRequest
             {
@@ -102,7 +102,7 @@ namespace CodeIndex.Test
                 CaseSensitive = true
             });
 
-            Assert.AreEqual(3, result.Result.Count(), "Extension is case-insensitive");
+            Assert.That(result.Result.Count(), Is.EqualTo(3), "Extension is case-insensitive");
 
             result = searchService.GetCodeSources(new SearchRequest
             {
@@ -112,7 +112,7 @@ namespace CodeIndex.Test
                 CaseSensitive = true
             });
 
-            Assert.AreEqual(0, result.Result.Count());
+            Assert.That(result.Result.Count(), Is.EqualTo(0));
         }
     }
 }

@@ -13,20 +13,20 @@ namespace CodeIndex.Test
                 UserName = "ABC"
             };
 
-            Assert.AreEqual("ABC", storage.UserName);
+            Assert.That(storage.UserName, Is.EqualTo("ABC"));
         }
 
         [Test]
         public void TestGet_SetOrUpdateValue()
         {
             var storage = new Storage();
-            Assert.IsNull(storage.GetValue("ABC"));
+            Assert.That(storage.GetValue("ABC"), Is.Null);
 
             storage.SetOrUpdate("ABC", 2);
-            Assert.AreEqual(2, storage.GetValue("ABC"));
+            Assert.That(storage.GetValue("ABC"), Is.EqualTo(2));
 
             storage.SetOrUpdate("ABC", "ABCD");
-            Assert.AreEqual("ABCD", storage.GetValue("ABC"));
+            Assert.That(storage.GetValue("ABC"), Is.EqualTo("ABCD"));
         }
     }
 }

@@ -12,14 +12,14 @@ namespace CodeIndex.Test
         {
             Assert.Multiple(() =>
             {
-                Assert.IsEmpty(Generator.GetSearchStr(null, null, null));
-                Assert.AreEqual($"{nameof(CodeSource.FileName)}:A", Generator.GetSearchStr("A", null, null));
-                Assert.AreEqual($"{nameof(CodeSource.FileExtension)}:B", Generator.GetSearchStr(null, "B", null));
-                Assert.AreEqual($"{nameof(CodeSource.FilePath)}:C", Generator.GetSearchStr(null, null, "C"));
-                Assert.AreEqual($"{nameof(CodeSource.FileName)}:A AND {nameof(CodeSource.FileExtension)}:B AND {nameof(CodeSource.FilePath)}:C", Generator.GetSearchStr("A", "B", "C"));
-                Assert.AreEqual($"{nameof(CodeSource.CodePK)}:D", Generator.GetSearchStr("A", "B", "C", "D"));
-                Assert.IsEmpty(Generator.GetSearchStr(" ", "   ", string.Empty, " "));
-                Assert.AreEqual(nameof(CodeSource.FilePath) + ":" + "\"C:\\\\WWWROOT\"", Generator.GetSearchStr(null, null, "\"C:\\WWWROOT\""));
+                Assert.That(Generator.GetSearchStr(null, null, null), Is.Empty);
+                Assert.That(Generator.GetSearchStr("A", null, null), Is.EqualTo($"{nameof(CodeSource.FileName)}:A"));
+                Assert.That(Generator.GetSearchStr(null, "B", null), Is.EqualTo($"{nameof(CodeSource.FileExtension)}:B"));
+                Assert.That(Generator.GetSearchStr(null, null, "C"), Is.EqualTo($"{nameof(CodeSource.FilePath)}:C"));
+                Assert.That(Generator.GetSearchStr("A", "B", "C"), Is.EqualTo($"{nameof(CodeSource.FileName)}:A AND {nameof(CodeSource.FileExtension)}:B AND {nameof(CodeSource.FilePath)}:C"));
+                Assert.That(Generator.GetSearchStr("A", "B", "C", "D"), Is.EqualTo($"{nameof(CodeSource.CodePK)}:D"));
+                Assert.That(Generator.GetSearchStr(" ", "   ", string.Empty, " "), Is.Empty);
+                Assert.That(Generator.GetSearchStr(null, null, "\"C:\\WWWROOT\""), Is.EqualTo(nameof(CodeSource.FilePath) + ":" + "\"C:\\\\WWWROOT\""));
             });
         }
 
@@ -28,10 +28,10 @@ namespace CodeIndex.Test
         {
             Assert.Multiple(() =>
             {
-                Assert.IsEmpty(Generator.GetContentSearchStr(null, false));
-                Assert.IsEmpty(Generator.GetContentSearchStr(" ", true));
-                Assert.AreEqual($"{nameof(CodeSource.Content)}:A", Generator.GetContentSearchStr("A", false));
-                Assert.AreEqual($"{CodeIndexBuilder.GetCaseSensitiveField(nameof(CodeSource.Content))}:A", Generator.GetContentSearchStr("A", true));
+                Assert.That(Generator.GetContentSearchStr(null, false), Is.Empty);
+                Assert.That(Generator.GetContentSearchStr(" ", true), Is.Empty);
+                Assert.That(Generator.GetContentSearchStr("A", false), Is.EqualTo($"{nameof(CodeSource.Content)}:A"));
+                Assert.That(Generator.GetContentSearchStr("A", true), Is.EqualTo($"{CodeIndexBuilder.GetCaseSensitiveField(nameof(CodeSource.Content))}:A"));
             });
         }
 
@@ -45,8 +45,8 @@ namespace CodeIndex.Test
                 FileName = "EFG",
             });
 
-            Assert.NotNull(query);
-            Assert.AreEqual("+FileName:efg +Content:abc*", query.ToString());
+            Assert.That(query, Is.Not.Null);
+            Assert.That(query.ToString(), Is.EqualTo("+FileName:efg +Content:abc*"));
 
             query = Generator.GetSearchQuery(new SearchRequest
             {
@@ -55,7 +55,7 @@ namespace CodeIndex.Test
                 FileName = "EFG",
             });
 
-            Assert.AreEqual($"+FileName:efg +{CodeIndexBuilder.GetCaseSensitiveField(nameof(CodeSource.Content))}:ABC*", query.ToString());
+            Assert.That(query.ToString(), Is.EqualTo($"+FileName:efg +{CodeIndexBuilder.GetCaseSensitiveField(nameof(CodeSource.Content))}:ABC*"));
 
             query = Generator.GetSearchQuery(new SearchRequest
             {
@@ -64,7 +64,7 @@ namespace CodeIndex.Test
                 FileName = "EFG",
             });
 
-            Assert.AreEqual($"+FileName:efg +Content:abc~2", query.ToString());
+            Assert.That(query.ToString(), Is.EqualTo($"+FileName:efg +Content:abc~2"));
 
             query = Generator.GetSearchQuery(new SearchRequest
             {
@@ -73,7 +73,7 @@ namespace CodeIndex.Test
                 Content = "Abc~2",
             });
 
-            Assert.AreEqual($"+FileName:efg +{CodeIndexBuilder.GetCaseSensitiveField(nameof(CodeSource.Content))}:Abc~2", query.ToString());
+            Assert.That(query.ToString(), Is.EqualTo($"+FileName:efg +{CodeIndexBuilder.GetCaseSensitiveField(nameof(CodeSource.Content))}:Abc~2"));
 
             query = Generator.GetSearchQuery(new SearchRequest
             {
@@ -81,7 +81,7 @@ namespace CodeIndex.Test
                 FileName = "EFG",
             });
 
-            Assert.AreEqual($"FileName:efg", query.ToString());
+            Assert.That(query.ToString(), Is.EqualTo($"FileName:efg"));
 
             query = Generator.GetSearchQuery(new SearchRequest
             {
@@ -89,7 +89,7 @@ namespace CodeIndex.Test
                 Content = "Abc~2",
             });
 
-            Assert.AreEqual($"{CodeIndexBuilder.GetCaseSensitiveField(nameof(CodeSource.Content))}:Abc~2", query.ToString());
+            Assert.That(query.ToString(), Is.EqualTo($"{CodeIndexBuilder.GetCaseSensitiveField(nameof(CodeSource.Content))}:Abc~2"));
 
             query = Generator.GetSearchQuery(new SearchRequest
             {
@@ -98,7 +98,7 @@ namespace CodeIndex.Test
                 CodePK = "123"
             });
 
-            Assert.AreEqual($"{nameof(CodeSource.CodePK)}:123", query.ToString());
+            Assert.That(query.ToString(), Is.EqualTo($"{nameof(CodeSource.CodePK)}:123"));
         }
 
         [Test]
@@ -111,8 +111,8 @@ namespace CodeIndex.Test
                 FileName = "EFG",
             });
 
-            Assert.NotNull(query);
-            Assert.AreEqual("+SpanNear([SpanMultiTermQueryWrapper(Content:abc*), SpanMultiTermQueryWrapper(Content:def)], 0, True) +FileName:efg", query.ToString());
+            Assert.That(query, Is.Not.Null);
+            Assert.That(query.ToString(), Is.EqualTo("+SpanNear([SpanMultiTermQueryWrapper(Content:abc*), SpanMultiTermQueryWrapper(Content:def)], 0, True) +FileName:efg"));
 
             query = Generator.GetSearchQuery(new SearchRequest
             {
@@ -120,8 +120,8 @@ namespace CodeIndex.Test
                 Content = "\"\\\"",
             });
 
-            Assert.NotNull(query);
-            Assert.AreEqual("+Content:\"\" \"\"", query.ToString());
+            Assert.That(query, Is.Not.Null);
+            Assert.That(query.ToString(), Is.EqualTo("+Content:\"\" \"\""));
 
             query = Generator.GetSearchQuery(new SearchRequest
             {
@@ -131,7 +131,7 @@ namespace CodeIndex.Test
                 CodePK = "123"
             });
 
-            Assert.AreEqual($"{nameof(CodeSource.CodePK)}:123", query.ToString());
+            Assert.That(query.ToString(), Is.EqualTo($"{nameof(CodeSource.CodePK)}:123"));
         }
 
         [Test]
@@ -143,8 +143,8 @@ namespace CodeIndex.Test
                 Content = "ABC*",
             });
 
-            Assert.NotNull(query);
-            Assert.AreEqual("Content:abc*", query.ToString());
+            Assert.That(query, Is.Not.Null);
+            Assert.That(query.ToString(), Is.EqualTo("Content:abc*"));
 
             query = Generator.GetContentSearchQuery(new SearchRequest
             {
@@ -152,7 +152,7 @@ namespace CodeIndex.Test
                 Content = "ABC*",
             });
 
-            Assert.AreEqual($"{CodeIndexBuilder.GetCaseSensitiveField(nameof(CodeSource.Content))}:ABC*", query.ToString());
+            Assert.That(query.ToString(), Is.EqualTo($"{CodeIndexBuilder.GetCaseSensitiveField(nameof(CodeSource.Content))}:ABC*"));
 
             query = Generator.GetContentSearchQuery(new SearchRequest
             {
@@ -160,7 +160,7 @@ namespace CodeIndex.Test
                 Content = "Abc~2",
             });
 
-            Assert.AreEqual($"Content:abc~2", query.ToString());
+            Assert.That(query.ToString(), Is.EqualTo($"Content:abc~2"));
 
             query = Generator.GetContentSearchQuery(new SearchRequest
             {
@@ -168,7 +168,7 @@ namespace CodeIndex.Test
                 Content = "Abc~2",
             });
 
-            Assert.AreEqual($"{CodeIndexBuilder.GetCaseSensitiveField(nameof(CodeSource.Content))}:Abc~2", query.ToString());
+            Assert.That(query.ToString(), Is.EqualTo($"{CodeIndexBuilder.GetCaseSensitiveField(nameof(CodeSource.Content))}:Abc~2"));
 
             query = Generator.GetContentSearchQuery(new SearchRequest
             {
@@ -176,7 +176,7 @@ namespace CodeIndex.Test
                 Content = "  ",
             });
 
-            Assert.IsNull(query);
+            Assert.That(query, Is.Null);
 
             query = Generator.GetContentSearchQuery(new SearchRequest
             {
@@ -184,7 +184,7 @@ namespace CodeIndex.Test
                 Content = null,
             });
 
-            Assert.IsNull(query);
+            Assert.That(query, Is.Null);
         }
 
         [Test]
@@ -196,8 +196,8 @@ namespace CodeIndex.Test
                 Content = "ABC* DEF",
             });
 
-            Assert.NotNull(query);
-            Assert.AreEqual("+SpanNear([SpanMultiTermQueryWrapper(Content:abc*), SpanMultiTermQueryWrapper(Content:def)], 0, True)", query.ToString());
+            Assert.That(query, Is.Not.Null);
+            Assert.That(query.ToString(), Is.EqualTo("+SpanNear([SpanMultiTermQueryWrapper(Content:abc*), SpanMultiTermQueryWrapper(Content:def)], 0, True)"));
         }
 
         QueryGeneratorForTest generator;

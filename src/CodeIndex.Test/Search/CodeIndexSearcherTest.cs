@@ -7,7 +7,7 @@ using NUnit.Framework;
 
 namespace CodeIndex.Test
 {
-    [Timeout(10000)]
+    [CancelAfter(10000)]
     public class CodeIndexSearcherTest : BaseTest
     {
         [Test]
@@ -38,17 +38,17 @@ namespace CodeIndex.Test
 
             var content = $"My ABC{Environment.NewLine}Is A ABC CONTENT{Environment.NewLine}It's abc in lowercase{Environment.NewLine}It's Abc in mix{Environment.NewLine}Not AB with C";
             var result = searcher.GenerateHtmlPreviewText(GetSearchRequest("ABC", initManagement.IndexPk), content, int.MaxValue);
-            Assert.AreEqual(@"My <span class='highlight'>ABC</span>
+            Assert.That(result, Is.EqualTo(@"My <span class='highlight'>ABC</span>
 Is A <span class='highlight'>ABC</span> CONTENT
 It&#39;s <span class='highlight'>abc</span> in lowercase
 It&#39;s <span class='highlight'>Abc</span> in mix
-Not AB with C", result);
+Not AB with C"));
 
             if (RuntimeInformation.IsOSPlatform(OSPlatform.Windows))
             {
                 result = searcher.GenerateHtmlPreviewText(GetSearchRequest("ABC", initManagement.IndexPk), content, 10);
-                Assert.AreEqual(@"My <span class='highlight'>ABC</span>
-Is A <span class='highlight'>ABC</span>...s <span class='highlight'>abc</span> in", result);
+                Assert.That(result, Is.EqualTo(@"My <span class='highlight'>ABC</span>
+Is A <span class='highlight'>ABC</span>...s <span class='highlight'>abc</span> in"));
             }
         }
 
@@ -60,13 +60,13 @@ Is A <span class='highlight'>ABC</span>...s <span class='highlight'>abc</span> i
 
             var content = $"My ABC{Environment.NewLine}Is A ABC CONTENT{Environment.NewLine}It's abc in lowercase{Environment.NewLine}It's Abc in mix{Environment.NewLine}Not AB with C";
             var result = searcher.GenerateHtmlPreviewText(GetSearchRequest("NotExistWord", initManagement.IndexPk), content, int.MaxValue);
-            Assert.IsEmpty(result);
+            Assert.That(result, Is.Empty);
 
             result = searcher.GenerateHtmlPreviewText(GetSearchRequest("NotExistWord", initManagement.IndexPk), content, 10, returnRawContentWhenResultIsEmpty: true);
-            Assert.AreEqual(HttpUtility.HtmlEncode(content), result);
+            Assert.That(result, Is.EqualTo(HttpUtility.HtmlEncode(content)));
 
             result = searcher.GenerateHtmlPreviewText(null, content, 10, returnRawContentWhenResultIsEmpty: true);
-            Assert.AreEqual(HttpUtility.HtmlEncode(content), result);
+            Assert.That(result, Is.EqualTo(HttpUtility.HtmlEncode(content)));
         }
 
         [Test]
@@ -77,7 +77,7 @@ Is A <span class='highlight'>ABC</span>...s <span class='highlight'>abc</span> i
 
             var content = $"My ABC{Environment.NewLine}Is A ABC CONTENT{Environment.NewLine}It's abc in lowercase{Environment.NewLine}It's Abc in mix{Environment.NewLine}Not AB with C";
             var result = searcher.GenerateHtmlPreviewText(GetSearchRequest("ABC", initManagement.IndexPk), content, int.MaxValue);
-            Assert.AreEqual(@"Content is too long to highlight", result);
+            Assert.That(result, Is.EqualTo(@"Content is too long to highlight"));
         }
 
         [Test]
@@ -87,9 +87,9 @@ Is A <span class='highlight'>ABC</span>...s <span class='highlight'>abc</span> i
             var searcher = initManagement.GetIndexSearcher();
 
             searcher.GetHints("ABC", initManagement.IndexPk);
-            CollectionAssert.AreEquivalent(new[] { "ABCD", "ABCE" }, searcher.GetHints("Abc", initManagement.IndexPk));
-            CollectionAssert.IsEmpty(searcher.GetHints("Abc", initManagement.IndexPk, caseSensitive: true));
-            CollectionAssert.AreEquivalent(new[] { "EFGH" }, searcher.GetHints("EFG", initManagement.IndexPk));
+            Assert.That(searcher.GetHints("Abc", initManagement.IndexPk), Is.EquivalentTo(new[] { "ABCD", "ABCE" }));
+            Assert.That(searcher.GetHints("Abc", initManagement.IndexPk, caseSensitive: true), Is.Empty);
+            Assert.That(searcher.GetHints("EFG", initManagement.IndexPk), Is.EquivalentTo(new[] { "EFGH" }));
         }
 
         [Test]
@@ -101,12 +101,12 @@ Is A <span class='highlight'>ABC</span>...s <span class='highlight'>abc</span> i
             var content = $"My ABC{Environment.NewLine}Is A ABC CONTENT{Environment.NewLine}ABCD EFG";
             var results = searcher.GeneratePreviewTextWithLineNumber(searcher.GetContentQuery(GetSearchRequest("ABC", initManagement.IndexPk)), content, int.MaxValue, 100, initManagement.IndexPk);
             Assert.That(results, Has.Length.EqualTo(2));
-            Assert.AreEqual(("My <span class='highlight'>ABC</span>", 1), results[0]);
-            Assert.AreEqual(("Is A <span class='highlight'>ABC</span> CONTENT", 2), results[1]);
+            Assert.That(results[0], Is.EqualTo(("My <span class='highlight'>ABC</span>", 1)));
+            Assert.That(results[1], Is.EqualTo(("Is A <span class='highlight'>ABC</span> CONTENT", 2)));
 
             results = searcher.GeneratePreviewTextWithLineNumber(searcher.GetContentQuery(GetSearchRequest("ABC", initManagement.IndexPk)), content, int.MaxValue, 1, initManagement.IndexPk);
             Assert.That(results, Has.Length.EqualTo(1));
-            Assert.AreEqual(("My <span class='highlight'>ABC</span>", 1), results[0]);
+            Assert.That(results[0], Is.EqualTo(("My <span class='highlight'>ABC</span>", 1)));
         }
 
         [Test]
@@ -118,7 +118,7 @@ Is A <span class='highlight'>ABC</span>...s <span class='highlight'>abc</span> i
             var content = $"My ABC{Environment.NewLine}Is A ABC CONTENT{Environment.NewLine}ABCD EFG";
             var results = searcher.GeneratePreviewTextWithLineNumber(searcher.GetContentQuery(GetSearchRequest("ABC", initManagement.IndexPk)), content, int.MaxValue, 100, initManagement.IndexPk);
             Assert.That(results, Has.Length.EqualTo(1));
-            Assert.AreEqual(("Content is too long to highlight", 1), results[0]);
+            Assert.That(results[0], Is.EqualTo(("Content is too long to highlight", 1)));
         }
 
         [Test]
@@ -130,9 +130,9 @@ Is A <span class='highlight'>ABC</span>...s <span class='highlight'>abc</span> i
             var content = $"OH ABC{Environment.NewLine}DEF QWE ABC DEF ABC{Environment.NewLine}DEF OOOODD DEF ABC";
             var results = searcher.GeneratePreviewTextWithLineNumber(searcher.GetContentQuery(GetSearchRequest("\"ABC DEF\"", initManagement.IndexPk)), content, int.MaxValue, 100, initManagement.IndexPk);
             Assert.That(results, Has.Length.EqualTo(3));
-            Assert.AreEqual(("OH <span class='highlight'>ABC</span>", 1), results[0]);
-            Assert.AreEqual(("<span class='highlight'>DEF</span> QWE <span class='highlight'>ABC</span> <span class='highlight'>DEF</span> <span class='highlight'>ABC</span>", 2), results[1]);
-            Assert.AreEqual(("<span class='highlight'>DEF</span> OOOODD DEF ABC", 3), results[2]);
+            Assert.That(results[0], Is.EqualTo(("OH <span class='highlight'>ABC</span>", 1)));
+            Assert.That(results[1], Is.EqualTo(("<span class='highlight'>DEF</span> QWE <span class='highlight'>ABC</span> <span class='highlight'>DEF</span> <span class='highlight'>ABC</span>", 2)));
+            Assert.That(results[2], Is.EqualTo(("<span class='highlight'>DEF</span> OOOODD DEF ABC", 3)));
         }
 
         [Test]
@@ -144,7 +144,7 @@ Is A <span class='highlight'>ABC</span>...s <span class='highlight'>abc</span> i
             var content = $"{Environment.NewLine}   \t\tABC\t   \t";
             var results = searcher.GeneratePreviewTextWithLineNumber(searcher.GetContentQuery(GetSearchRequest("ABC", initManagement.IndexPk)), content, int.MaxValue, 100, initManagement.IndexPk);
             Assert.That(results, Has.Length.EqualTo(1));
-            Assert.AreEqual(("<span class='highlight'>ABC</span>", 2), results[0]);
+            Assert.That(results[0], Is.EqualTo(("<span class='highlight'>ABC</span>", 2)));
         }
 
         SearchRequest GetSearchRequest(string content, Guid indexPk, string fileName = null, int showResults = 20) => new SearchRequest { Content = content, IndexPk = indexPk, FileName = fileName, ShowResults = showResults };

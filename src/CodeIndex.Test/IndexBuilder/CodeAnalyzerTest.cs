@@ -16,7 +16,7 @@ namespace CodeIndex.Test
         {
             var content = " LucenePool.SaveResultsAndClearLucenePool(TempIndexDir);";
             var result = GetTokens(new CodeAnalyzer(Constants.AppLuceneVersion, false), content);
-            CollectionAssert.AreEquivalent(new[]
+            Assert.That(result, Is.EquivalentTo(new[]
             {
                 "LucenePool",
                 ".",
@@ -25,10 +25,10 @@ namespace CodeIndex.Test
                 "TempIndexDir",
                 ")",
                 ";"
-            }, result);
+            }));
 
             result = GetTokens(new CodeAnalyzer(Constants.AppLuceneVersion, true), content);
-            CollectionAssert.AreEquivalent(new[]
+            Assert.That(result, Is.EquivalentTo(new[]
             {
                 "lucenepool",
                 ".",
@@ -37,14 +37,14 @@ namespace CodeIndex.Test
                 "tempindexdir",
                 ")",
                 ";"
-            }, result);
+            }));
 
             result = GetTokens(new CodeAnalyzer(Constants.AppLuceneVersion, false), @"Line One
 Line Two
 
 Line Four");
 
-            CollectionAssert.AreEquivalent(new[]
+            Assert.That(result, Is.EquivalentTo(new[]
             {
                 "Line",
                 "One",
@@ -52,16 +52,16 @@ Line Four");
                 "Two",
                 "Line",
                 "Four"
-            }, result);
+            }));
         }
 
         [Test]
         public void TestGetWords()
         {
             var content = "It's a content for test" + Environment.NewLine + "这是一个例句,我知道了";
-            CollectionAssert.AreEquivalent(new[] { "It", "s", "a", "content", "for", "test", "这是一个例句", "我知道了" }, WordSegmenter.GetWords(content));
-            CollectionAssert.AreEquivalent(new[] { "It", "for", "test", "我知道了" }, WordSegmenter.GetWords(content, 2, 4));
-            CollectionAssert.IsEmpty(WordSegmenter.GetWords("a".PadRight(201, 'b')));
+            Assert.That(WordSegmenter.GetWords(content), Is.EquivalentTo(new[] { "It", "s", "a", "content", "for", "test", "这是一个例句", "我知道了" }));
+            Assert.That(WordSegmenter.GetWords(content, 2, 4), Is.EquivalentTo(new[] { "It", "for", "test", "我知道了" }));
+            Assert.That(WordSegmenter.GetWords("a".PadRight(201, 'b')), Is.Empty);
 
             Assert.Throws<ArgumentException>(() => WordSegmenter.GetWords(null));
             Assert.Throws<ArgumentException>(() => WordSegmenter.GetWords(content, 0));
@@ -74,15 +74,14 @@ Line Four");
         List<string> GetTokens(Analyzer analyzer, string content)
         {
             var tokens = new List<string>();
-            var tokenStream = analyzer.GetTokenStream("A", content);
-            var termAttr = tokenStream.GetAttribute<ICharTermAttribute>();
+            using var tokenStream = analyzer.GetTokenStream("dummy", content);
+            var termAttribute = tokenStream.AddAttribute<ICharTermAttribute>();
             tokenStream.Reset();
-
             while (tokenStream.IncrementToken())
             {
-                tokens.Add(termAttr.ToString());
+                tokens.Add(termAttribute.ToString());
             }
-
+            tokenStream.End();
             return tokens;
         }
     }

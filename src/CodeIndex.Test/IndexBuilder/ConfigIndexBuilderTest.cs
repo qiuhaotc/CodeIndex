@@ -17,7 +17,7 @@ namespace CodeIndex.Test
                 IndexName = "ABC"
             });
 
-            Assert.AreEqual("ABC", configBuilder.GetConfigs().First().IndexName);
+            Assert.That(configBuilder.GetConfigs().First().IndexName, Is.EqualTo("ABC"));
         }
 
         [Test]
@@ -29,14 +29,14 @@ namespace CodeIndex.Test
                 IndexName = "ABC"
             });
 
-            Assert.AreEqual("ABC", configBuilder.GetConfigs().First().IndexName);
+            Assert.That(configBuilder.GetConfigs().First().IndexName, Is.EqualTo("ABC"));
 
             configBuilder.AddIndexConfig(new IndexConfig
             {
                 IndexName = "EFG"
             });
 
-            CollectionAssert.AreEquivalent(new[] { "ABC", "EFG" }, configBuilder.GetConfigs().Select(u => u.IndexName));
+            Assert.That(configBuilder.GetConfigs().Select(u => u.IndexName), Is.EquivalentTo(new[] { "ABC", "EFG" }));
         }
 
         [Test]
@@ -56,13 +56,13 @@ namespace CodeIndex.Test
 
             configBuilder.AddIndexConfig(config1);
             configBuilder.AddIndexConfig(config2);
-            Assert.AreEqual(2, configBuilder.GetConfigs().Count());
+            Assert.That(configBuilder.GetConfigs().Count(), Is.EqualTo(2));
 
             configBuilder.DeleteIndexConfig(config2.Pk);
-            CollectionAssert.AreEquivalent(new[] { "ABC" }, configBuilder.GetConfigs().Select(u => u.IndexName));
+            Assert.That(configBuilder.GetConfigs().Select(u => u.IndexName), Is.EquivalentTo(new[] { "ABC" }));
 
             configBuilder.DeleteIndexConfig(config1.Pk);
-            Assert.AreEqual(0, configBuilder.GetConfigs().Count());
+            Assert.That(configBuilder.GetConfigs().Count(), Is.EqualTo(0));
         }
 
         [Test]
@@ -82,15 +82,15 @@ namespace CodeIndex.Test
 
             configBuilder.AddIndexConfig(config1);
             configBuilder.AddIndexConfig(config2);
-            Assert.AreEqual(2, configBuilder.GetConfigs().Count());
+            Assert.That(configBuilder.GetConfigs().Count(), Is.EqualTo(2));
 
             config1.IndexName = "NEW";
             configBuilder.EditIndexConfig(config1);
-            CollectionAssert.AreEquivalent(new[] { "NEW", "EFG" }, configBuilder.GetConfigs().Select(u => u.IndexName));
+            Assert.That(configBuilder.GetConfigs().Select(u => u.IndexName), Is.EquivalentTo(new[] { "NEW", "EFG" }));
 
             config2.IndexName = "NEW NEW";
             configBuilder.EditIndexConfig(config2);
-            CollectionAssert.AreEquivalent(new[] { "NEW", "NEW NEW" }, configBuilder.GetConfigs().Select(u => u.IndexName));
+            Assert.That(configBuilder.GetConfigs().Select(u => u.IndexName), Is.EquivalentTo(new[] { "NEW", "NEW NEW" }));
         }
 
         [Test]
@@ -111,10 +111,10 @@ namespace CodeIndex.Test
             };
 
             var document = ConfigIndexBuilder.GetDocument(config);
-            Assert.AreEqual(10, document.Fields.Count);
+            Assert.That(document.Fields.Count, Is.EqualTo(10));
 
             var configConvertBack = document.GetObject<IndexConfig>();
-            Assert.AreEqual(config.ToString(), configConvertBack.ToString());
+            Assert.That(configConvertBack.ToString(), Is.EqualTo(config.ToString()));
         }
     }
 }

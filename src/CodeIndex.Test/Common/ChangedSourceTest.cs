@@ -17,10 +17,11 @@ namespace CodeIndex.Test
                 OldPath = "B"
             };
 
-            Assert.AreEqual(new DateTime(2021,1,1), source.ChangedUTCDate);
-            Assert.AreEqual(System.IO.WatcherChangeTypes.Renamed, source.ChangesType);
-            Assert.AreEqual("A", source.FilePath);
-            Assert.AreEqual("B", source.OldPath);
+            // NUnit4 constraint syntax
+            Assert.That(source.ChangedUTCDate, Is.EqualTo(new DateTime(2021, 1, 1)));
+            Assert.That(source.ChangesType, Is.EqualTo(System.IO.WatcherChangeTypes.Renamed));
+            Assert.That(source.FilePath, Is.EqualTo("A"));
+            Assert.That(source.OldPath, Is.EqualTo("B"));
         }
     }
 }

@@ -11,7 +11,7 @@ namespace CodeIndex.Test
         public void TestConstructor()
         {
             var source = new CodeSource();
-            Assert.AreNotEqual(string.Empty, source.CodePK);
+            Assert.That(source.CodePK, Is.Not.EqualTo(string.Empty));
             Assert.DoesNotThrow(() => new Guid(source.CodePK));
         }
 
@@ -21,15 +21,15 @@ namespace CodeIndex.Test
             var dateTime = DateTime.UtcNow;
             var fileInfo = new FileInfo("AAA.txt");
             var source = CodeSource.GetCodeSource(fileInfo, "ABCD");
-            Assert.AreEqual("AAA.txt", source.FileName);
-            Assert.AreEqual("ABCD", source.Content);
-            Assert.AreEqual("txt", source.FileExtension);
-            Assert.AreEqual(fileInfo.FullName, source.FilePath);
-            Assert.AreEqual(fileInfo.LastWriteTimeUtc, source.LastWriteTimeUtc);
-            Assert.LessOrEqual(dateTime, source.IndexDate);
-            Assert.AreNotEqual(string.Empty, source.CodePK);
+            Assert.That(source.FileName, Is.EqualTo("AAA.txt"));
+            Assert.That(source.Content, Is.EqualTo("ABCD"));
+            Assert.That(source.FileExtension, Is.EqualTo("txt"));
+            Assert.That(source.FilePath, Is.EqualTo(fileInfo.FullName));
+            Assert.That(source.LastWriteTimeUtc, Is.EqualTo(fileInfo.LastWriteTimeUtc));
+            Assert.That(source.IndexDate, Is.GreaterThanOrEqualTo(dateTime));
+            Assert.That(source.CodePK, Is.Not.EqualTo(string.Empty));
             Assert.DoesNotThrow(() => new Guid(source.CodePK));
-            Assert.AreEqual($"FileName: {source.FileName}{Environment.NewLine}FilePath: {source.FilePath}{Environment.NewLine}Index Date: {source.IndexDate.ToLocalTime()}{Environment.NewLine}Last Modify Date:{source.LastWriteTimeUtc.ToLocalTime()}", source.Info);
+            Assert.That(source.Info, Is.EqualTo($"FileName: {source.FileName}{Environment.NewLine}FilePath: {source.FilePath}{Environment.NewLine}Index Date: {source.IndexDate.ToLocalTime()}{Environment.NewLine}Last Modify Date:{source.LastWriteTimeUtc.ToLocalTime()}"));
         }
     }
 }

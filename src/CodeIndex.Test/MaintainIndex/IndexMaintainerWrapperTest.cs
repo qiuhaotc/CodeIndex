@@ -14,12 +14,12 @@ namespace CodeIndex.Test
                 IndexName ="AAA"
             }, Config, Log);
 
-            Assert.AreEqual(IndexStatus.Idle, wrapper.Status);
-            Assert.NotNull(wrapper.QueryGenerator);
-            Assert.NotNull(wrapper.QueryParserNormal);
-            Assert.IsTrue(wrapper.QueryParserNormal.LowercaseExpandedTerms);
-            Assert.NotNull(wrapper.QueryParserCaseSensitive);
-            Assert.IsFalse(wrapper.QueryParserCaseSensitive.LowercaseExpandedTerms);
+            Assert.That(wrapper.Status, Is.EqualTo(IndexStatus.Idle));
+            Assert.That(wrapper.QueryGenerator, Is.Not.Null);
+            Assert.That(wrapper.QueryParserNormal, Is.Not.Null);
+            Assert.That(wrapper.QueryParserNormal.LowercaseExpandedTerms, Is.True);
+            Assert.That(wrapper.QueryParserCaseSensitive, Is.Not.Null);
+            Assert.That(wrapper.QueryParserCaseSensitive.LowercaseExpandedTerms, Is.False);
         }
     }
 }

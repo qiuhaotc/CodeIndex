@@ -14,8 +14,8 @@ namespace CodeIndex.Test
                 WordLower = "abc"
             };
 
-            Assert.AreEqual("ABc", word.Word);
-            Assert.AreEqual("abc", word.WordLower);
+            Assert.That(word.Word, Is.EqualTo("ABc"));
+            Assert.That(word.WordLower, Is.EqualTo("abc"));
         }
     }
 }
