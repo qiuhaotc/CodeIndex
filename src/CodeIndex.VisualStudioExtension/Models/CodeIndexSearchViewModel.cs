@@ -13,7 +13,17 @@ namespace CodeIndex.VisualStudioExtension
     {
         public CodeIndexSearchViewModel()
         {
-            serviceUrl = ConfigHelper.Configuration.AppSettings.Settings[nameof(ServiceUrl)].Value;
+            // Load settings from new user settings system with fallbacks
+            serviceUrl = UserSettingsHelper.GetSetting(nameof(ServiceUrl), "http://localhost:6000");
+            IndexPk = UserSettingsHelper.GetSetting(nameof(IndexPk), Guid.Empty);
+            CaseSensitive = UserSettingsHelper.GetSetting(nameof(CaseSensitive), false);
+            PhaseQuery = UserSettingsHelper.GetSetting(nameof(PhaseQuery), true);
+            ShowResultsNumber = UserSettingsHelper.GetSetting(nameof(ShowResultsNumber), 1000);
+            FileName = UserSettingsHelper.GetSetting(nameof(FileName), string.Empty);
+            FileExtension = UserSettingsHelper.GetSetting(nameof(FileExtension), string.Empty);
+            FileLocation = UserSettingsHelper.GetSetting(nameof(FileLocation), string.Empty);
+            Content = UserSettingsHelper.GetSetting(nameof(Content), string.Empty);
+            
             _ = LoadIndexInfosAsync();
         }
 
@@ -22,16 +32,92 @@ namespace CodeIndex.VisualStudioExtension
             get => indexPk;
             set
             {
-                indexPk = value;
-                NotifyPropertyChange();
+                if (indexPk != value)
+                {
+                    indexPk = value;
+                    UserSettingsHelper.SetSetting(nameof(IndexPk), value);
+                    NotifyPropertyChange();
+                }
             }
         }
 
-        public string FileName { get; set; }
-        public string Content { get; set; }
-        public string FileExtension { get; set; }
-        public string FileLocation { get; set; }
-        public int ShowResultsNumber { get; set; } = 1000;
+        private string fileName;
+        private string content;
+        private string fileExtension;
+        private string fileLocation;
+        private int showResultsNumber;
+        private bool caseSensitive;
+        private bool phaseQuery;
+
+        public string FileName 
+        { 
+            get => fileName; 
+            set 
+            { 
+                if (fileName != value)
+                {
+                    fileName = value;
+                    UserSettingsHelper.SetSetting(nameof(FileName), value);
+                    NotifyPropertyChange();
+                }
+            } 
+        }
+        
+        public string Content 
+        { 
+            get => content; 
+            set 
+            { 
+                if (content != value)
+                {
+                    content = value;
+                    UserSettingsHelper.SetSetting(nameof(Content), value);
+                    NotifyPropertyChange();
+                }
+            } 
+        }
+        
+        public string FileExtension 
+        { 
+            get => fileExtension; 
+            set 
+            { 
+                if (fileExtension != value)
+                {
+                    fileExtension = value;
+                    UserSettingsHelper.SetSetting(nameof(FileExtension), value);
+                    NotifyPropertyChange();
+                }
+            } 
+        }
+        
+        public string FileLocation 
+        { 
+            get => fileLocation; 
+            set 
+            { 
+                if (fileLocation != value)
+                {
+                    fileLocation = value;
+                    UserSettingsHelper.SetSetting(nameof(FileLocation), value);
+                    NotifyPropertyChange();
+                }
+            } 
+        }
+        
+        public int ShowResultsNumber 
+        { 
+            get => showResultsNumber; 
+            set 
+            { 
+                if (showResultsNumber != value)
+                {
+                    showResultsNumber = value;
+                    UserSettingsHelper.SetSetting(nameof(ShowResultsNumber), value);
+                    NotifyPropertyChange();
+                }
+            } 
+        }
 
         public string ServiceUrl
         {
@@ -45,17 +131,42 @@ namespace CodeIndex.VisualStudioExtension
 
                 if (value != serviceUrl)
                 {
-                    ConfigHelper.SetConfiguration(nameof(ServiceUrl), value);
+                    UserSettingsHelper.SetSetting(nameof(ServiceUrl), value);
                     serviceUrl = value;
+                    NotifyPropertyChange();
                 }
 
                 _ = LoadIndexInfosAsync();
             }
         }
 
-        public bool CaseSensitive { get; set; }
+        public bool CaseSensitive 
+        { 
+            get => caseSensitive; 
+            set 
+            { 
+                if (caseSensitive != value)
+                {
+                    caseSensitive = value;
+                    UserSettingsHelper.SetSetting(nameof(CaseSensitive), value);
+                    NotifyPropertyChange();
+                }
+            } 
+        }
 
-        public bool PhaseQuery { get; set; } = true;
+        public bool PhaseQuery 
+        { 
+            get => phaseQuery; 
+            set 
+            { 
+                if (phaseQuery != value)
+                {
+                    phaseQuery = value;
+                    UserSettingsHelper.SetSetting(nameof(PhaseQuery), value);
+                    NotifyPropertyChange();
+                }
+            } 
+        }
 
         CancellationTokenSource tokenToLoadIndexInfos;
 
