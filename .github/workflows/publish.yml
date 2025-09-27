@@ -1,0 +1,146 @@
+name: Publish CodeIndex.Server
+
+# 仅在推送以 v 开头的 tag（例如 v1.2.3）时触发
+on:
+  push:
+    tags:
+      - v*
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Restore
+        run: dotnet restore src/CodeIndex.sln
+
+      - name: Build (Release)
+        run: dotnet build src/CodeIndex.sln -c Release --no-restore
+
+      - name: Test
+        id: teststep
+        run: dotnet test src/CodeIndex.Test/CodeIndex.Test.csproj -c Release --no-build --verbosity normal
+
+      - name: Delete tag on failure
+        if: failure()
+        shell: pwsh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $tag = $env:GITHUB_REF_NAME
+          Write-Host "Tests failed. Deleting remote tag $tag ..."
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          # Delete remote tag (ignore errors if already removed)
+          git push origin :refs/tags/$tag 2>$null || Write-Host "Remote tag deletion push command returned non-zero (may already be gone)."
+          Write-Host "Tag $tag deleted to prevent release."
+
+  build:
+    needs: test
+    name: Build & Package (${{ matrix.rid }})
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - os: windows-latest
+            rid: win-x64
+            archiveExt: zip
+          - os: ubuntu-latest
+            rid: linux-x64
+            archiveExt: tar.gz
+    runs-on: ${{ matrix.os }}
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Restore (solution)
+        run: dotnet restore src/CodeIndex.sln
+
+      - name: Build (Release)
+        run: dotnet build src/CodeIndex.sln -c Release --no-restore
+
+      # Tests 已在独立 job 中执行，此处不再重复
+
+      - name: Publish (${{ matrix.rid }})
+        run: >-
+          dotnet publish src/CodeIndex.Server/CodeIndex.Server.csproj -c Release -r ${{ matrix.rid }}
+          --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:PublishTrimmed=false
+          -o artifacts/${{ matrix.rid }}
+
+      - name: Package artifact (zip on Windows)
+        if: runner.os == 'Windows'
+        shell: pwsh
+        run: |
+          New-Item -ItemType Directory -Path artifacts/zips -Force | Out-Null
+          $dest = "artifacts/zips/CodeIndex.Server-${{ matrix.rid }}.zip"
+          Compress-Archive -Path artifacts/${{ matrix.rid }}/* -DestinationPath $dest -Force
+
+      - name: Package artifact (tar.gz on Linux)
+        if: runner.os == 'Linux'
+        run: |
+          mkdir -p artifacts/zips
+          tar -C artifacts/${{ matrix.rid }} -czf artifacts/zips/CodeIndex.Server-${{ matrix.rid }}.tar.gz .
+
+      - name: Upload packaged artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: CodeIndex.Server-${{ matrix.rid }}
+          path: artifacts/zips/*
+          if-no-files-found: error
+
+  release:
+    name: Create / Update Release
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download all build artifacts
+        uses: actions/download-artifact@v4
+        with:
+          path: downloaded
+
+      - name: List downloaded files
+        run: |
+          echo "Downloaded files:" && find downloaded -type f -maxdepth 5
+
+      - name: Setup gh
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Create or update release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          tag="$GITHUB_REF_NAME" # e.g. v1.2.3
+          echo "Processing release $tag"
+          assets=(
+            "downloaded/CodeIndex.Server-win-x64/CodeIndex.Server-win-x64.zip"
+            "downloaded/CodeIndex.Server-linux-x64/CodeIndex.Server-linux-x64.tar.gz"
+          )
+          # Try create
+          if gh release create "$tag" "${assets[@]}" --title "CodeIndex.Server $tag" --notes "Automated release for $tag" -R "$GITHUB_REPOSITORY"; then
+            echo "Release created"
+          else
+            echo "Release exists, updating assets..."
+            for a in "${assets[@]}"; do
+              gh release upload "$tag" "$a" --clobber -R "$GITHUB_REPOSITORY"
+            done
+          fi
