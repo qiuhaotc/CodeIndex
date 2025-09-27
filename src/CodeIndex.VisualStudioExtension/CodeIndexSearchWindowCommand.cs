@@ -89,12 +89,13 @@ namespace CodeIndex.VisualStudioExtension
         {
             this.package.JoinableTaskFactory.RunAsync(async delegate
             {
+                await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
                 ToolWindowPane window = await this.package.ShowToolWindowAsync(typeof(CodeIndexSearchWindow), 0, true, this.package.DisposalToken);
-                if ((null == window) || (null == window.Frame))
+                if (window?.Frame == null)
                 {
                     throw new NotSupportedException("Cannot create tool window");
                 }
-            });
+            }).FileAndForget("CodeIndex/ShowToolWindow");
         }
 
         private void OpenSettingsExecute(object sender, EventArgs e)
@@ -111,14 +112,20 @@ namespace CodeIndex.VisualStudioExtension
                         UserSettingsManager.Save(settings); // 创建文件
                     }
 
-                    var dte = (EnvDTE.DTE)await package.GetServiceAsync(typeof(EnvDTE.DTE));
+                    var dte = await package.GetServiceAsync(typeof(EnvDTE.DTE)) as EnvDTE.DTE;
+                    if (dte == null)
+                    {
+                        System.Windows.MessageBox.Show("Cannot get DTE service.", "CodeIndex", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Warning);
+                        return;
+                    }
+
                     dte.ItemOperations.OpenFile(path);
                 }
                 catch (Exception ex)
                 {
                     System.Windows.MessageBox.Show("Open settings failed: " + ex.Message, "CodeIndex", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
                 }
-            });
+            }).FileAndForget("CodeIndex/OpenSettings");
         }
     }
 }

@@ -22,11 +22,16 @@ namespace CodeIndex.VisualStudioExtension
             if (e.Key == Key.Enter)
             {
                 TextBox_KeyDown(sender, e);
+                return;
             }
-            else
+
+            if (SearchViewModel == null)
             {
-                SearchViewModel?.GetHintWordsAsync();
+                return;
             }
+
+            // 调度提示词获取（由 ViewModel 内部使用 JoinableTaskCollection 追踪，避免 VSSDK007 警告）
+            SearchViewModel.ScheduleGetHintWords();
         }
 
         void TextBox_KeyDown(object sender, KeyEventArgs e)

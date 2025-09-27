@@ -89,6 +89,7 @@ namespace CodeIndex.VisualStudioExtension
             return CanExecute();
         }
 
+        [System.Diagnostics.CodeAnalysis.SuppressMessage("Usage", "VSTHRD100", Justification = "ICommand.Execute 必须为 void；内部已捕获异常，且不需切回 UI 线程")]
         public async void Execute(object parameter)
         {
             try

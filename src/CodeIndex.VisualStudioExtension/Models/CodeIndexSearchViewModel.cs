@@ -5,6 +5,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Net.Http;
 using System.Windows.Input;
+using Microsoft.VisualStudio.Shell;
+using Microsoft.VisualStudio.Threading;
 using CodeIndex.VisualStudioExtension.Models;
 
 namespace CodeIndex.VisualStudioExtension
@@ -15,7 +17,11 @@ namespace CodeIndex.VisualStudioExtension
         {
             userSettings = UserSettingsManager.Load();
             serviceUrl = userSettings.ServiceUrl;
-            _ = LoadIndexInfosAsync();
+
+            // 使用 VS 提供的 ThreadHelper.JoinableTaskFactory，避免 VSSDK005（不要自建 JoinableTaskContext）
+            jtf = ThreadHelper.JoinableTaskFactory;
+            trackedTasks = jtf.Context.CreateCollection();
+            trackedTasks.Add(jtf.RunAsync(LoadIndexInfosAsync)); // 加入集合以便被视为“已观察”从而避免 VSSDK007
         }
 
         public Guid IndexPk
@@ -51,7 +57,8 @@ namespace CodeIndex.VisualStudioExtension
                     serviceUrl = value;
                 }
 
-                _ = LoadIndexInfosAsync();
+                // 重新加载索引列表并加入集合
+                trackedTasks?.Add(jtf.RunAsync(LoadIndexInfosAsync));
             }
         }
 
@@ -193,6 +200,8 @@ namespace CodeIndex.VisualStudioExtension
         ICommand refreshIndexCommand;
     string serviceUrl;
     readonly UserSettings userSettings;
+    JoinableTaskCollection trackedTasks; // 跟踪后台任务集合
+    JoinableTaskFactory jtf;             // VS 提供的 JoinableTaskFactory
         List<CodeSourceWithMatchedLine> searchResults = new List<CodeSourceWithMatchedLine>();
         string resultInfo;
         CancellationTokenSource tokenSource;
@@ -356,6 +365,29 @@ namespace CodeIndex.VisualStudioExtension
             return !string.IsNullOrEmpty(GetSearchStr());
         }
 
+        #endregion
+
+        #region HintWords 调度封装
+        public void ScheduleGetHintWords()
+        {
+            if (string.IsNullOrEmpty(Content))
+            {
+                return;
+            }
+
+            // 将获取提示词操作作为后台任务加入集合（内部自行捕获异常）
+            trackedTasks?.Add(jtf.RunAsync(async delegate
+            {
+                try
+                {
+                    await GetHintWordsAsync();
+                }
+                catch
+                {
+                    // 忽略异常，提示词非关键路径
+                }
+            }));
+        }
         #endregion
     }
 }
