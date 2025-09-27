@@ -1,0 +1,110 @@
+name: Publish CodeIndex.Server
+
+# 仅在推送以 v 开头的 tag（例如 v1.2.3）时触发
+on:
+  push:
+    tags:
+      - v*
+
+jobs:
+  test:
+    name: Run Tests
+    runs-on: windows-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Restore
+        run: dotnet restore src/CodeIndex.sln
+
+      - name: Build (Debug for tests)
+        run: dotnet build src/CodeIndex.sln -c Debug --no-restore
+
+      - name: Test (Debug)
+        id: teststep
+        run: dotnet test src/CodeIndex.Test/CodeIndex.Test.csproj -c Debug --verbosity normal
+
+      - name: Delete tag on failure
+        if: failure()
+        shell: pwsh
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        run: |
+          $tag = $env:GITHUB_REF_NAME
+          Write-Host "Tests failed. Deleting tag $tag (local & remote) ..."
+          git config user.name github-actions
+          git config user.email github-actions@github.com
+          git tag -d $tag 2>$null || Write-Host "Local tag $tag already absent."
+          git push origin :refs/tags/$tag 2>$null || Write-Host "Remote tag deletion returned non-zero (maybe already gone)."
+          Write-Host "Tag $tag deleted to prevent release."
+
+  build:
+    name: Build & Package (framework-dependent any-platform)
+    needs: test
+    runs-on: ubuntu-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      - name: Setup .NET
+        uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: '9.0.x'
+
+      - name: Restore (solution)
+        run: dotnet restore src/CodeIndex.sln
+
+      - name: Publish (framework-dependent)
+        run: >-
+          dotnet publish src/CodeIndex.Server/CodeIndex.Server.csproj -c Release
+          -p:PublishSingleFile=false -p:SelfContained=false -o artifacts/publish-any
+
+      - name: Package zip
+        run: |
+          mkdir -p artifacts/zips
+          (cd artifacts/publish-any && zip -r ../zips/CodeIndex.Server-any.zip .)
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: CodeIndex.Server-any
+          path: artifacts/zips/CodeIndex.Server-any.zip
+          if-no-files-found: error
+
+  release:
+    name: Create / Update Release
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: CodeIndex.Server-any
+          path: downloaded
+
+      - name: List downloaded files
+        run: ls -R downloaded
+
+      - name: Create or update release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          tag="$GITHUB_REF_NAME"
+          asset="downloaded/CodeIndex.Server-any.zip"
+          echo "Publishing release $tag with asset $asset (framework-dependent build)"
+          if gh release create "$tag" "$asset" --title "CodeIndex.Server $tag" --notes "Framework-dependent (cross-platform) build for $tag" -R "$GITHUB_REPOSITORY"; then
+            echo "Release created"
+          else
+            echo "Release exists, updating asset..."
+            gh release upload "$tag" "$asset" --clobber -R "$GITHUB_REPOSITORY"
+          fi
