@@ -24,12 +24,12 @@ jobs:
       - name: Restore
         run: dotnet restore src/CodeIndex.sln
 
-      - name: Build (Release)
-        run: dotnet build src/CodeIndex.sln -c Release --no-restore
+      - name: Build (Debug for tests)
+        run: dotnet build src/CodeIndex.sln -c Debug --no-restore
 
-      - name: Test
+      - name: Test (Debug)
         id: teststep
-        run: dotnet test src/CodeIndex.Test/CodeIndex.Test.csproj -c Release --no-build --verbosity normal
+        run: dotnet test src/CodeIndex.Test/CodeIndex.Test.csproj -c Debug --no-build --verbosity normal
 
       - name: Delete tag on failure
         if: failure()
@@ -38,11 +38,11 @@ jobs:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         run: |
           $tag = $env:GITHUB_REF_NAME
-          Write-Host "Tests failed. Deleting remote tag $tag ..."
+            Write-Host "Tests failed. Deleting tag $tag (local & remote) ..."
           git config user.name github-actions
           git config user.email github-actions@github.com
-          # Delete remote tag (ignore errors if already removed)
-          git push origin :refs/tags/$tag 2>$null || Write-Host "Remote tag deletion push command returned non-zero (may already be gone)."
+          git tag -d $tag 2>$null || Write-Host "Local tag $tag already absent."
+          git push origin :refs/tags/$tag 2>$null || Write-Host "Remote tag deletion returned non-zero (maybe already gone)."
           Write-Host "Tag $tag deleted to prevent release."
 
   build:
