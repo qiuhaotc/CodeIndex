@@ -9,15 +9,15 @@
         <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     </PropertyGroup>
     <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'VisualStudioExtensionRelease|AnyCPU'">
-        <OutputPath>bin\Release\</OutputPath>
-        <Optimize>true</Optimize>
-        <DefineConstants>TRACE</DefineConstants>
-        <ErrorReport>prompt</ErrorReport>
-        <DebugType>pdbonly</DebugType>
-        <DebugSymbols>true</DebugSymbols>
-        <UseWindowsForms>true</UseWindowsForms>
-        <UseWPF>true</UseWPF>
-    </PropertyGroup>
+            <OutputPath>bin\Release\</OutputPath>
+            <Optimize>true</Optimize>
+            <DefineConstants>TRACE</DefineConstants>
+            <ErrorReport>prompt</ErrorReport>
+            <DebugType>pdbonly</DebugType>
+            <DebugSymbols>true</DebugSymbols>
+            <UseWindowsForms>true</UseWindowsForms>
+            <UseWPF>true</UseWPF>
+        </PropertyGroup>
     <PropertyGroup>
         <Configuration Condition=" '$(Configuration)' == '' ">Debug</Configuration>
         <Platform Condition=" '$(Platform)' == '' ">AnyCPU</Platform>
@@ -91,6 +91,7 @@
         <Reference Include="System.ComponentModel.DataAnnotations" />
         <Reference Include="System.Design" />
         <Reference Include="System.Web" />
+        <Reference Include="System.Windows.Forms" />
         <PackageReference Include="Microsoft.VisualStudio.SDK" Version="17.14.40265" ExcludeAssets="runtime">
             <IncludeAssets>compile; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>
@@ -118,6 +119,10 @@
             <Generator>MSBuild:Compile</Generator>
         </Page>
         <Page Include="CodeIndexSearchWindowControl.xaml">
+            <SubType>Designer</SubType>
+            <Generator>MSBuild:Compile</Generator>
+        </Page>
+        <Page Include="Controls\SettingsWindow.xaml">
             <SubType>Designer</SubType>
             <Generator>MSBuild:Compile</Generator>
         </Page>

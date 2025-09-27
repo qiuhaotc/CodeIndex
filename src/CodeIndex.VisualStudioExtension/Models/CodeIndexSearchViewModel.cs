@@ -16,7 +16,7 @@ namespace CodeIndex.VisualStudioExtension
         public CodeIndexSearchViewModel()
         {
             userSettings = UserSettingsManager.Load();
-            serviceUrl = userSettings.ServiceUrl;
+            serviceUrl = userSettings.Mode == ServerMode.Local ? userSettings.LocalServiceUrl : userSettings.RemoteServiceUrl;
 
             // 使用 VS 提供的 ThreadHelper.JoinableTaskFactory，避免 VSSDK005（不要自建 JoinableTaskContext）
             jtf = ThreadHelper.JoinableTaskFactory;
@@ -40,27 +40,12 @@ namespace CodeIndex.VisualStudioExtension
         public string FileLocation { get; set; }
         public int ShowResultsNumber { get; set; } = 1000;
 
-        public string ServiceUrl
-        {
-            get => serviceUrl;
-            set
-            {
-                if (value != null && value.EndsWith("/"))
-                {
-                    value = value.Substring(0, value.Length - 1);
-                }
+        // 兼容旧代码：保留 ServiceUrl 字段用于外部引用（如打开详情页面），但不再直接绑定 UI
+        public string ServiceUrl => EffectiveServiceUrl;
 
-                if (value != serviceUrl)
-                {
-                    userSettings.ServiceUrl = value;
-                    UserSettingsManager.Save(userSettings);
-                    serviceUrl = value;
-                }
-
-                // 重新加载索引列表并加入集合
-                trackedTasks?.Add(jtf.RunAsync(LoadIndexInfosAsync));
-            }
-        }
+        string EffectiveServiceUrl => userSettings.Mode == ServerMode.Local
+            ? (userSettings.LocalServiceUrl?.TrimEnd('/') ?? serviceUrl)
+            : (userSettings.RemoteServiceUrl?.TrimEnd('/') ?? serviceUrl);
 
         public bool CaseSensitive { get; set; }
 
@@ -76,7 +61,7 @@ namespace CodeIndex.VisualStudioExtension
                 tokenToLoadIndexInfos?.Dispose();
                 tokenToLoadIndexInfos = new CancellationTokenSource();
 
-                var client = new CodeIndexClient(new HttpClient(), ServiceUrl);
+                var client = new CodeIndexClient(new HttpClient(), EffectiveServiceUrl);
                 var result = await client.ApiLuceneGetindexviewlistAsync(tokenToLoadIndexInfos.Token);
 
                 IndexInfos = result.Status.Success ? result.Result.Select(u => new Item<Guid>(u.IndexName, u.Pk)).ToList() : IndexInfos;
@@ -118,7 +103,7 @@ namespace CodeIndex.VisualStudioExtension
                 {
                     try
                     {
-                        var client = new CodeIndexClient(new HttpClient(), ServiceUrl);
+                        var client = new CodeIndexClient(new HttpClient(), EffectiveServiceUrl);
                         var result = await client.ApiLuceneGethintsAsync(inputWord, IndexPk);
 
                         if (result.Status.Success)
@@ -272,21 +257,20 @@ namespace CodeIndex.VisualStudioExtension
             await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
             try
             {
-                var settings = UserSettingsManager.Load(); // Ensure directory
-                var path = UserSettingsManager.SettingsFile;
-                if (!System.IO.File.Exists(path))
+                var settings = UserSettingsManager.Load();
+                var vm = new SettingsViewModel(settings);
+                var window = new CodeIndex.VisualStudioExtension.Controls.SettingsWindow(vm)
                 {
-                    UserSettingsManager.Save(settings); // create file
-                }
-
-                var dte = Package.GetGlobalService(typeof(EnvDTE.DTE)) as EnvDTE.DTE;
-                if (dte == null)
+                    Owner = System.Windows.Application.Current?.MainWindow
+                };
+                var result = window.ShowDialog();
+                if (result == true)
                 {
-                    System.Windows.MessageBox.Show("Cannot get DTE service.", "CodeIndex", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Warning);
-                    return;
+                    // 切换生效：重新计算有效 URL 并刷新索引
+                    serviceUrl = vm.IsLocalMode ? settings.LocalServiceUrl : settings.RemoteServiceUrl;
+                    trackedTasks?.Add(jtf.RunAsync(LoadIndexInfosAsync));
+                    NotifyPropertyChange(nameof(ServiceUrl));
                 }
-
-                dte.ItemOperations.OpenFile(path);
             }
             catch (Exception ex)
             {
@@ -330,7 +314,7 @@ namespace CodeIndex.VisualStudioExtension
         {
             if (IsValidate())
             {
-                var client = new CodeIndexClient(new HttpClient(), ServiceUrl);
+                var client = new CodeIndexClient(new HttpClient(), EffectiveServiceUrl);
                 var result = await client.ApiLuceneGetcodesourceswithmatchedlineAsync(new SearchRequest
                 {
                     IndexPk = indexPk,

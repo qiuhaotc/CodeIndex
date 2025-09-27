@@ -45,8 +45,16 @@ namespace CodeIndex.VisualStudioExtension
         /// <returns>A task representing the async work of package initialization, or an already completed task if there is none. Do not return null from this method.</returns>
         protected override async Task InitializeAsync(CancellationToken cancellationToken, IProgress<ServiceProgressData> progress)
         {
-            // When initialized asynchronously, the current thread may be a background thread at this point.
-            // Do any initialization that requires the UI thread after switching to the UI thread.
+            // 后台线程：可以做不需要 UI 的初始化
+            var settings = UserSettingsManager.Load();
+            // 尝试在后台启动本地服务器（不会阻塞）
+            try
+            {
+                Models.LocalServerLauncher.TryLaunch(settings);
+            }
+            catch { /* 忽略异常 */ }
+
+            // 切换到 UI 线程再注册命令
             await this.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
             await CodeIndex.VisualStudioExtension.CodeIndexSearchWindowCommand.InitializeAsync(this);
         }
