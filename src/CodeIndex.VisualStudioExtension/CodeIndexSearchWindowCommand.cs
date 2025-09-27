@@ -14,7 +14,6 @@ namespace CodeIndex.VisualStudioExtension
         /// Command ID.
         /// </summary>
     public const int CommandId = 4129;
-    public const int OpenSettingsCommandId = 4130;
 
         /// <summary>
         /// Command menu group (command set GUID).
@@ -41,9 +40,6 @@ namespace CodeIndex.VisualStudioExtension
             var menuItem = new MenuCommand(this.Execute, menuCommandID);
             commandService.AddCommand(menuItem);
 
-            var openSettingsCommandID = new CommandID(CommandSet, OpenSettingsCommandId);
-            var openSettingsMenuItem = new MenuCommand(this.OpenSettingsExecute, openSettingsCommandID);
-            commandService.AddCommand(openSettingsMenuItem);
         }
 
         /// <summary>
@@ -98,34 +94,5 @@ namespace CodeIndex.VisualStudioExtension
             }).FileAndForget("CodeIndex/ShowToolWindow");
         }
 
-        private void OpenSettingsExecute(object sender, EventArgs e)
-        {
-            this.package.JoinableTaskFactory.RunAsync(async delegate
-            {
-                await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
-                try
-                {
-                    var settings = UserSettingsManager.Load(); // 确保已初始化目录
-                    var path = UserSettingsManager.SettingsFile;
-                    if (!System.IO.File.Exists(path))
-                    {
-                        UserSettingsManager.Save(settings); // 创建文件
-                    }
-
-                    var dte = await package.GetServiceAsync(typeof(EnvDTE.DTE)) as EnvDTE.DTE;
-                    if (dte == null)
-                    {
-                        System.Windows.MessageBox.Show("Cannot get DTE service.", "CodeIndex", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Warning);
-                        return;
-                    }
-
-                    dte.ItemOperations.OpenFile(path);
-                }
-                catch (Exception ex)
-                {
-                    System.Windows.MessageBox.Show("Open settings failed: " + ex.Message, "CodeIndex", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
-                }
-            }).FileAndForget("CodeIndex/OpenSettings");
-        }
     }
 }

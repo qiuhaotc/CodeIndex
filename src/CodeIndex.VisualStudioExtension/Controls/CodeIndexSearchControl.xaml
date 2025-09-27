@@ -54,6 +54,7 @@
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="Auto" />
+                    <ColumnDefinition Width="Auto" />
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
                 <Label Content="Service Url:" Grid.Column="0" Style="{StaticResource CommonLabel}" VerticalAlignment="Center" />
@@ -61,8 +62,9 @@
                 <Label Content="Index:" Style="{StaticResource CommonLabel}" Grid.Column="2" VerticalAlignment="Center" />
                 <ComboBox SelectedValue="{Binding IndexPk}" Grid.Column="3" ItemsSource="{Binding IndexInfos}" DisplayMemberPath="Name" SelectedValuePath="Value" Width="200" VerticalAlignment="Center" />
                 <Button x:Name="RefreshButton" Grid.Column="4" Margin="10 2 0 2" Content="Refresh Index" Command="{Binding RefreshIndexCommand}" Style="{StaticResource InfoButton}" Height="26" Width="82" />
-                <Label Content="Result Info:" Style="{StaticResource CommonLabel}" VerticalAlignment="Center" Grid.Column="5" />
-                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" MaxHeight="100" Grid.Column="6">
+                <Button Grid.Column="5" Margin="10 2 0 2" Content="Settings" Command="{Binding OpenSettingsCommand}" Style="{StaticResource InfoButton}" Height="26" Width="70" />
+                <Label Content="Result Info:" Style="{StaticResource CommonLabel}" VerticalAlignment="Center" Grid.Column="6" />
+                <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" MaxHeight="100" Grid.Column="7">
                     <Label Content="{Binding ResultInfo}" Style="{StaticResource ResultInfoLabelStyle}"/>
                 </ScrollViewer>
             </Grid>

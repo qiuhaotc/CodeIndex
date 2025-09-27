@@ -198,6 +198,7 @@ namespace CodeIndex.VisualStudioExtension
         ICommand searchIndexCommand;
         ICommand stopSearchCommand;
         ICommand refreshIndexCommand;
+    ICommand openSettingsCommand;
     string serviceUrl;
     readonly UserSettings userSettings;
     JoinableTaskCollection trackedTasks; // 跟踪后台任务集合
@@ -251,6 +252,45 @@ namespace CodeIndex.VisualStudioExtension
                 }
 
                 return refreshIndexCommand;
+            }
+        }
+
+        public ICommand OpenSettingsCommand
+        {
+            get
+            {
+                if (openSettingsCommand == null)
+                {
+                    openSettingsCommand = new AsyncCommand(OpenSettingsAsync, () => true, null);
+                }
+                return openSettingsCommand;
+            }
+        }
+
+        async Task OpenSettingsAsync()
+        {
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+            try
+            {
+                var settings = UserSettingsManager.Load(); // Ensure directory
+                var path = UserSettingsManager.SettingsFile;
+                if (!System.IO.File.Exists(path))
+                {
+                    UserSettingsManager.Save(settings); // create file
+                }
+
+                var dte = Package.GetGlobalService(typeof(EnvDTE.DTE)) as EnvDTE.DTE;
+                if (dte == null)
+                {
+                    System.Windows.MessageBox.Show("Cannot get DTE service.", "CodeIndex", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Warning);
+                    return;
+                }
+
+                dte.ItemOperations.OpenFile(path);
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show("Open settings failed: " + ex.Message, "CodeIndex", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
             }
         }
 
