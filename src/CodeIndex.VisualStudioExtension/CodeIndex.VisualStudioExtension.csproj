@@ -12,6 +12,7 @@
     <!-- Legacy project properties for VSIX compatibility -->
     <SchemaVersion>2.0</SchemaVersion>
     <AppDesignerFolder>Properties</AppDesignerFolder>
+    <MSBuildEnableWorkloadResolver>false</MSBuildEnableWorkloadResolver>
     
     <!-- Essential VSIX Project Type GUID -->
     <ProjectTypeGuids>{82b43b9b-a64c-4715-b499-d71e9ca2bd60};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
@@ -32,6 +33,13 @@
     <IncludeDebugSymbolsInLocalVSIXDeployment>false</IncludeDebugSymbolsInLocalVSIXDeployment>
     <CopyBuildOutputToOutputDirectory>true</CopyBuildOutputToOutputDirectory>
     <CopyOutputSymbolsToOutputDirectory>true</CopyOutputSymbolsToOutputDirectory>
+    
+    <!-- Additional path properties for VSSDK compatibility -->
+    <BaseIntermediateOutputPath>obj\</BaseIntermediateOutputPath>
+    <IntermediateOutputPath>$(BaseIntermediateOutputPath)$(Configuration)\</IntermediateOutputPath>
+    <!-- Explicitly set project directory for VSSDK -->
+    <ProjectDir>$(MSBuildProjectDirectory)\</ProjectDir>
+    <TargetDir>$(OutputPath)</TargetDir>
     
     <!-- Debug Properties -->
     <StartAction>Program</StartAction>
