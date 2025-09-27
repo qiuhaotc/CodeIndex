@@ -34,6 +34,13 @@
     <CopyBuildOutputToOutputDirectory>true</CopyBuildOutputToOutputDirectory>
     <CopyOutputSymbolsToOutputDirectory>true</CopyOutputSymbolsToOutputDirectory>
     
+    <!-- Enhanced VSIX deployment properties for debugging -->
+    <DeployExtension>true</DeployExtension>
+    <CreateVsixContainer>true</CreateVsixContainer>
+    <CopyVsixExtensionFiles>true</CopyVsixExtensionFiles>
+    <!-- Ensure assembly is available for loading -->
+    <CopyLocalLockFileAssemblies>true</CopyLocalLockFileAssemblies>
+    
     <!-- Additional path properties for VSSDK compatibility -->
     <BaseIntermediateOutputPath>obj\</BaseIntermediateOutputPath>
     <IntermediateOutputPath>$(BaseIntermediateOutputPath)$(Configuration)\</IntermediateOutputPath>
@@ -41,10 +48,12 @@
     <ProjectDir>$(MSBuildProjectDirectory)\</ProjectDir>
     <TargetDir>$(OutputPath)</TargetDir>
     
-    <!-- Debug Properties -->
+    <!-- Debug Properties for VSIX deployment -->
     <StartAction>Program</StartAction>
     <StartProgram Condition="'$(DevEnvDir)' != ''">$(DevEnvDir)devenv.exe</StartProgram>
     <StartArguments>/rootsuffix Exp</StartArguments>
+    <!-- Ensure VSIX deployment during debugging -->
+    <EnableUnmanagedDebugging>false</EnableUnmanagedDebugging>
   </PropertyGroup>
 
   <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'VisualStudioExtensionRelease|AnyCPU'">
