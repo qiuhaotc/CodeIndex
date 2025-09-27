@@ -46,19 +46,9 @@ jobs:
           Write-Host "Tag $tag deleted to prevent release."
 
   build:
+    name: Build & Package (framework-dependent any-platform)
     needs: test
-    name: Build & Package (${{ matrix.rid }})
-    strategy:
-      fail-fast: false
-      matrix:
-        include:
-          - os: windows-latest
-            rid: win-x64
-            archiveExt: zip
-          - os: ubuntu-latest
-            rid: linux-x64
-            archiveExt: tar.gz
-    runs-on: ${{ matrix.os }}
+    runs-on: ubuntu-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -70,33 +60,22 @@ jobs:
 
       - name: Restore (solution)
         run: dotnet restore src/CodeIndex.sln
-      # 不再单独 build，直接在 publish 中构建；此 Job 依赖 test Job 成功
 
-      - name: Publish (${{ matrix.rid }})
+      - name: Publish (framework-dependent)
         run: >-
-          dotnet publish src/CodeIndex.Server/CodeIndex.Server.csproj -c Release -r ${{ matrix.rid }}
-          --self-contained true -p:PublishSingleFile=true -p:IncludeNativeLibrariesForSelfExtract=true -p:PublishTrimmed=false
-          --no-restore -o artifacts/${{ matrix.rid }}
+          dotnet publish src/CodeIndex.Server/CodeIndex.Server.csproj -c Release
+          -p:PublishSingleFile=false -p:SelfContained=false -o artifacts/publish-any
 
-      - name: Package artifact (zip on Windows)
-        if: runner.os == 'Windows'
-        shell: pwsh
-        run: |
-          New-Item -ItemType Directory -Path artifacts/zips -Force | Out-Null
-          $dest = "artifacts/zips/CodeIndex.Server-${{ matrix.rid }}.zip"
-          Compress-Archive -Path artifacts/${{ matrix.rid }}/* -DestinationPath $dest -Force
-
-      - name: Package artifact (tar.gz on Linux)
-        if: runner.os == 'Linux'
+      - name: Package zip
         run: |
           mkdir -p artifacts/zips
-          tar -C artifacts/${{ matrix.rid }} -czf artifacts/zips/CodeIndex.Server-${{ matrix.rid }}.tar.gz .
+          (cd artifacts/publish-any && zip -r ../zips/CodeIndex.Server-any.zip .)
 
-      - name: Upload packaged artifact
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: CodeIndex.Server-${{ matrix.rid }}
-          path: artifacts/zips/*
+          name: CodeIndex.Server-any
+          path: artifacts/zips/CodeIndex.Server-any.zip
           if-no-files-found: error
 
   release:
@@ -106,37 +85,26 @@ jobs:
     permissions:
       contents: write
     steps:
-      - name: Download all build artifacts
+      - name: Download artifact
         uses: actions/download-artifact@v4
         with:
+          name: CodeIndex.Server-any
           path: downloaded
 
       - name: List downloaded files
-        run: |
-          echo "Downloaded files:" && find downloaded -type f -maxdepth 5
-
-      - name: Setup gh
-        uses: actions/setup-dotnet@v4
-        with:
-          dotnet-version: '9.0.x'
+        run: ls -R downloaded
 
       - name: Create or update release
         env:
           GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
         shell: bash
         run: |
-          tag="$GITHUB_REF_NAME" # e.g. v1.2.3
-          echo "Processing release $tag"
-          assets=(
-            "downloaded/CodeIndex.Server-win-x64/CodeIndex.Server-win-x64.zip"
-            "downloaded/CodeIndex.Server-linux-x64/CodeIndex.Server-linux-x64.tar.gz"
-          )
-          # Try create
-          if gh release create "$tag" "${assets[@]}" --title "CodeIndex.Server $tag" --notes "Automated release for $tag" -R "$GITHUB_REPOSITORY"; then
+          tag="$GITHUB_REF_NAME"
+          asset="downloaded/CodeIndex.Server-any.zip"
+          echo "Publishing release $tag with asset $asset (framework-dependent build)"
+          if gh release create "$tag" "$asset" --title "CodeIndex.Server $tag" --notes "Framework-dependent (cross-platform) build for $tag" -R "$GITHUB_REPOSITORY"; then
             echo "Release created"
           else
-            echo "Release exists, updating assets..."
-            for a in "${assets[@]}"; do
-              gh release upload "$tag" "$a" --clobber -R "$GITHUB_REPOSITORY"
-            done
+            echo "Release exists, updating asset..."
+            gh release upload "$tag" "$asset" --clobber -R "$GITHUB_REPOSITORY"
           fi
