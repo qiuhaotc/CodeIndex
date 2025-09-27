@@ -49,6 +49,12 @@
           <ButtonText>Code Index Search</ButtonText>
         </Strings>
       </Button>
+      <Button guid="guidVisualStudioExtensionPackageCmdSet" id="cmdidOpenCodeIndexSettingsCommand" priority="0x0110" type="Button">
+        <Parent guid="guidSHLMainMenu" id="IDG_VS_WNDO_OTRWNDWS1" />
+        <Strings>
+          <ButtonText>Code Index Settings (User)</ButtonText>
+        </Strings>
+      </Button>
     </Buttons>
 
     <!--The bitmaps section is used to define the bitmaps that are used for the commands.-->
@@ -69,6 +75,7 @@
     <!-- This is the guid used to group the menu commands together -->
     <GuidSymbol name="guidVisualStudioExtensionPackageCmdSet" value="{c025b4ef-e6ed-42b4-9c22-2d6835421d25}">
       <IDSymbol value="4129" name="cmdidCodeIndexSearchWindowCommand" />
+      <IDSymbol value="4130" name="cmdidOpenCodeIndexSettingsCommand" />
     </GuidSymbol>
 
     <GuidSymbol name="guidImages" value="{8f96059a-9439-496a-91a0-b937e25c4e41}">

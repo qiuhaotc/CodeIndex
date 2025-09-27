@@ -13,7 +13,8 @@ namespace CodeIndex.VisualStudioExtension
     {
         public CodeIndexSearchViewModel()
         {
-            serviceUrl = ConfigHelper.Configuration.AppSettings.Settings[nameof(ServiceUrl)].Value;
+            userSettings = UserSettingsManager.Load();
+            serviceUrl = userSettings.ServiceUrl;
             _ = LoadIndexInfosAsync();
         }
 
@@ -45,7 +46,8 @@ namespace CodeIndex.VisualStudioExtension
 
                 if (value != serviceUrl)
                 {
-                    ConfigHelper.SetConfiguration(nameof(ServiceUrl), value);
+                    userSettings.ServiceUrl = value;
+                    UserSettingsManager.Save(userSettings);
                     serviceUrl = value;
                 }
 
@@ -189,7 +191,8 @@ namespace CodeIndex.VisualStudioExtension
         ICommand searchIndexCommand;
         ICommand stopSearchCommand;
         ICommand refreshIndexCommand;
-        string serviceUrl;
+    string serviceUrl;
+    readonly UserSettings userSettings;
         List<CodeSourceWithMatchedLine> searchResults = new List<CodeSourceWithMatchedLine>();
         string resultInfo;
         CancellationTokenSource tokenSource;

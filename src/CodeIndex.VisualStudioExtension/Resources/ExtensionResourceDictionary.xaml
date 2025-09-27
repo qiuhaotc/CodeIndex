@@ -1,25 +1,51 @@
 ﻿<ResourceDictionary 
     xmlns="http://schemas.microsoft.com/winfx/2006/xaml/presentation"
-    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" xmlns:local="clr-namespace:CodeIndex.VisualStudioExtension">
-    <SolidColorBrush x:Key="StandardSolidColorBrush" Color="Blue" />
+    xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml" 
+    xmlns:local="clr-namespace:CodeIndex.VisualStudioExtension"
+    xmlns:vsshell="clr-namespace:Microsoft.VisualStudio.Shell;assembly=Microsoft.VisualStudio.Shell.15.0">
+    <!--  动态跟随 VS 主题的基础画刷  -->
+    <SolidColorBrush x:Key="CI.PanelBackground" Color="#00000000" />
+    <SolidColorBrush x:Key="CI.ListBackground" Color="#00000000" />
+
+    <!--  Label 基础样式  -->
     <Style TargetType="{x:Type Label}" x:Key="CommonLabel">
-        <Setter Property="Foreground" Value="White"/>
+        <Setter Property="Foreground" Value="{DynamicResource {x:Static vsshell:VsBrushes.WindowTextKey}}"/>
         <Setter Property="Margin" Value="2"/>
     </Style>
+
+    <!--  结果信息 / 提示词 样式（从控件文件迁移） -->
+    <Style x:Key="ResultInfoLabelStyle" TargetType="Label" BasedOn="{StaticResource CommonLabel}">
+        <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.HighlightBrushKey}}" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+    <Style x:Key="HintWordLabelStyle" TargetType="Label" BasedOn="{StaticResource CommonLabel}">
+        <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.HighlightBrushKey}}" />
+        <Setter Property="FontWeight" Value="SemiBold" />
+    </Style>
+
+    <!--  TextBox 动态主题  -->
     <Style TargetType="{x:Type TextBox}" x:Key="CommonTextBox">
-        <Setter Property="Background" Value="#FF434343"/>
-        <Setter Property="Foreground" Value="White"/>
+        <Setter Property="Background" Value="{DynamicResource {x:Static vsshell:VsBrushes.ToolWindowBackgroundKey}}"/>
+        <Setter Property="Foreground" Value="{DynamicResource {x:Static vsshell:VsBrushes.WindowTextKey}}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource {x:Static vsshell:VsBrushes.ToolWindowBorderKey}}"/>
+        <Setter Property="BorderThickness" Value="1"/>
     </Style>
+
+    <!--  DataGridRow  -->
     <Style TargetType="{x:Type DataGridRow}" x:Key="BaseGridStyle">
-        <Setter Property="Foreground" Value="White"/>
-        <Setter Property="Background" Value="#FF2D2D30"/>
+        <Setter Property="Foreground" Value="{DynamicResource {x:Static vsshell:VsBrushes.WindowTextKey}}"/>
+        <Setter Property="Background" Value="{DynamicResource {x:Static vsshell:VsBrushes.ToolWindowBackgroundKey}}"/>
     </Style>
+
+    <!--  列头  -->
     <Style TargetType="{x:Type DataGridColumnHeader}">
-        <Setter Property="Foreground" Value="White"/>
-        <Setter Property="Background" Value="#FF434343"/>
+        <Setter Property="Foreground" Value="{DynamicResource {x:Static vsshell:VsBrushes.WindowTextKey}}"/>
+        <Setter Property="Background" Value="{DynamicResource {x:Static vsshell:VsBrushes.CommandBarGradientBeginKey}}"/>
     </Style>
+
+    <!--  CheckBox  -->
     <Style TargetType="{x:Type CheckBox}" x:Key="CommonCheckBox">
-        <Setter Property="Foreground" Value="White"/>
+        <Setter Property="Foreground" Value="{DynamicResource {x:Static vsshell:VsBrushes.WindowTextKey}}"/>
         <Setter Property="FlowDirection" Value="RightToLeft"/>
         <Setter Property="Margin" Value="10 4 10 4"/>
         <Setter Property="VerticalAlignment" Value="Center"/>
@@ -29,19 +55,23 @@
             </Style>
         </Style.Resources>
     </Style>
+
+    <!--  ListView  -->
     <Style TargetType="{x:Type ListView}">
-        <Setter Property="Background" Value="#FF2D2D30"/>
-        <Setter Property="Foreground" Value="White"/>
+        <Setter Property="Background" Value="{DynamicResource {x:Static vsshell:VsBrushes.ToolWindowBackgroundKey}}"/>
+        <Setter Property="Foreground" Value="{DynamicResource {x:Static vsshell:VsBrushes.WindowTextKey}}"/>
     </Style>
+
+    <!--  Panel 子面板  -->
     <Style x:Key="PanelForWrapPanel" TargetType="{x:Type DockPanel}">
         <Setter Property="MinHeight" Value="23"/>
         <Style.Resources>
-            <Style TargetType="{x:Type Label}" BasedOn="{StaticResource CommonLabel}">
-            </Style>
-            <Style TargetType="{x:Type TextBox}" BasedOn="{StaticResource CommonTextBox}">
-            </Style>
+            <Style TargetType="{x:Type Label}" BasedOn="{StaticResource CommonLabel}" />
+            <Style TargetType="{x:Type TextBox}" BasedOn="{StaticResource CommonTextBox}" />
         </Style.Resources>
     </Style>
+
+    <!--  DataGridCell  -->
     <Style TargetType="{x:Type DataGridCell}">
         <Setter Property="Background" Value="Transparent"/>
         <Setter Property="BorderBrush" Value="Transparent"/>
@@ -56,21 +86,23 @@
             </Setter.Value>
         </Setter>
         <Style.Triggers>
+            <!-- Active selection -->
             <Trigger Property="IsSelected" Value="True">
-                <Setter Property="Background" Value="#FF0078D7"/>
-                <Setter Property="Foreground" Value="White"/>
+                <Setter Property="Background" Value="{DynamicResource {x:Static SystemColors.HighlightBrushKey}}"/>
+                <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.HighlightTextBrushKey}}"/>
                 <Setter Property="BorderBrush" Value="{DynamicResource {x:Static SystemColors.HighlightBrushKey}}"/>
             </Trigger>
             <Trigger Property="IsKeyboardFocusWithin" Value="True">
                 <Setter Property="BorderBrush" Value="{DynamicResource {x:Static DataGrid.FocusBorderBrushKey}}"/>
             </Trigger>
+            <!-- Inactive selection (window not focused) -->
             <MultiTrigger>
                 <MultiTrigger.Conditions>
                     <Condition Property="IsSelected" Value="true"/>
                     <Condition Property="Selector.IsSelectionActive" Value="false"/>
                 </MultiTrigger.Conditions>
-                <Setter Property="Background" Value="#FF0078D7"/>
-                <Setter Property="Foreground" Value="White"/>
+                <Setter Property="Background" Value="{DynamicResource {x:Static SystemColors.InactiveSelectionHighlightBrushKey}}"/>
+                <Setter Property="Foreground" Value="{DynamicResource {x:Static SystemColors.InactiveCaptionTextBrushKey}}"/>
                 <Setter Property="BorderBrush" Value="{DynamicResource {x:Static SystemColors.InactiveSelectionHighlightBrushKey}}"/>
             </MultiTrigger>
             <Trigger Property="IsEnabled" Value="false">
@@ -78,12 +110,27 @@
             </Trigger>
         </Style.Triggers>
     </Style>
+
+    <!--  DataGrid 主样式（主题自适应背景） -->
+    <Style TargetType="{x:Type DataGrid}" x:Key="MatchedCodeSourceGridStyle">
+        <Setter Property="Background" Value="{DynamicResource {x:Static vsshell:VsBrushes.ToolWindowBackgroundKey}}"/>
+        <Setter Property="Foreground" Value="{DynamicResource {x:Static vsshell:VsBrushes.WindowTextKey}}"/>
+        <Setter Property="BorderBrush" Value="{DynamicResource {x:Static vsshell:VsBrushes.ToolWindowBorderKey}}"/>
+        <Setter Property="RowBackground" Value="Transparent"/>
+        <Setter Property="AlternatingRowBackground" Value="{DynamicResource {x:Static vsshell:VsBrushes.CommandBarGradientBeginKey}}"/>
+        <Setter Property="GridLinesVisibility" Value="Horizontal"/>
+        <Setter Property="HeadersVisibility" Value="Column"/>
+        <Setter Property="AutoGenerateColumns" Value="False"/>
+    </Style>
+
+    <!--  信息按钮  -->
     <Style TargetType="{x:Type Button}" x:Key="InfoButton">
         <Setter Property="Width" Value="70"/>
         <Setter Property="Height" Value="25"/>
-        <Setter Property="Foreground" Value="White"/>
+        <Setter Property="Foreground" Value="{DynamicResource {x:Static vsshell:VsBrushes.WindowTextKey}}"/>
         <Setter Property="BorderThickness" Value="0"/>
-        <Setter Property="Background" Value="#43a9c7"/>
+        <!--  使用固定强调色（暗黑下接近原效果，浅色主题仍可读）。可后续再调优  -->
+        <Setter Property="Background" Value="#2f96b4"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
@@ -92,7 +139,7 @@
                     </Border>
                     <ControlTemplate.Triggers>
                         <Trigger Property="IsMouseOver" Value="True">
-                            <Setter TargetName="border" Property="Background" Value="#2f96b4"/>
+                            <Setter TargetName="border" Property="Background" Value="#43a9c7"/>
                         </Trigger>
                         <Trigger Property="IsPressed" Value="True">
                             <Setter TargetName="border" Property="Background" Value="#2a89a4"/>
@@ -102,12 +149,14 @@
             </Setter.Value>
         </Setter>
     </Style>
+
+    <!--  警告按钮  -->
     <Style TargetType="{x:Type Button}" x:Key="WarnButton">
         <Setter Property="Width" Value="80"/>
         <Setter Property="Height" Value="25"/>
         <Setter Property="Foreground" Value="White"/>
         <Setter Property="BorderThickness" Value="0"/>
-        <Setter Property="Background" Value="#FFFF3A18"/>
+        <Setter Property="Background" Value="#FFCC3A18"/>
         <Setter Property="Template">
             <Setter.Value>
                 <ControlTemplate TargetType="Button">
@@ -126,6 +175,7 @@
             </Setter.Value>
         </Setter>
     </Style>
+
     <local:StringToXamlConverter x:Key="StringToXamlConverter" />
     <ItemsPanelTemplate x:Key="ItemsPanelTemplateHorizontal">
         <WrapPanel Orientation="Horizontal" Margin="0,0,0,0"/>

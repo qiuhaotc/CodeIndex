@@ -3,10 +3,18 @@
              xmlns:d="http://schemas.microsoft.com/expression/blend/2008"
              xmlns:x="http://schemas.microsoft.com/winfx/2006/xaml"
              xmlns:mc="http://schemas.openxmlformats.org/markup-compatibility/2006"
+             xmlns:vsshell="clr-namespace:Microsoft.VisualStudio.Shell;assembly=Microsoft.VisualStudio.Shell.15.0"
              mc:Ignorable="d" 
-             d:DesignHeight="281.2" d:DesignWidth="987.2" Foreground="Black" Background="#FF2D2D30">
+             d:DesignHeight="281.2" d:DesignWidth="987.2" 
+             Foreground="{DynamicResource {x:Static vsshell:VsBrushes.WindowTextKey}}" 
+             Background="{DynamicResource {x:Static vsshell:VsBrushes.ToolWindowBackgroundKey}}">
     <UserControl.Resources>
-        <ResourceDictionary Source="../Resources/ExtensionResourceDictionary.xaml" />
+        <ResourceDictionary>
+            <ResourceDictionary.MergedDictionaries>
+                <ResourceDictionary Source="../Resources/ExtensionResourceDictionary.xaml" />
+            </ResourceDictionary.MergedDictionaries>
+            <!-- 样式已迁移至 ExtensionResourceDictionary.xaml -->
+        </ResourceDictionary>
     </UserControl.Resources>
     <Grid>
         <DockPanel LastChildFill="True" Margin="6">
@@ -49,13 +57,13 @@
                     <ColumnDefinition Width="*" />
                 </Grid.ColumnDefinitions>
                 <Label Content="Service Url:" Grid.Column="0" Style="{StaticResource CommonLabel}" VerticalAlignment="Center" />
-                <TextBox Height="23" Style="{StaticResource CommonTextBox}" Grid.Column="1" TextWrapping="NoWrap" Text="{Binding ServiceUrl}" Width="200" />
+                <TextBox Height="23" Style="{StaticResource CommonTextBox}" Grid.Column="1" TextWrapping="NoWrap" Text="{Binding ServiceUrl}" Width="300" />
                 <Label Content="Index:" Style="{StaticResource CommonLabel}" Grid.Column="2" VerticalAlignment="Center" />
                 <ComboBox SelectedValue="{Binding IndexPk}" Grid.Column="3" ItemsSource="{Binding IndexInfos}" DisplayMemberPath="Name" SelectedValuePath="Value" Width="200" VerticalAlignment="Center" />
                 <Button x:Name="RefreshButton" Grid.Column="4" Margin="10 2 0 2" Content="Refresh Index" Command="{Binding RefreshIndexCommand}" Style="{StaticResource InfoButton}" Height="26" Width="82" />
                 <Label Content="Result Info:" Style="{StaticResource CommonLabel}" VerticalAlignment="Center" Grid.Column="5" />
                 <ScrollViewer VerticalScrollBarVisibility="Auto" HorizontalScrollBarVisibility="Auto" MaxHeight="100" Grid.Column="6">
-                    <Label Content="{Binding ResultInfo}" Foreground="Yellow" Style="{StaticResource CommonLabel}"/>
+                    <Label Content="{Binding ResultInfo}" Style="{StaticResource ResultInfoLabelStyle}"/>
                 </ScrollViewer>
             </Grid>
             <DockPanel DockPanel.Dock="Top">
@@ -64,13 +72,13 @@
                     <ItemsControl ItemsSource="{Binding HintWords}" ItemsPanel="{StaticResource ItemsPanelTemplateHorizontal}" HorizontalAlignment="Left">
                         <ItemsControl.ItemTemplate>
                             <DataTemplate>
-                                <Label Style="{StaticResource CommonLabel}" Content="{Binding Word}"  Foreground="Yellow" />
+                                <Label Style="{StaticResource HintWordLabelStyle}" Content="{Binding Word}"  />
                             </DataTemplate>
                         </ItemsControl.ItemTemplate>
                     </ItemsControl>
                 </ScrollViewer>
             </DockPanel>
-            <DataGrid Name="MatchedCodeSourceGrid" Background="#FF2D2D30" Margin="0 6 0 0" ItemsSource="{Binding SearchResults}" IsReadOnly="True" HeadersVisibility="Column" AutoGenerateColumns="False">
+            <DataGrid Name="MatchedCodeSourceGrid" Style="{StaticResource MatchedCodeSourceGridStyle}" Margin="0 6 0 0" ItemsSource="{Binding SearchResults}" IsReadOnly="True">
                 <DataGrid.Columns>
                     <DataGridTextColumn Header="Name" Width="3*" Binding="{Binding CodeSource.FileName}" />
                     <DataGridTextColumn Header="Extension" Width="1*" Binding="{Binding CodeSource.FileExtension}" />
