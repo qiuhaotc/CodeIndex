@@ -7,6 +7,11 @@
     <GenerateAssemblyInfo>false</GenerateAssemblyInfo>
     <UseWPF>true</UseWPF>
     <UseWindowsForms>true</UseWindowsForms>
+    <OutputType>Library</OutputType>
+    
+    <!-- Essential VSIX Project Type GUID -->
+    <ProjectTypeGuids>{82b43b9b-a64c-4715-b499-d71e9ca2bd60};{FAE04EC0-301F-11D3-BF4B-00C04F79EFBC}</ProjectTypeGuids>
+    <ProjectGuid>{ED1D3026-8695-4B9B-9FA9-2D68E28EE850}</ProjectGuid>
     
     <!-- Disable default item inclusion to avoid conflicts -->
     <EnableDefaultPageItems>false</EnableDefaultPageItems>
@@ -35,6 +40,19 @@
     <DefineConstants>TRACE</DefineConstants>
     <DebugType>pdbonly</DebugType>
     <DebugSymbols>true</DebugSymbols>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Debug|AnyCPU'">
+    <DebugSymbols>true</DebugSymbols>
+    <DebugType>full</DebugType>
+    <Optimize>false</Optimize>
+    <DefineConstants>DEBUG;TRACE</DefineConstants>
+  </PropertyGroup>
+
+  <PropertyGroup Condition="'$(Configuration)|$(Platform)' == 'Release|AnyCPU'">
+    <DebugType>pdbonly</DebugType>
+    <Optimize>true</Optimize>
+    <DefineConstants>TRACE</DefineConstants>
   </PropertyGroup>
 
   <ItemGroup>
@@ -126,5 +144,8 @@
   <ItemGroup>
     <Folder Include="Connected Services\" />
   </ItemGroup>
+
+  <!-- Import VSIX build targets - essential for VSIX generation on Windows -->
+  <Import Project="$(VSToolsPath)\VSSDK\Microsoft.VsSDK.targets" Condition="'$(VSToolsPath)' != '' And Exists('$(VSToolsPath)\VSSDK\Microsoft.VsSDK.targets')" />
 
 </Project>
