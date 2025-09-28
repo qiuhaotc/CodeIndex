@@ -133,20 +133,20 @@ namespace CodeIndex.VisualStudioExtension.Models
             }
         }, _ => true);
 
-    public ICommand DownloadOrUpdateCommand => downloadCommand ?? (downloadCommand = new AsyncCommand(DownloadOrUpdateAsync, () => !isBusy, null));
-    public ICommand SaveCommand => new CommonCommand(Save, _ => !isBusy);
-    public ICommand StartServerCommand => startServerCommand ?? (startServerCommand = new AsyncCommand(StartServerAsync, () => CanStart, null));
-    public ICommand StopServerCommand => stopServerCommand ?? (stopServerCommand = new AsyncCommand(StopServerAsync, () => CanStop, null));
-    public ICommand RestartServerCommand => restartServerCommand ?? (restartServerCommand = new AsyncCommand(RestartServerAsync, () => CanRestart, null));
+        public ICommand DownloadOrUpdateCommand => downloadCommand ?? (downloadCommand = new AsyncCommand(DownloadOrUpdateAsync, () => !isBusy, null));
+        public ICommand SaveCommand => new CommonCommand(Save, _ => !isBusy);
+        public ICommand StartServerCommand => startServerCommand ?? (startServerCommand = new AsyncCommand(StartServerAsync, () => CanStart, null));
+        public ICommand StopServerCommand => stopServerCommand ?? (stopServerCommand = new AsyncCommand(StopServerAsync, () => CanStop, null));
+        public ICommand RestartServerCommand => restartServerCommand ?? (restartServerCommand = new AsyncCommand(RestartServerAsync, () => CanRestart, null));
         public ICommand RefreshLogCommand => new AsyncCommand(RefreshLogAsync, () => true, null);
         public ICommand CheckHealthCommand => new AsyncCommand(async () => await CheckHealthAsync(), () => !isCheckingHealth, null);
 
-    AsyncCommand downloadCommand;
-    AsyncCommand startServerCommand;
-    AsyncCommand stopServerCommand;
-    AsyncCommand restartServerCommand;
+        AsyncCommand downloadCommand;
+        AsyncCommand startServerCommand;
+        AsyncCommand stopServerCommand;
+        AsyncCommand restartServerCommand;
 
-    public string LogContent
+        public string LogContent
         {
             get => logContent;
             set { logContent = value; Raise(); }
@@ -236,7 +236,7 @@ namespace CodeIndex.VisualStudioExtension.Models
                 try
                 {
                     // 解压前先尝试停止当前运行的服务器
-                    StopServer();
+                    await StopServerCoreAsync();
                     // 自定义覆盖解压，兼容 .NET Framework (无 ExtractToDirectory(..., overwriteFiles))
                     using (var archive = ZipFile.OpenRead(tempZip))
                     {
@@ -286,8 +286,8 @@ namespace CodeIndex.VisualStudioExtension.Models
             return html.Substring(start, end - start);
         }
 
-        void StartServer() => _ = CodeIndex.VisualStudioExtension.Models.LocalServerLauncher.EnsureServerRunningAsync(settings, System.Threading.CancellationToken.None);
-        void StopServer() { _ = CodeIndex.VisualStudioExtension.Models.LocalServerLauncher.StopServerIfLastAsync(settings); }
+        async Task StartServerCoreAsync() => await CodeIndex.VisualStudioExtension.Models.LocalServerLauncher.EnsureServerRunningAsync(settings, System.Threading.CancellationToken.None);
+        async Task StopServerCoreAsync() { await CodeIndex.VisualStudioExtension.Models.LocalServerLauncher.StopServerIfLastAsync(settings); }
 
         async Task StartServerAsync()
         {
@@ -296,7 +296,7 @@ namespace CodeIndex.VisualStudioExtension.Models
             {
                 isOperatingServer = true; RefreshButtonsState();
                 HealthStatus = "Starting"; // 立即反馈
-                StartServer();
+                await StartServerCoreAsync();
                 await PollHealthAsync(maxAttempts: 12, delayMs: 500, successStatus: "Started", failStatus: "Error");
             }
             finally
@@ -312,7 +312,7 @@ namespace CodeIndex.VisualStudioExtension.Models
             {
                 isOperatingServer = true; RefreshButtonsState();
                 HealthStatus = "Stopping";
-                StopServer();
+                await StopServerCoreAsync();
                 // 简单等待一小段然后检查
                 await Task.Delay(300);
                 await PollHealthAsync(maxAttempts: 5, delayMs: 400, successStatus: "Stopped", failStatus: "Stopped", expectStopped: true);
@@ -330,9 +330,9 @@ namespace CodeIndex.VisualStudioExtension.Models
             {
                 isOperatingServer = true; RefreshButtonsState();
                 HealthStatus = "Restarting";
-                StopServer();
+                await StopServerCoreAsync();
                 await Task.Delay(400); // 给进程退出一点时间
-                StartServer();
+                await StartServerCoreAsync();
                 await PollHealthAsync(maxAttempts: 14, delayMs: 500, successStatus: "Started", failStatus: "Error");
             }
             finally
