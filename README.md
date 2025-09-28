@@ -93,11 +93,53 @@ Notice: in the docker container, when add the index config, the monitor folder s
 
 ### Search Extension For Visual Studio
 
-|Status|Value|
+Current icon used in listing:
+
+![Marketplace Icon](doc/Extension-Icon.png)
+
+|Status|Badge|
 |:----|:---:|
-|VS Marketplace|[![VS Marketplace](http://vsmarketplacebadge.apphb.com/version-short/qiuhaotc.CodeIndexExtension.svg)](https://marketplace.visualstudio.com/items?itemName=qiuhaotc.CodeIndexExtension)
-|VS Marketplace Downloads|[![VS Marketplace Downloads](http://vsmarketplacebadge.apphb.com/downloads/qiuhaotc.CodeIndexExtension.svg)](https://marketplace.visualstudio.com/items?itemName=qiuhaotc.CodeIndexExtension)
-|VS Marketplace Installs|[![VS Marketplace Installs](http://vsmarketplacebadge.apphb.com/installs-short/qiuhaotc.CodeIndexExtension.svg)](https://marketplace.visualstudio.com/items?itemName=qiuhaotc.CodeIndexExtension)
+|VS Marketplace Version|[![VS Marketplace Version](https://img.shields.io/visual-studio-marketplace/v/qiuhaotc.CodeIndexExtension?label=version&logo=visualstudio&color=blueviolet)](https://marketplace.visualstudio.com/items?itemName=qiuhaotc.CodeIndexExtension)|
+|VS Marketplace Downloads|[![VS Marketplace Downloads](https://img.shields.io/visual-studio-marketplace/d/qiuhaotc.CodeIndexExtension?label=downloads&logo=visualstudio)](https://marketplace.visualstudio.com/items?itemName=qiuhaotc.CodeIndexExtension)|
+|VS Marketplace Installs|[![VS Marketplace Installs](https://img.shields.io/visual-studio-marketplace/i/qiuhaotc.CodeIndexExtension?label=installs&logo=visualstudio)](https://marketplace.visualstudio.com/items?itemName=qiuhaotc.CodeIndexExtension)|
+|VS Marketplace Rating|[![VS Marketplace Rating](https://img.shields.io/visual-studio-marketplace/r/qiuhaotc.CodeIndexExtension?label=rating&logo=visualstudio)](https://marketplace.visualstudio.com/items?itemName=qiuhaotc.CodeIndexExtension)|
+
+#### Recent Updates
+
+Latest improvements to the Visual Studio extension
+
+- Dual Server Modes
+  - Seamlessly switch between Local and Remote server modes with persistent settings.
+  - Automatic health probe on settings window open (local mode) + manual Check button.
+- Resilient Local Server Lifecycle
+  - Single-instance control (global mutex + per-process lock files + PID file).
+  - Auto restart if external termination detected (mutex loss recovery).
+  - Deferred index loading until server health passes.
+- Download / Update Workflow
+  - One-click Download / Update (latest tag scraped from Releases page).
+  - Streamed download with real-time percentage progress.
+  - Temp ZIP cleanup after successful extraction; validates core binary presence.
+- Smart Default Paths
+  - Auto install path: `%LOCALAPPDATA%/CodeIndex.VisualStudioExtension/CodeIndex.Server` when empty.
+  - Auto data path: `%LOCALAPPDATA%/CodeIndex.VisualStudioExtension/CodeIndex.Server.Data` when first selecting install path and data path empty.
+- Modern Folder Picker
+  - Replaced WinForms dialog with Vista IFileOpenDialog (better UX); removed System.Windows.Forms dependency.
+- Theme-Aware UI
+  - Buttons/styles now use Visual Studio dynamic theme brushes (light/dark/HC) instead of hardcoded colors.
+- Quick Navigation Buttons
+  - Open buttons beside Local & Remote URLs (auto prepend http:// when missing).
+- Responsive Async Commands
+  - Instant button enable/disable; removed unsafe async void patterns.
+- Embedded Log Viewer
+  - Displays latest 100 log lines with refresh.
+- Packaging & Manifest Reliability
+  - Pre-build sync of `source.extension.vsixmanifest` prevents stale version drift.
+  - Architecture targeting + ProductArchitecture resolves VSSDK1311 warning.
+- Settings & Migration
+  - JSON settings, legacy URL migration, normalized trailing slashes.
+- Additional Hardening
+  - Clear health states (Started / Stopped / Error / Unknown) drive UI state.
+  - Improved error messages for download / extraction / URL opening.
 
 #### Download Url
 
@@ -137,9 +179,9 @@ When Case-Sensitive been ticked, we can search the content in case-sensitive mod
 
 |Status|Value|
 |:----|:---:|
-|Stars|[![Stars](https://img.shields.io/github/stars/qiuhaotc/CodeIndex)](https://github.com/qiuhaotc/CodeIndex)
-|Forks|[![Forks](https://img.shields.io/github/forks/qiuhaotc/CodeIndex)](https://github.com/qiuhaotc/CodeIndex)
-|License|[![License](https://img.shields.io/github/license/qiuhaotc/CodeIndex)](https://github.com/qiuhaotc/CodeIndex)
-|Issues|[![Issues](https://img.shields.io/github/issues/qiuhaotc/CodeIndex)](https://github.com/qiuhaotc/CodeIndex)
-|Docker Pulls|[![Downloads](https://img.shields.io/docker/pulls/qiuhaotc/codeindex.svg)](https://hub.docker.com/r/qiuhaotc/codeindex)
-|Release Downloads|[![Downloads](https://img.shields.io/github/downloads/qiuhaotc/CodeIndex/total.svg)](https://github.com/qiuhaotc/CodeIndex/releases)
+|Stars|[![Stars](https://img.shields.io/github/stars/qiuhaotc/CodeIndex)](https://github.com/qiuhaotc/CodeIndex)|
+|Forks|[![Forks](https://img.shields.io/github/forks/qiuhaotc/CodeIndex)](https://github.com/qiuhaotc/CodeIndex)|
+|License|[![License](https://img.shields.io/github/license/qiuhaotc/CodeIndex)](https://github.com/qiuhaotc/CodeIndex)|
+|Issues|[![Issues](https://img.shields.io/github/issues/qiuhaotc/CodeIndex)](https://github.com/qiuhaotc/CodeIndex)|
+|Docker Pulls|[![Downloads](https://img.shields.io/docker/pulls/qiuhaotc/codeindex.svg)](https://hub.docker.com/r/qiuhaotc/codeindex)|
+|Release Downloads|[![Downloads](https://img.shields.io/github/downloads/qiuhaotc/CodeIndex/total.svg)](https://github.com/qiuhaotc/CodeIndex/releases)|
