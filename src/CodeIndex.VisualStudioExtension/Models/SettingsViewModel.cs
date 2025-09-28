@@ -6,13 +6,26 @@ using System.Runtime.CompilerServices;
 using System.Threading.Tasks;
 using System.Windows.Input;
 using Microsoft.Win32;
+using System.Diagnostics;
+using System.Linq; // For FirstOrDefault
+using System.IO.Compression; // For Zip extraction
+using System.Collections.Generic; // For Queue in log tail
 
 namespace CodeIndex.VisualStudioExtension.Models
 {
     public class SettingsViewModel : INotifyPropertyChanged
     {
+        // 简单扩展帮助方法
+        // 放在类内部避免额外文件；.NET Framework 无 StartProcess 扩展
+        Process StartProcess(ProcessStartInfo psi)
+        {
+            return Process.Start(psi);
+        }
         readonly UserSettings settings;
         bool isBusy;
+        double downloadProgress; // 0-100
+        string healthStatus = "Unknown"; // Started / Stopped / Error / Unknown
+        bool isCheckingHealth;
 
         public SettingsViewModel(UserSettings settings)
         {
@@ -24,6 +37,12 @@ namespace CodeIndex.VisualStudioExtension.Models
             LocalServerVersion = settings.LocalServerVersion;
             IsLocalMode = settings.Mode == ServerMode.Local;
             IsRemoteMode = settings.Mode == ServerMode.Remote;
+
+            // 打开设置界面立即触发一次健康检查（异步，不阻塞 UI）
+            if (IsLocalMode && !string.IsNullOrWhiteSpace(LocalServiceUrl))
+            {
+                _ = CheckHealthAsync();
+            }
         }
 
         public event PropertyChangedEventHandler PropertyChanged;
@@ -64,6 +83,33 @@ namespace CodeIndex.VisualStudioExtension.Models
         public string LocalServerDataDirectory { get; set; }
         public string LocalServerVersion { get; set; }
 
+        public double DownloadProgress
+        {
+            get => downloadProgress;
+            set { downloadProgress = value; Raise(); }
+        }
+
+        public string HealthStatus
+        {
+            get => healthStatus;
+            set { healthStatus = value; Raise(); Raise(nameof(IsServerRunning)); RefreshButtonsState(); }
+        }
+
+        public bool IsServerRunning => string.Equals(HealthStatus, "Started", StringComparison.OrdinalIgnoreCase);
+
+        void RefreshButtonsState()
+        {
+            // 强制刷新命令的 CanExecute
+            System.Windows.Input.CommandManager.InvalidateRequerySuggested();
+            Raise(nameof(CanStart));
+            Raise(nameof(CanStop));
+            Raise(nameof(CanRestart));
+        }
+
+        public bool CanStart => !isBusy && IsLocalMode && !IsServerRunning;
+        public bool CanStop => !isBusy && IsLocalMode && IsServerRunning;
+        public bool CanRestart => !isBusy && IsLocalMode && IsServerRunning;
+
         public ICommand BrowseInstallPathCommand => new CommonCommand(_ =>
         {
             var dlg = new System.Windows.Forms.FolderBrowserDialog();
@@ -86,18 +132,183 @@ namespace CodeIndex.VisualStudioExtension.Models
 
         public ICommand DownloadOrUpdateCommand => new AsyncCommand(DownloadOrUpdateAsync, () => !isBusy, null);
         public ICommand SaveCommand => new CommonCommand(Save, _ => !isBusy);
+        public ICommand StartServerCommand => new CommonCommand(_ => { StartServer(); _ = CheckHealthAsync(); }, _ => CanStart);
+        public ICommand StopServerCommand => new CommonCommand(_ => { StopServer(); _ = CheckHealthAsync(); }, _ => CanStop);
+        public ICommand RestartServerCommand => new CommonCommand(_ => { StopServer(); StartServer(); _ = CheckHealthAsync(); }, _ => CanRestart);
+        public ICommand RefreshLogCommand => new AsyncCommand(RefreshLogAsync, () => true, null);
+        public ICommand CheckHealthCommand => new AsyncCommand(async () => await CheckHealthAsync(), () => !isCheckingHealth, null);
+
+        public string LogContent
+        {
+            get => logContent;
+            set { logContent = value; Raise(); }
+        }
+        string logContent;
+
+        // 不再在 ViewModel 中直接保存进程；统一由 LocalServerLauncher 负责生命周期
+
+        const string ReleaseListUrl = "https://github.com/qiuhaotc/CodeIndex/releases"; // 用于解析最新 tag
+        const string FixedZipUrlTemplate = "https://github.com/qiuhaotc/CodeIndex/releases/download/{0}/CodeIndex.Server.zip"; // {tag}
+        static readonly HttpClient sharedHttp = new HttpClient();
 
         async Task DownloadOrUpdateAsync()
         {
             try
             {
-                isBusy = true;
-                // 占位：未来实现调用 GitHub API 下载最新 Release
-                await Task.Delay(300); // 模拟
+                isBusy = true; Raise(nameof(IsLocalMode)); // 触发命令刷新
+
+                if (string.IsNullOrWhiteSpace(LocalServerInstallPath))
+                {
+                    LocalServerInstallPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "CodeIndex.VisualStudioExtension", "CodeIndex.Server");
+                    Raise(nameof(LocalServerInstallPath));
+                }
+                Directory.CreateDirectory(LocalServerInstallPath);
+
+                // 解析 releases 页面简单提取第一个 href="/qiuhaotc/CodeIndex/releases/tag/v..."
+                string html = await sharedHttp.GetStringAsync(ReleaseListUrl);
+                var tag = ParseFirstTag(html) ?? "v0.98_t"; // 回退已知版本
+                if (tag.StartsWith("/qiuhaotc/CodeIndex/releases/tag/"))
+                {
+                    tag = tag.Substring("/qiuhaotc/CodeIndex/releases/tag/".Length);
+                }
+
+                // 修正: 之前只比较版本号, 若本地版本号已保存但实际文件缺失会误判为无需下载。
+                // 判定需要下载的条件:
+                // 1. 未记录版本(LocalServerVersion 为空)
+                // 2. 版本不一致
+                // 3. 关键文件( CodeIndex.Server.dll ) 不存在 (可能被用户手动删除或首次尚未真正下载)
+                var serverDllPath = string.IsNullOrWhiteSpace(LocalServerInstallPath)
+                    ? null
+                    : Path.Combine(LocalServerInstallPath, "CodeIndex.Server.dll");
+                bool serverInstalled = !string.IsNullOrWhiteSpace(serverDllPath) && File.Exists(serverDllPath);
+                bool needDownload = string.IsNullOrWhiteSpace(LocalServerVersion)
+                                    || !string.Equals(LocalServerVersion, tag, StringComparison.OrdinalIgnoreCase)
+                                    || !serverInstalled;
+                if (!needDownload)
+                {
+                    System.Windows.MessageBox.Show($"Already latest: {tag}", "CodeIndex", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
+                    return;
+                }
+
+                var zipUrl = string.Format(FixedZipUrlTemplate, tag);
+                var tempZip = Path.Combine(Path.GetTempPath(), $"CodeIndex.Server_{tag}.zip");
+                try
+                {
+                    DownloadProgress = 0;
+                    using (var resp = await sharedHttp.GetAsync(zipUrl, HttpCompletionOption.ResponseHeadersRead))
+                    {
+                        resp.EnsureSuccessStatusCode();
+                        var total = resp.Content.Headers.ContentLength;
+                        using (var rs = await resp.Content.ReadAsStreamAsync())
+                        using (var fs = new FileStream(tempZip, FileMode.Create, FileAccess.Write, FileShare.None))
+                        {
+                            var buffer = new byte[81920];
+                            long readTotal = 0;
+                            int read;
+                            while ((read = await rs.ReadAsync(buffer, 0, buffer.Length)) > 0)
+                            {
+                                await fs.WriteAsync(buffer, 0, read);
+                                readTotal += read;
+                                if (total.HasValue && total.Value > 0)
+                                {
+                                    DownloadProgress = Math.Round(readTotal * 100.0 / total.Value, 1);
+                                }
+                            }
+                            DownloadProgress = 100;
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    System.Windows.MessageBox.Show("Download failed: " + ex.Message, "CodeIndex", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+                    return;
+                }
+
+                // 解压：简单处理，若存在旧文件尝试覆盖
+                try
+                {
+                    // 解压前先尝试停止当前运行的服务器
+                    StopServer();
+                    // 自定义覆盖解压，兼容 .NET Framework (无 ExtractToDirectory(..., overwriteFiles))
+                    using (var archive = ZipFile.OpenRead(tempZip))
+                    {
+                        foreach (var entry in archive.Entries)
+                        {
+                            var destinationPath = Path.Combine(LocalServerInstallPath, entry.FullName);
+                            if (string.IsNullOrEmpty(entry.Name))
+                            {
+                                Directory.CreateDirectory(destinationPath);
+                                continue;
+                            }
+                            Directory.CreateDirectory(Path.GetDirectoryName(destinationPath));
+                            if (File.Exists(destinationPath))
+                            {
+                                try { File.Delete(destinationPath); } catch { }
+                            }
+                            entry.ExtractToFile(destinationPath);
+                        }
+                    }
+                }
+                catch (Exception ex)
+                {
+                    System.Windows.MessageBox.Show("Extract failed: " + ex.Message, "CodeIndex", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+                    return;
+                }
+
+                LocalServerVersion = tag;
+                Raise(nameof(LocalServerVersion));
+                System.Windows.MessageBox.Show($"Updated to {tag}", "CodeIndex", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
             }
             finally
             {
                 isBusy = false;
+            }
+        }
+
+        static string ParseFirstTag(string html)
+        {
+            if (string.IsNullOrEmpty(html)) return null;
+            // 粗略查找 pattern：/qiuhaotc/CodeIndex/releases/tag/v...
+            var marker = "/qiuhaotc/CodeIndex/releases/tag/";
+            var idx = html.IndexOf(marker, StringComparison.OrdinalIgnoreCase);
+            if (idx < 0) return null;
+            var start = idx;
+            var end = html.IndexOf('"', start + marker.Length);
+            if (end < 0) return null;
+            return html.Substring(start, end - start);
+        }
+
+        void StartServer() => _ = CodeIndex.VisualStudioExtension.Models.LocalServerLauncher.EnsureServerRunningAsync(settings, System.Threading.CancellationToken.None);
+        void StopServer() { _ = CodeIndex.VisualStudioExtension.Models.LocalServerLauncher.StopServerIfLastAsync(settings); }
+
+        async Task RefreshLogAsync()
+        {
+            try
+            {
+                if (string.IsNullOrWhiteSpace(LocalServerInstallPath)) return;
+                var logFile = Path.Combine(LocalServerInstallPath, "Logs", "CodeIndex.log");
+                if (!File.Exists(logFile))
+                {
+                    LogContent = "(log file not found)";
+                    return;
+                }
+                // 读取最新 100 行
+                using (var fs = new FileStream(logFile, FileMode.Open, FileAccess.Read, FileShare.ReadWrite))
+                using (var sr = new StreamReader(fs))
+                {
+                    var q = new Queue<string>(100);
+                    string line;
+                    while ((line = await sr.ReadLineAsync()) != null)
+                    {
+                        if (q.Count == 100) q.Dequeue();
+                        q.Enqueue(line);
+                    }
+                    LogContent = string.Join(Environment.NewLine, q.ToArray());
+                }
+            }
+            catch (Exception ex)
+            {
+                LogContent = "Read log failed: " + ex.Message;
             }
         }
 
@@ -111,6 +322,46 @@ namespace CodeIndex.VisualStudioExtension.Models
             settings.Mode = IsLocalMode ? ServerMode.Local : ServerMode.Remote;
             UserSettingsManager.Save(settings);
             CloseWindow(true);
+        }
+
+        public async Task CheckHealthAsync()
+        {
+            if (isCheckingHealth) return;
+            if (!IsLocalMode)
+            {
+                HealthStatus = "Unknown";
+                return;
+            }
+            if (string.IsNullOrWhiteSpace(LocalServiceUrl))
+            {
+                HealthStatus = "Unknown";
+                return;
+            }
+            try
+            {
+                isCheckingHealth = true;
+                var url = LocalServiceUrl.TrimEnd('/') + "/api/Lucene/GetIndexViewList";
+                using (var cts = new System.Threading.CancellationTokenSource(TimeSpan.FromSeconds(3)))
+                {
+                    var resp = await sharedHttp.GetAsync(url, cts.Token);
+                    if (resp.IsSuccessStatusCode)
+                    {
+                        HealthStatus = "Started";
+                    }
+                    else
+                    {
+                        HealthStatus = "Error";
+                    }
+                }
+            }
+            catch
+            {
+                HealthStatus = "Stopped";
+            }
+            finally
+            {
+                isCheckingHealth = false;
+            }
         }
 
         void CloseWindow(bool dialogResult)

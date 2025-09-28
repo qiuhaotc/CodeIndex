@@ -127,6 +127,12 @@ When Phase Quuery not been ticked, you can follow the sytax under [http://www.lu
 
 When Case-Sensitive been ticked, we can search the content in case-sensitive mode. When search the content like String, it won't return the content that contains string
 
+## Extension Compile
+
+```powershell
+& "C:\Program Files\Microsoft Visual Studio\18\Insiders\MSBuild\Current\Bin\MSBuild.exe" src\CodeIndex.VisualStudioExtension\CodeIndex.VisualStudioExtension.csproj /t:Build /p:Configuration=Debug /nologo
+```
+
 ## Misc
 
 |Status|Value|

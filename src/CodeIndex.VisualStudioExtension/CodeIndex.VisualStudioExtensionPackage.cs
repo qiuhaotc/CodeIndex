@@ -43,20 +43,31 @@ namespace CodeIndex.VisualStudioExtension
         /// <param name="cancellationToken">A cancellation token to monitor for initialization cancellation, which can occur when VS is shutting down.</param>
         /// <param name="progress">A provider for progress updates.</param>
         /// <returns>A task representing the async work of package initialization, or an already completed task if there is none. Do not return null from this method.</returns>
+        UserSettings loadedSettings;
+
         protected override async Task InitializeAsync(CancellationToken cancellationToken, IProgress<ServiceProgressData> progress)
         {
             // 后台线程：可以做不需要 UI 的初始化
-            var settings = UserSettingsManager.Load();
-            // 尝试在后台启动本地服务器（不会阻塞）
-            try
-            {
-                Models.LocalServerLauncher.TryLaunch(settings);
-            }
-            catch { /* 忽略异常 */ }
+            loadedSettings = UserSettingsManager.Load();
+            // 注册实例（引用 + 确保启动）
+            await Models.LocalServerLauncher.RegisterInstanceAsync(loadedSettings);
 
             // 切换到 UI 线程再注册命令
-            await this.JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
-            await CodeIndex.VisualStudioExtension.CodeIndexSearchWindowCommand.InitializeAsync(this);
+            await JoinableTaskFactory.SwitchToMainThreadAsync(cancellationToken);
+            await CodeIndexSearchWindowCommand.InitializeAsync(this);
+        }
+
+        protected override void Dispose(bool disposing)
+        {
+            try
+            {
+                if (disposing && loadedSettings != null)
+                {
+                    Models.LocalServerLauncher.UnregisterInstance(loadedSettings);
+                }
+            }
+            catch { }
+            base.Dispose(disposing);
         }
 
         #endregion

@@ -1,0 +1,29 @@
+name: Build VSIX on Tag
+
+on:
+  push:
+    tags:
+      - t*
+
+jobs:
+  build-vsix:
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Locate MSBuild
+        id: msbuild
+        shell: pwsh
+        run: |
+          $msbuild = & "$env:ProgramFiles(x86)\Microsoft Visual Studio\Installer\vswhere.exe" -latest -products * -requires Microsoft.Component.MSBuild -find MSBuild\**\Bin\MSBuild.exe | Select-Object -First 1
+          if(-not $msbuild){ throw 'MSBuild not found' }
+          echo "path=$msbuild" >> $env:GITHUB_OUTPUT
+      - name: Build VSIX (Release)
+        shell: pwsh
+        run: |
+          & '${{ steps.msbuild.outputs.path }}' src/CodeIndex.VisualStudioExtension/CodeIndex.VisualStudioExtension.csproj /t:Build /p:Configuration=Release /nologo
+      - name: Upload VSIX Artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: CodeIndex.VisualStudioExtension.vsix
+          path: src/CodeIndex.VisualStudioExtension/bin/Release/CodeIndex.VisualStudioExtension.vsix

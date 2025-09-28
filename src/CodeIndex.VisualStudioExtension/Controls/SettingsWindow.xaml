@@ -46,6 +46,8 @@
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
                             <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="Auto"/>
+                            <RowDefinition Height="200"/>
                         </Grid.RowDefinitions>
                         <Label Content="Local Service Url:"/>
                         <TextBox Grid.Column="1" Text="{Binding LocalServiceUrl, UpdateSourceTrigger=PropertyChanged}"/>
@@ -61,6 +63,30 @@
                         <Label Grid.Row="3" Content="Installed Version:"/>
                         <TextBox Grid.Row="3" Grid.Column="1" IsReadOnly="True" Text="{Binding LocalServerVersion}"/>
                         <Button Grid.Row="3" Grid.Column="2" Content="Download / Update" Margin="6 0 0 0" Padding="10 2" Command="{Binding DownloadOrUpdateCommand}"/>
+
+                        <StackPanel Grid.Row="4" Grid.ColumnSpan="3" Orientation="Vertical" Margin="0 8 0 4">
+                            <StackPanel Orientation="Horizontal" Margin="0 0 0 4">
+                                <TextBlock Text="Health:" VerticalAlignment="Center" Margin="0 0 4 0"/>
+                                <TextBlock Text="{Binding HealthStatus}" FontWeight="Bold"/>
+                                <Button Content="Check" Width="60" Margin="12 0 0 0" Command="{Binding CheckHealthCommand}"/>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" Margin="0 0 0 4">
+                                <Button Content="Start" Width="70" Margin="0 0 8 0" Command="{Binding StartServerCommand}" IsEnabled="{Binding CanStart}"/>
+                                <Button Content="Stop" Width="70" Margin="0 0 8 0" Command="{Binding StopServerCommand}" IsEnabled="{Binding CanStop}"/>
+                                <Button Content="Restart" Width="70" Margin="0 0 8 0" Command="{Binding RestartServerCommand}" IsEnabled="{Binding CanRestart}"/>
+                                <Button Content="Refresh Log" Width="90" Command="{Binding RefreshLogCommand}"/>
+                            </StackPanel>
+                            <StackPanel Orientation="Horizontal" VerticalAlignment="Center">
+                                <TextBlock Text="Download:" Margin="0 0 4 0"/>
+                                <ProgressBar Width="200" Height="14" Minimum="0" Maximum="100" Value="{Binding DownloadProgress}"/>
+                                <TextBlock Text="{Binding DownloadProgress, StringFormat={}{0:F1}%}" Margin="6 0 0 0"/>
+                            </StackPanel>
+                        </StackPanel>
+                        <GroupBox Grid.Row="5" Grid.ColumnSpan="3" Header="Latest 100 Log Lines" Padding="4">
+                            <ScrollViewer VerticalScrollBarVisibility="Auto">
+                                <TextBox Text="{Binding LogContent}" IsReadOnly="True" TextWrapping="NoWrap" FontFamily="Consolas" FontSize="12" Background="{DynamicResource {x:Static SystemColors.WindowBrushKey}}" BorderThickness="0"/>
+                            </ScrollViewer>
+                        </GroupBox>
                     </Grid>
                 </GroupBox>
             </StackPanel>

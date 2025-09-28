@@ -60,7 +60,23 @@ namespace CodeIndex.VisualStudioExtension
                 tokenToLoadIndexInfos?.Cancel();
                 tokenToLoadIndexInfos?.Dispose();
                 tokenToLoadIndexInfos = new CancellationTokenSource();
-
+                // 若为本地模式且服务器未启动，先尝试启动并等待健康
+                if (userSettings.Mode == ServerMode.Local)
+                {
+                    var ensure = await LocalServerLauncher.EnsureServerRunningAsync(userSettings, tokenToLoadIndexInfos.Token);
+                    if (!ensure)
+                    {
+                        ResultInfo = "Local server not started.";
+                        return;
+                    }
+                    else
+                    {
+                        // 本地服务器刚刚成功启动，强制刷新相关绑定（例如 ServiceUrl 显示）
+                        NotifyPropertyChange(nameof(ServiceUrl));
+                        ResultInfo = "Local server started, loading indexes...";
+                    }
+                    // 再次刷新 EffectiveServiceUrl 以防用户修改
+                }
                 var client = new CodeIndexClient(new HttpClient(), EffectiveServiceUrl);
                 var result = await client.ApiLuceneGetindexviewlistAsync(tokenToLoadIndexInfos.Token);
 
