@@ -46,8 +46,11 @@ jobs:
             throw 'VSIX file not generated.'
           }
           Write-Host "Found VSIX: $($vsix.FullName)"
-          Copy-Item $vsix.FullName artifacts/ -Force -ErrorAction Stop
-          "path=artifacts/$($vsix.Name)" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+          if(-not (Test-Path 'artifacts')) { New-Item -ItemType Directory -Path artifacts | Out-Null }
+          $dest = Join-Path -Path (Resolve-Path 'artifacts').Path -ChildPath $vsix.Name
+          Copy-Item -Path $vsix.FullName -Destination $dest -Force -ErrorAction Stop
+          Write-Host "Copied to $dest"
+          "path=$dest" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
@@ -80,7 +83,7 @@ jobs:
             echo "No VSIX asset found" >&2
             exit 1
           fi
-            echo "Publishing release $tag with asset $asset"
+          echo "Publishing release $tag with asset $asset"
           if gh release create "$tag" "$asset" --title "VSIX $tag" --notes "VSIX build for $tag" -R "$GITHUB_REPOSITORY"; then
             echo "Release created"
           else
