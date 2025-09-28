@@ -46,9 +46,9 @@ jobs:
           Write-Host "Tag $tag deleted to prevent release."
 
   build:
-    name: Build & Package (framework-dependent any-platform)
+    name: Build & Package
     needs: test
-    runs-on: ubuntu-latest
+    runs-on: windows-latest
     steps:
       - name: Checkout
         uses: actions/checkout@v4
@@ -67,15 +67,16 @@ jobs:
           -p:PublishSingleFile=false -p:SelfContained=false -o artifacts/publish-any
 
       - name: Package zip
+        shell: pwsh
         run: |
-          mkdir -p artifacts/zips
-          (cd artifacts/publish-any && zip -r ../zips/CodeIndex.Server-any.zip .)
+          New-Item -ItemType Directory -Path artifacts/zips -Force | Out-Null
+          Compress-Archive -Path artifacts/publish-any/* -DestinationPath artifacts/zips/CodeIndex.Server.zip -Force
 
       - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: CodeIndex.Server-any
-          path: artifacts/zips/CodeIndex.Server-any.zip
+          name: CodeIndex.Server
+          path: artifacts/zips/CodeIndex.Server.zip
           if-no-files-found: error
 
   release:
@@ -88,7 +89,7 @@ jobs:
       - name: Download artifact
         uses: actions/download-artifact@v4
         with:
-          name: CodeIndex.Server-any
+          name: CodeIndex.Server
           path: downloaded
 
       - name: List downloaded files
@@ -100,9 +101,9 @@ jobs:
         shell: bash
         run: |
           tag="$GITHUB_REF_NAME"
-          asset="downloaded/CodeIndex.Server-any.zip"
-          echo "Publishing release $tag with asset $asset (framework-dependent build)"
-          if gh release create "$tag" "$asset" --title "CodeIndex.Server $tag" --notes "Framework-dependent (cross-platform) build for $tag" -R "$GITHUB_REPOSITORY"; then
+          asset="downloaded/CodeIndex.Server.zip"
+          echo "Publishing release $tag with asset $asset"
+          if gh release create "$tag" "$asset" --title "CodeIndex.Server $tag" --notes "Framework-dependent build (.exe) for $tag" -R "$GITHUB_REPOSITORY"; then
             echo "Release created"
           else
             echo "Release exists, updating asset..."
