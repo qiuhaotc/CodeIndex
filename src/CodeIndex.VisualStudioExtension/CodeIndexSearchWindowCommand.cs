@@ -13,7 +13,7 @@ namespace CodeIndex.VisualStudioExtension
         /// <summary>
         /// Command ID.
         /// </summary>
-        public const int CommandId = 4129;
+    public const int CommandId = 4129;
 
         /// <summary>
         /// Command menu group (command set GUID).
@@ -39,6 +39,7 @@ namespace CodeIndex.VisualStudioExtension
             var menuCommandID = new CommandID(CommandSet, CommandId);
             var menuItem = new MenuCommand(this.Execute, menuCommandID);
             commandService.AddCommand(menuItem);
+
         }
 
         /// <summary>
@@ -84,12 +85,14 @@ namespace CodeIndex.VisualStudioExtension
         {
             this.package.JoinableTaskFactory.RunAsync(async delegate
             {
+                await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
                 ToolWindowPane window = await this.package.ShowToolWindowAsync(typeof(CodeIndexSearchWindow), 0, true, this.package.DisposalToken);
-                if ((null == window) || (null == window.Frame))
+                if (window?.Frame == null)
                 {
                     throw new NotSupportedException("Cannot create tool window");
                 }
-            });
+            }).FileAndForget("CodeIndex/ShowToolWindow");
         }
+
     }
 }

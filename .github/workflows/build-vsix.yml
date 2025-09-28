@@ -1,0 +1,91 @@
+name: Publish VSIX
+
+on:
+  push:
+    tags:
+      - v*
+
+jobs:
+  build:
+    name: Build VSIX
+    runs-on: windows-latest
+    steps:
+      - name: Checkout
+        uses: actions/checkout@v4
+      - name: Setup MSBuild (add to PATH)
+        uses: microsoft/setup-msbuild@v2
+      - name: Locate MSBuild
+        id: msbuild
+        shell: pwsh
+        run: |
+          $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
+          if(-not (Test-Path $vswhere)) { throw "vswhere not found at $vswhere" }
+          $msbuild = & $vswhere -latest -requires Microsoft.Component.MSBuild -find "MSBuild\**\Bin\MSBuild.exe" | Select-Object -First 1
+          if(-not $msbuild){ throw 'MSBuild not found' }
+          "path=$msbuild" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+      - name: Restore (solution)
+        shell: pwsh
+        run: |
+          dotnet restore src/CodeIndex.VisualStudioExtension/CodeIndex.VisualStudioExtension.sln
+      - name: Build VSIX (Release)
+        shell: pwsh
+        run: |
+          & '${{ steps.msbuild.outputs.path }}' src/CodeIndex.VisualStudioExtension/CodeIndex.VisualStudioExtension.csproj /t:Build /p:Configuration=Release /nologo
+      - name: Locate VSIX
+        id: locate_vsix
+        shell: pwsh
+        run: |
+          $outDir = "src/CodeIndex.VisualStudioExtension/bin/Release"
+          if(-not (Test-Path $outDir)) { throw "Output directory not found: $outDir" }
+          Write-Host "Listing VSIX output directory contents:"; Get-ChildItem -Path $outDir | Format-Table Name,Length,LastWriteTime
+          $vsix = Get-ChildItem -Path $outDir -Filter *.vsix -File | Sort-Object LastWriteTime -Descending | Select-Object -First 1
+          if(-not $vsix) {
+            Write-Host 'No VSIX found; dumping recursive tree:'
+            Get-ChildItem -Path $outDir -Recurse | Select-Object FullName,Length,LastWriteTime | Format-Table -AutoSize
+            throw 'VSIX file not generated.'
+          }
+          Write-Host "Found VSIX: $($vsix.FullName)"
+          if(-not (Test-Path 'artifacts')) { New-Item -ItemType Directory -Path artifacts | Out-Null }
+          $dest = Join-Path -Path (Resolve-Path 'artifacts').Path -ChildPath $vsix.Name
+          Copy-Item -Path $vsix.FullName -Destination $dest -Force -ErrorAction Stop
+          Write-Host "Copied to $dest"
+          "path=$dest" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+      - name: Upload artifact
+        uses: actions/upload-artifact@v4
+        with:
+          name: CodeIndex.VSIX
+          path: ${{ steps.locate_vsix.outputs.path }}
+          if-no-files-found: error
+
+  release:
+    name: Create / Update Release
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: CodeIndex.VSIX
+          path: downloaded
+      - name: List downloaded files
+        run: ls -R downloaded
+      - name: Create or update release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          tag="$GITHUB_REF_NAME"
+          asset=$(ls downloaded/*.vsix | head -n1)
+          if [ -z "$asset" ]; then
+            echo "No VSIX asset found" >&2
+            exit 1
+          fi
+          echo "Publishing release $tag with asset $asset"
+          if gh release create "$tag" "$asset" --title "VSIX $tag" --notes "VSIX build for $tag" -R "$GITHUB_REPOSITORY"; then
+            echo "Release created"
+          else
+            echo "Release exists, updating asset..."
+            gh release upload "$tag" "$asset" --clobber -R "$GITHUB_REPOSITORY"
+          fi

@@ -1,7 +1,8 @@
 ﻿using System;
 using System.ComponentModel;
 using System.Runtime.CompilerServices;
-using System.Windows.Threading;
+using System.Threading.Tasks;
+using Microsoft.VisualStudio.Shell;
 
 namespace CodeIndex.VisualStudioExtension
 {
@@ -19,9 +20,14 @@ namespace CodeIndex.VisualStudioExtension
             PropertyChanged?.Invoke(this, new PropertyChangedEventArgs(propertyName.Invoke()));
         }
 
-        public static void InvokeDispatcher(Action action, Dispatcher dispatcher, DispatcherPriority dispatcherPriority = DispatcherPriority.Normal)
+        /// <summary>
+        /// 在 UI 线程执行委托（如果可能）。如果当前不在 UI 线程，会切换。
+        /// </summary>
+        public static async Task InvokeOnUIThreadAsync(Action action)
         {
-            dispatcher?.BeginInvoke(dispatcherPriority, action);
+            if (action == null) return;
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+            action();
         }
     }
 }

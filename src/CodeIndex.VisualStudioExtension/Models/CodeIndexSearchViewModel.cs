@@ -5,6 +5,8 @@ using System.Threading;
 using System.Threading.Tasks;
 using System.Net.Http;
 using System.Windows.Input;
+using Microsoft.VisualStudio.Shell;
+using Microsoft.VisualStudio.Threading;
 using CodeIndex.VisualStudioExtension.Models;
 
 namespace CodeIndex.VisualStudioExtension
@@ -13,8 +15,13 @@ namespace CodeIndex.VisualStudioExtension
     {
         public CodeIndexSearchViewModel()
         {
-            serviceUrl = ConfigHelper.Configuration.AppSettings.Settings[nameof(ServiceUrl)].Value;
-            _ = LoadIndexInfosAsync();
+            userSettings = UserSettingsManager.Load();
+            serviceUrl = userSettings.Mode == ServerMode.Local ? userSettings.LocalServiceUrl : userSettings.RemoteServiceUrl;
+
+            // 使用 VS 提供的 ThreadHelper.JoinableTaskFactory，避免 VSSDK005（不要自建 JoinableTaskContext）
+            jtf = ThreadHelper.JoinableTaskFactory;
+            trackedTasks = jtf.Context.CreateCollection();
+            trackedTasks.Add(jtf.RunAsync(LoadIndexInfosAsync)); // 加入集合以便被视为“已观察”从而避免 VSSDK007
         }
 
         public Guid IndexPk
@@ -33,25 +40,12 @@ namespace CodeIndex.VisualStudioExtension
         public string FileLocation { get; set; }
         public int ShowResultsNumber { get; set; } = 1000;
 
-        public string ServiceUrl
-        {
-            get => serviceUrl;
-            set
-            {
-                if (value != null && value.EndsWith("/"))
-                {
-                    value = value.Substring(0, value.Length - 1);
-                }
+        // 兼容旧代码：保留 ServiceUrl 字段用于外部引用（如打开详情页面），但不再直接绑定 UI
+        public string ServiceUrl => EffectiveServiceUrl;
 
-                if (value != serviceUrl)
-                {
-                    ConfigHelper.SetConfiguration(nameof(ServiceUrl), value);
-                    serviceUrl = value;
-                }
-
-                _ = LoadIndexInfosAsync();
-            }
-        }
+        string EffectiveServiceUrl => userSettings.Mode == ServerMode.Local
+            ? (userSettings.LocalServiceUrl?.TrimEnd('/') ?? serviceUrl)
+            : (userSettings.RemoteServiceUrl?.TrimEnd('/') ?? serviceUrl);
 
         public bool CaseSensitive { get; set; }
 
@@ -66,8 +60,24 @@ namespace CodeIndex.VisualStudioExtension
                 tokenToLoadIndexInfos?.Cancel();
                 tokenToLoadIndexInfos?.Dispose();
                 tokenToLoadIndexInfos = new CancellationTokenSource();
-
-                var client = new CodeIndexClient(new HttpClient(), ServiceUrl);
+                // 若为本地模式且服务器未启动，先尝试启动并等待健康
+                if (userSettings.Mode == ServerMode.Local)
+                {
+                    var ensure = await LocalServerLauncher.EnsureServerRunningAsync(userSettings, tokenToLoadIndexInfos.Token);
+                    if (!ensure)
+                    {
+                        ResultInfo = "Local server not started.";
+                        return;
+                    }
+                    else
+                    {
+                        // 本地服务器刚刚成功启动，强制刷新相关绑定（例如 ServiceUrl 显示）
+                        NotifyPropertyChange(nameof(ServiceUrl));
+                        ResultInfo = "Local server started, loading indexes...";
+                    }
+                    // 再次刷新 EffectiveServiceUrl 以防用户修改
+                }
+                var client = new CodeIndexClient(new HttpClient(), EffectiveServiceUrl);
                 var result = await client.ApiLuceneGetindexviewlistAsync(tokenToLoadIndexInfos.Token);
 
                 IndexInfos = result.Status.Success ? result.Result.Select(u => new Item<Guid>(u.IndexName, u.Pk)).ToList() : IndexInfos;
@@ -109,7 +119,7 @@ namespace CodeIndex.VisualStudioExtension
                 {
                     try
                     {
-                        var client = new CodeIndexClient(new HttpClient(), ServiceUrl);
+                        var client = new CodeIndexClient(new HttpClient(), EffectiveServiceUrl);
                         var result = await client.ApiLuceneGethintsAsync(inputWord, IndexPk);
 
                         if (result.Status.Success)
@@ -189,7 +199,11 @@ namespace CodeIndex.VisualStudioExtension
         ICommand searchIndexCommand;
         ICommand stopSearchCommand;
         ICommand refreshIndexCommand;
-        string serviceUrl;
+    ICommand openSettingsCommand;
+    string serviceUrl;
+    readonly UserSettings userSettings;
+    JoinableTaskCollection trackedTasks; // 跟踪后台任务集合
+    JoinableTaskFactory jtf;             // VS 提供的 JoinableTaskFactory
         List<CodeSourceWithMatchedLine> searchResults = new List<CodeSourceWithMatchedLine>();
         string resultInfo;
         CancellationTokenSource tokenSource;
@@ -242,6 +256,44 @@ namespace CodeIndex.VisualStudioExtension
             }
         }
 
+        public ICommand OpenSettingsCommand
+        {
+            get
+            {
+                if (openSettingsCommand == null)
+                {
+                    openSettingsCommand = new AsyncCommand(OpenSettingsAsync, () => true, null);
+                }
+                return openSettingsCommand;
+            }
+        }
+
+        async Task OpenSettingsAsync()
+        {
+            await ThreadHelper.JoinableTaskFactory.SwitchToMainThreadAsync();
+            try
+            {
+                var settings = UserSettingsManager.Load();
+                var vm = new SettingsViewModel(settings);
+                var window = new CodeIndex.VisualStudioExtension.Controls.SettingsWindow(vm)
+                {
+                    Owner = System.Windows.Application.Current?.MainWindow
+                };
+                var result = window.ShowDialog();
+                if (result == true)
+                {
+                    // 切换生效：重新计算有效 URL 并刷新索引
+                    serviceUrl = vm.IsLocalMode ? settings.LocalServiceUrl : settings.RemoteServiceUrl;
+                    trackedTasks?.Add(jtf.RunAsync(LoadIndexInfosAsync));
+                    NotifyPropertyChange(nameof(ServiceUrl));
+                }
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show("Open settings failed: " + ex.Message, "CodeIndex", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+            }
+        }
+
         #region SearchCodeIndex
 
         bool IsSearching { get; set; }
@@ -278,7 +330,7 @@ namespace CodeIndex.VisualStudioExtension
         {
             if (IsValidate())
             {
-                var client = new CodeIndexClient(new HttpClient(), ServiceUrl);
+                var client = new CodeIndexClient(new HttpClient(), EffectiveServiceUrl);
                 var result = await client.ApiLuceneGetcodesourceswithmatchedlineAsync(new SearchRequest
                 {
                     IndexPk = indexPk,
@@ -353,6 +405,29 @@ namespace CodeIndex.VisualStudioExtension
             return !string.IsNullOrEmpty(GetSearchStr());
         }
 
+        #endregion
+
+        #region HintWords 调度封装
+        public void ScheduleGetHintWords()
+        {
+            if (string.IsNullOrEmpty(Content))
+            {
+                return;
+            }
+
+            // 将获取提示词操作作为后台任务加入集合（内部自行捕获异常）
+            trackedTasks?.Add(jtf.RunAsync(async delegate
+            {
+                try
+                {
+                    await GetHintWordsAsync();
+                }
+                catch
+                {
+                    // 忽略异常，提示词非关键路径
+                }
+            }));
+        }
         #endregion
     }
 }
