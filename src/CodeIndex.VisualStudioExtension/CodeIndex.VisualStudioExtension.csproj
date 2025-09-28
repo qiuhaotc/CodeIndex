@@ -15,7 +15,6 @@
             <ErrorReport>prompt</ErrorReport>
             <DebugType>pdbonly</DebugType>
             <DebugSymbols>true</DebugSymbols>
-            <UseWindowsForms>true</UseWindowsForms>
             <UseWPF>true</UseWPF>
         </PropertyGroup>
     <PropertyGroup>
@@ -91,7 +90,6 @@
         <Reference Include="System.ComponentModel.DataAnnotations" />
         <Reference Include="System.Design" />
         <Reference Include="System.Web" />
-        <Reference Include="System.Windows.Forms" />
         <PackageReference Include="Microsoft.VisualStudio.SDK" Version="17.14.40265" ExcludeAssets="runtime">
             <IncludeAssets>compile; build; native; contentfiles; analyzers; buildtransitive</IncludeAssets>
         </PackageReference>

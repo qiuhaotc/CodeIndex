@@ -115,20 +115,20 @@ namespace CodeIndex.VisualStudioExtension.Models
 
         public ICommand BrowseInstallPathCommand => new CommonCommand(_ =>
         {
-            var dlg = new System.Windows.Forms.FolderBrowserDialog();
-            if (dlg.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            var picked = FolderPickerHelper.PickFolder(LocalServerInstallPath, "Select Local Server Install Directory (CodeIndex.Server)");
+            if (!string.IsNullOrWhiteSpace(picked))
             {
-                LocalServerInstallPath = dlg.SelectedPath;
+                LocalServerInstallPath = picked;
                 Raise(nameof(LocalServerInstallPath));
             }
         }, _ => true);
 
         public ICommand BrowseDataDirCommand => new CommonCommand(_ =>
         {
-            var dlg = new System.Windows.Forms.FolderBrowserDialog();
-            if (dlg.ShowDialog() == System.Windows.Forms.DialogResult.OK)
+            var picked = FolderPickerHelper.PickFolder(LocalServerDataDirectory, "Select Local Server Data Directory (Index Storage)");
+            if (!string.IsNullOrWhiteSpace(picked))
             {
-                LocalServerDataDirectory = dlg.SelectedPath;
+                LocalServerDataDirectory = picked;
                 Raise(nameof(LocalServerDataDirectory));
             }
         }, _ => true);
@@ -140,11 +140,15 @@ namespace CodeIndex.VisualStudioExtension.Models
         public ICommand RestartServerCommand => restartServerCommand ?? (restartServerCommand = new AsyncCommand(RestartServerAsync, () => CanRestart, null));
         public ICommand RefreshLogCommand => new AsyncCommand(RefreshLogAsync, () => true, null);
         public ICommand CheckHealthCommand => new AsyncCommand(async () => await CheckHealthAsync(), () => !isCheckingHealth, null);
+        public ICommand OpenLocalServiceUrlCommand => openLocalServiceUrlCommand ?? (openLocalServiceUrlCommand = new CommonCommand(OpenLocalServiceUrl, _ => !string.IsNullOrWhiteSpace(LocalServiceUrl)));
+        public ICommand OpenRemoteServiceUrlCommand => openRemoteServiceUrlCommand ?? (openRemoteServiceUrlCommand = new CommonCommand(OpenRemoteServiceUrl, _ => !string.IsNullOrWhiteSpace(RemoteServiceUrl)));
 
         AsyncCommand downloadCommand;
         AsyncCommand startServerCommand;
         AsyncCommand stopServerCommand;
         AsyncCommand restartServerCommand;
+        CommonCommand openLocalServiceUrlCommand;
+        CommonCommand openRemoteServiceUrlCommand;
 
         public string LogContent
         {
@@ -169,7 +173,15 @@ namespace CodeIndex.VisualStudioExtension.Models
                 {
                     LocalServerInstallPath = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "CodeIndex.VisualStudioExtension", "CodeIndex.Server");
                     Raise(nameof(LocalServerInstallPath));
+
+                    if (string.IsNullOrWhiteSpace(LocalServerDataDirectory))
+                    {
+                        LocalServerDataDirectory = Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "CodeIndex.VisualStudioExtension", "CodeIndex.Server.Data");
+                        Raise(nameof(LocalServerDataDirectory));
+                        Directory.CreateDirectory(LocalServerDataDirectory);
+                    }
                 }
+
                 Directory.CreateDirectory(LocalServerInstallPath);
 
                 // 解析 releases 页面简单提取第一个 href="/qiuhaotc/CodeIndex/releases/tag/v..."
@@ -256,6 +268,8 @@ namespace CodeIndex.VisualStudioExtension.Models
                             entry.ExtractToFile(destinationPath);
                         }
                     }
+                    // 解压完成后尝试删除临时压缩包
+                    try { if (File.Exists(tempZip)) File.Delete(tempZip); } catch { }
                 }
                 catch (Exception ex)
                 {
@@ -430,6 +444,52 @@ namespace CodeIndex.VisualStudioExtension.Models
             CloseWindow(true);
         }
 
+        void OpenLocalServiceUrl(object _)
+        {
+            try
+            {
+                var url = LocalServiceUrl;
+                if (string.IsNullOrWhiteSpace(url)) return;
+                url = url.Trim();
+                if (!url.StartsWith("http://", StringComparison.OrdinalIgnoreCase) && !url.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+                {
+                    url = "http://" + url.TrimStart('/');
+                }
+                StartProcess(new ProcessStartInfo
+                {
+                    FileName = url,
+                    UseShellExecute = true
+                });
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show("Open failed: " + ex.Message, "CodeIndex", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+            }
+        }
+
+        void OpenRemoteServiceUrl(object _)
+        {
+            try
+            {
+                var url = RemoteServiceUrl;
+                if (string.IsNullOrWhiteSpace(url)) return;
+                url = url.Trim();
+                if (!url.StartsWith("http://", StringComparison.OrdinalIgnoreCase) && !url.StartsWith("https://", StringComparison.OrdinalIgnoreCase))
+                {
+                    url = "http://" + url.TrimStart('/');
+                }
+                StartProcess(new ProcessStartInfo
+                {
+                    FileName = url,
+                    UseShellExecute = true
+                });
+            }
+            catch (Exception ex)
+            {
+                System.Windows.MessageBox.Show("Open failed: " + ex.Message, "CodeIndex", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+            }
+        }
+
         public async Task CheckHealthAsync()
         {
             if (isCheckingHealth) return;
@@ -482,6 +542,155 @@ namespace CodeIndex.VisualStudioExtension.Models
                     break;
                 }
             }
+        }
+    }
+
+    // 基于 Vista 及以上的 IFileOpenDialog 实现的现代文件夹选择器，体验接近 VS / VSCode 打开文件夹窗口
+    internal static class FolderPickerHelper
+    {
+        public static string PickFolder(string initialPath, string title = null)
+        {
+            try
+            {
+                var dialog = (IFileOpenDialog)new FileOpenDialogRCW();
+                uint options;
+                dialog.GetOptions(out options);
+                // 允许选择文件夹 / 仅文件系统 / 路径必须存在 / 允许创建新文件夹按钮
+                options |= (uint)(FOS.FOS_PICKFOLDERS | FOS.FOS_FORCEFILESYSTEM | FOS.FOS_PATHMUSTEXIST | FOS.FOS_CREATEPROMPT | FOS.FOS_NOREADONLYRETURN);
+                dialog.SetOptions(options);
+
+                // 初始目录
+                if (!string.IsNullOrWhiteSpace(initialPath) && System.IO.Directory.Exists(initialPath))
+                {
+                    IShellItem folderItem;
+                    if (SHCreateItemFromParsingName(initialPath, IntPtr.Zero, typeof(IShellItem).GUID, out folderItem) == 0)
+                    {
+                        dialog.SetFolder(folderItem);
+                    }
+                }
+
+                // 预填一个名称（可输入路径）
+                if (!string.IsNullOrWhiteSpace(initialPath))
+                {
+                    try { dialog.SetFileName(initialPath); } catch { }
+                }
+
+                if (!string.IsNullOrWhiteSpace(title))
+                {
+                    try { dialog.SetTitle(title); } catch { }
+                }
+
+                var hr = dialog.Show(GetActiveWindow());
+                if (hr == (int)HRESULT.ERROR_CANCELLED) return null; // 用户取消
+                if (hr != 0) return null; // 其他错误
+
+                IShellItem result;
+                dialog.GetResult(out result);
+                if (result == null) return null;
+                string path;
+                result.GetDisplayName(SIGDN.SIGDN_FILESYSPATH, out path);
+                return path;
+            }
+            catch
+            {
+                return null;
+            }
+        }
+
+        // --- COM / PInvoke 定义 ---
+        [System.Runtime.InteropServices.ComImport]
+        [System.Runtime.InteropServices.Guid("DC1C5A9C-E88A-4DDE-A5A1-60F82A20AEF7")]
+        private class FileOpenDialogRCW { }
+
+        [System.Runtime.InteropServices.ComImport]
+        [System.Runtime.InteropServices.InterfaceType(System.Runtime.InteropServices.ComInterfaceType.InterfaceIsIUnknown)]
+        [System.Runtime.InteropServices.Guid("42f85136-db7e-439c-85f1-e4075d135fc8")]
+        private interface IFileOpenDialog
+        {
+            // IModalWindow
+            [System.Runtime.InteropServices.PreserveSig]
+            int Show(IntPtr parent);
+            // IFileDialog (部分，只保留需要的方法顺序需与原接口一致)
+            void SetFileTypes(); // 未使用
+            void SetFileTypeIndex(uint iFileType);
+            void GetFileTypeIndex(out uint piFileType);
+            void Advise();
+            void Unadvise();
+            void SetOptions(uint fos);
+            void GetOptions(out uint pfos);
+            void SetDefaultFolder(IShellItem psi);
+            void SetFolder(IShellItem psi);
+            void GetFolder(out IShellItem ppsi);
+            void GetCurrentSelection(out IShellItem ppsi);
+            void SetFileName([System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.LPWStr)] string pszName);
+            void GetFileName([System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.LPWStr)] out string pszName);
+            void SetTitle([System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.LPWStr)] string pszTitle);
+            void SetOkButtonLabel([System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.LPWStr)] string pszText);
+            void SetFileNameLabel([System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.LPWStr)] string pszLabel);
+            void GetResult(out IShellItem ppsi);
+            void AddPlace(IShellItem psi, int fdap);
+            void SetDefaultExtension([System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.LPWStr)] string pszDefaultExtension);
+            void Close(int hr);
+            void SetClientGuid();
+            void ClearClientData();
+            void SetFilter();
+            // IFileOpenDialog
+            void GetResults();
+            void GetSelectedItems();
+        }
+
+        [System.Runtime.InteropServices.ComImport]
+        [System.Runtime.InteropServices.InterfaceType(System.Runtime.InteropServices.ComInterfaceType.InterfaceIsIUnknown)]
+        [System.Runtime.InteropServices.Guid("43826D1E-E718-42EE-BC55-A1E261C37BFE")]
+        private interface IShellItem
+        {
+            void BindToHandler();
+            void GetParent();
+            void GetDisplayName(SIGDN sigdnName, [System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.LPWStr)] out string ppszName);
+            void GetAttributes();
+            void Compare();
+        }
+
+        [System.Runtime.InteropServices.DllImport("shell32.dll", CharSet = System.Runtime.InteropServices.CharSet.Unicode, SetLastError = true)]
+        private static extern int SHCreateItemFromParsingName([System.Runtime.InteropServices.MarshalAs(System.Runtime.InteropServices.UnmanagedType.LPWStr)] string pszPath, IntPtr pbc, [System.Runtime.InteropServices.In] System.Guid riid, out IShellItem ppv);
+
+        [System.Runtime.InteropServices.DllImport("user32.dll")]
+        private static extern IntPtr GetActiveWindow();
+
+        private enum HRESULT : int
+        {
+            ERROR_CANCELLED = unchecked((int)0x800704C7)
+        }
+
+        [Flags]
+        private enum FOS : uint
+        {
+            FOS_OVERWRITEPROMPT = 0x00000002,
+            FOS_STRICTFILETYPES = 0x00000004,
+            FOS_NOCHANGEDIR = 0x00000008,
+            FOS_PICKFOLDERS = 0x00000020,
+            FOS_FORCEFILESYSTEM = 0x00000040,
+            FOS_ALLNONSTORAGEITEMS = 0x00000080,
+            FOS_NOVALIDATE = 0x00000100,
+            FOS_ALLOWMULTISELECT = 0x00000200,
+            FOS_PATHMUSTEXIST = 0x00000800,
+            FOS_FILEMUSTEXIST = 0x00001000,
+            FOS_CREATEPROMPT = 0x00002000,
+            FOS_SHAREAWARE = 0x00004000,
+            FOS_NOREADONLYRETURN = 0x00008000,
+            FOS_NOTESTFILECREATE = 0x00010000,
+            FOS_HIDEMRUPLACES = 0x00020000,
+            FOS_HIDEPINNEDPLACES = 0x00040000,
+            FOS_NODEREFERENCELINKS = 0x00100000,
+            FOS_OKBUTTONNEEDSINTERACTION = 0x00200000,
+            FOS_DONTADDTORECENT = 0x02000000,
+            FOS_FORCESHOWHIDDEN = 0x10000000,
+            FOS_DEFAULTNOMINIMODE = 0x20000000
+        }
+
+        private enum SIGDN : uint
+        {
+            SIGDN_FILESYSPATH = 0x80058000
         }
     }
 }
