@@ -17,12 +17,15 @@ jobs:
         id: msbuild
         shell: pwsh
         run: |
-          # 正确取 ProgramFiles(x86) 需要使用 ${env:ProgramFiles(x86)} 否则路径会变成 "Program Files(x86)"
           $vswhere = "${env:ProgramFiles(x86)}\Microsoft Visual Studio\Installer\vswhere.exe"
           if(-not (Test-Path $vswhere)) { throw "vswhere not found at $vswhere" }
           $msbuild = & $vswhere -latest -requires Microsoft.Component.MSBuild -find "MSBuild\**\Bin\MSBuild.exe" | Select-Object -First 1
           if(-not $msbuild){ throw 'MSBuild not found' }
           "path=$msbuild" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+      - name: Restore (solution)
+        shell: pwsh
+        run: |
+          dotnet restore src/CodeIndex.VisualStudioExtension/CodeIndex.VisualStudioExtension.sln
       - name: Build VSIX (Release)
         shell: pwsh
         run: |
