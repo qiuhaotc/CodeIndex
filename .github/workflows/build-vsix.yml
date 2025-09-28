@@ -1,12 +1,14 @@
-name: Build VSIX on Tag
+name: Publish VSIX
 
+# 以 t 开头的 tag 触发 (例如 t1.2.3)
 on:
   push:
     tags:
       - t*
 
 jobs:
-  build-vsix:
+  build:
+    name: Build VSIX
     runs-on: windows-latest
     steps:
       - name: Checkout
@@ -44,9 +46,44 @@ jobs:
             throw 'VSIX file not generated.'
           }
           Write-Host "Found VSIX: $($vsix.FullName)"
-          "path=$($vsix.FullName)" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
-      - name: Upload VSIX Artifact
+          Copy-Item $vsix.FullName artifacts/ -Force -ErrorAction Stop
+          "path=artifacts/$($vsix.Name)" | Out-File -FilePath $env:GITHUB_OUTPUT -Append -Encoding utf8
+      - name: Upload artifact
         uses: actions/upload-artifact@v4
         with:
-          name: CodeIndex.VisualStudioExtension.vsix
+          name: CodeIndex.VSIX
           path: ${{ steps.locate_vsix.outputs.path }}
+          if-no-files-found: error
+
+  release:
+    name: Create / Update Release
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - name: Download artifact
+        uses: actions/download-artifact@v4
+        with:
+          name: CodeIndex.VSIX
+          path: downloaded
+      - name: List downloaded files
+        run: ls -R downloaded
+      - name: Create or update release
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
+        shell: bash
+        run: |
+          tag="$GITHUB_REF_NAME"
+          asset=$(ls downloaded/*.vsix | head -n1)
+          if [ -z "$asset" ]; then
+            echo "No VSIX asset found" >&2
+            exit 1
+          fi
+            echo "Publishing release $tag with asset $asset"
+          if gh release create "$tag" "$asset" --title "VSIX $tag" --notes "VSIX build for $tag" -R "$GITHUB_REPOSITORY"; then
+            echo "Release created"
+          else
+            echo "Release exists, updating asset..."
+            gh release upload "$tag" "$asset" --clobber -R "$GITHUB_REPOSITORY"
+          fi
