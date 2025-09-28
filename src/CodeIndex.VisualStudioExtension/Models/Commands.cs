@@ -51,7 +51,7 @@ namespace CodeIndex.VisualStudioExtension
             Func<bool> canExecute,
             Action<Exception> errorHandler)
         {
-            this.execute = execute;
+            this.execute = execute ?? throw new ArgumentNullException(nameof(execute));
             this.canExecute = canExecute;
             this.errorHandler = errorHandler;
         }

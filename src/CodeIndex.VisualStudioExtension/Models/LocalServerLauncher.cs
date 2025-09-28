@@ -112,6 +112,23 @@ namespace CodeIndex.VisualStudioExtension.Models
                 return true;
             }
 
+            // 情况: 已持有 singleInstanceMutex (说明我们是最初启动者) 但进程被手动终止。
+            // 尝试在不释放互斥的情况下直接重启一次，成功则继续持有；失败再释放让后续调用重新竞争启动。
+            if (singleInstanceMutex != null)
+            {
+                bool restarted = await TryRestartOwnedMutexServerAsync(settings, token).ConfigureAwait(false);
+                if (restarted)
+                {
+                    lastHealthyUtc = DateTime.UtcNow;
+                    return true;
+                }
+                
+                // 重启失败则释放互斥，允许后续重新获取并再试
+                try { singleInstanceMutex.ReleaseMutex(); } catch { }
+                try { singleInstanceMutex.Dispose(); } catch { }
+                singleInstanceMutex = null;
+            }
+
             bool created;
             try
             {
@@ -157,6 +174,22 @@ namespace CodeIndex.VisualStudioExtension.Models
                     return true;
                 }
             }
+            return false;
+        }
+
+        static async Task<bool> TryRestartOwnedMutexServerAsync(UserSettings settings, CancellationToken token)
+        {
+            try
+            {
+                if (await IsHealthyAsync(settings, token).ConfigureAwait(false)) return true; // 已恢复
+                StartProcess(settings);
+                for (int i = 0; i < 10; i++)
+                {
+                    await Task.Delay(500, token).ConfigureAwait(false);
+                    if (await IsHealthyAsync(settings, token).ConfigureAwait(false)) return true;
+                }
+            }
+            catch { }
             return false;
         }
 
