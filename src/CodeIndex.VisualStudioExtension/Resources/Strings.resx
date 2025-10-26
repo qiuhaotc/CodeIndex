@@ -1,0 +1,301 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" msdata:Ordinal="5" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+
+    <!-- Window Title -->
+  <data name="Settings_WindowTitle" xml:space="preserve">
+    <value>CodeIndex Settings</value>
+  </data>
+  
+  <!-- Server Mode -->
+  <data name="Settings_ServerMode" xml:space="preserve">
+    <value>Server Mode</value>
+  </data>
+  <data name="Settings_Remote" xml:space="preserve">
+    <value>Remote</value>
+  </data>
+  <data name="Settings_Local" xml:space="preserve">
+    <value>Local</value>
+  </data>
+  
+  <!-- Remote Server -->
+  <data name="Settings_RemoteServer" xml:space="preserve">
+    <value>Remote Server</value>
+  </data>
+  <data name="Settings_RemoteServiceUrl" xml:space="preserve">
+    <value>Remote Service Url:</value>
+  </data>
+  
+  <!-- Local Server -->
+  <data name="Settings_LocalServer" xml:space="preserve">
+    <value>Local Server</value>
+  </data>
+  <data name="Settings_LocalServiceUrl" xml:space="preserve">
+    <value>Local Service Url:</value>
+  </data>
+  <data name="Settings_InstallPath" xml:space="preserve">
+    <value>Install Path:</value>
+  </data>
+  <data name="Settings_DataDirectory" xml:space="preserve">
+    <value>Data Directory:</value>
+  </data>
+  <data name="Settings_InstalledVersion" xml:space="preserve">
+    <value>Installed Version:</value>
+  </data>
+  <data name="Settings_LatestLogLines" xml:space="preserve">
+    <value>Latest 100 Log Lines</value>
+  </data>
+  
+  <!-- Buttons -->
+  <data name="Settings_Open" xml:space="preserve">
+    <value>Open</value>
+  </data>
+  <data name="Settings_Browse" xml:space="preserve">
+    <value>Browse</value>
+  </data>
+  <data name="Settings_DownloadUpdate" xml:space="preserve">
+    <value>Download / Update</value>
+  </data>
+  <data name="Settings_Check" xml:space="preserve">
+    <value>Check</value>
+  </data>
+  <data name="Settings_Start" xml:space="preserve">
+    <value>Start</value>
+  </data>
+  <data name="Settings_Stop" xml:space="preserve">
+    <value>Stop</value>
+  </data>
+  <data name="Settings_Restart" xml:space="preserve">
+    <value>Restart</value>
+  </data>
+  <data name="Settings_RefreshLog" xml:space="preserve">
+    <value>Refresh Log</value>
+  </data>
+  <data name="Settings_Save" xml:space="preserve">
+    <value>Save</value>
+  </data>
+  <data name="Settings_Cancel" xml:space="preserve">
+    <value>Cancel</value>
+  </data>
+  
+  <!-- Status Labels -->
+  <data name="Settings_Health" xml:space="preserve">
+    <value>Health:</value>
+  </data>
+  <data name="Settings_Download" xml:space="preserve">
+    <value>Download:</value>
+  </data>
+  
+  <!-- Health Status Values -->
+  <data name="Health_Started" xml:space="preserve">
+    <value>Started</value>
+  </data>
+  <data name="Health_Stopped" xml:space="preserve">
+    <value>Stopped</value>
+  </data>
+  <data name="Health_Error" xml:space="preserve">
+    <value>Error</value>
+  </data>
+  <data name="Health_Unknown" xml:space="preserve">
+    <value>Unknown</value>
+  </data>
+  
+  <!-- Folder Picker Titles -->
+  <data name="Settings_SelectInstallDirectory" xml:space="preserve">
+    <value>Select Local Server Install Directory</value>
+  </data>
+  <data name="Settings_SelectDataDirectory" xml:space="preserve">
+    <value>Select Local Server Data Directory</value>
+  </data>
+  
+  <!-- Messages -->
+  <data name="Message_SaveSuccess" xml:space="preserve">
+    <value>Settings saved successfully.</value>
+  </data>
+  <data name="Message_UrlOpenError" xml:space="preserve">
+    <value>Failed to open URL: {0}</value>
+  </data>
+  <data name="Message_DownloadComplete" xml:space="preserve">
+    <value>Download complete.</value>
+  </data>
+  <data name="Message_DownloadError" xml:space="preserve">
+    <value>Download failed: {0}</value>
+  </data>
+  <data name="Message_ExtractError" xml:space="preserve">
+    <value>Extraction failed: {0}</value>
+  </data>
+  <data name="Message_ServerStarted" xml:space="preserve">
+    <value>Server started successfully.</value>
+  </data>
+  <data name="Message_ServerStopped" xml:space="preserve">
+    <value>Server stopped successfully.</value>
+  </data>
+  <data name="Message_ServerError" xml:space="preserve">
+    <value>Server operation failed: {0}</value>
+  </data>
+  <data name="Message_FileNotLocal" xml:space="preserve">
+    <value>This file is not on your local machine. Do you want to open it in the web portal?</value>
+  </data>
+  <data name="Message_FileNotLocalTitle" xml:space="preserve">
+    <value>File Not Found</value>
+  </data>
+  
+  <!-- Search Control -->
+  <data name="Search_Content" xml:space="preserve">
+    <value>Content:</value>
+  </data>
+  <data name="Search_CaseSensitive" xml:space="preserve">
+    <value>Case Sensitive</value>
+  </data>
+  <data name="Search_PhaseQuery" xml:space="preserve">
+    <value>Phase Query</value>
+  </data>
+  <data name="Search_FileName" xml:space="preserve">
+    <value>File Name:</value>
+  </data>
+  <data name="Search_FileExtension" xml:space="preserve">
+    <value>File Extension:</value>
+  </data>
+  <data name="Search_FileLocation" xml:space="preserve">
+    <value>File Location:</value>
+  </data>
+  <data name="Search_ShowResults" xml:space="preserve">
+    <value>Show Results:</value>
+  </data>
+  <data name="Search_Search" xml:space="preserve">
+    <value>Search</value>
+  </data>
+  <data name="Search_StopSearch" xml:space="preserve">
+    <value>Stop Search</value>
+  </data>
+  <data name="Search_Index" xml:space="preserve">
+    <value>Index:</value>
+  </data>
+  <data name="Search_RefreshIndex" xml:space="preserve">
+    <value>Refresh Index</value>
+  </data>
+  <data name="Search_Settings" xml:space="preserve">
+    <value>Settings</value>
+  </data>
+  <data name="Search_ResultInfo" xml:space="preserve">
+    <value>Result Info:</value>
+  </data>
+  <data name="Search_HintWords" xml:space="preserve">
+    <value>Hint Words:</value>
+  </data>
+  <data name="Search_ColumnName" xml:space="preserve">
+    <value>Name</value>
+  </data>
+  <data name="Search_ColumnExtension" xml:space="preserve">
+    <value>Extension</value>
+  </data>
+  <data name="Search_ColumnMatchedLine" xml:space="preserve">
+    <value>Matched Line</value>
+  </data>
+  <data name="Search_ColumnContent" xml:space="preserve">
+    <value>Content</value>
+  </data>
+  <data name="Search_ColumnPath" xml:space="preserve">
+    <value>Path</value>
+  </data>
+  
+  <!-- Search ViewModel Messages -->
+  <data name="Search_LocalServerNotStarted" xml:space="preserve">
+    <value>Local server not started.</value>
+  </data>
+  <data name="Search_LocalServerStartedLoadingIndexes" xml:space="preserve">
+    <value>Local server started, loading indexes...</value>
+  </data>
+  <data name="Search_ExceptionOccur" xml:space="preserve">
+    <value>Exception Occur: {0}</value>
+  </data>
+  <data name="Search_Searching" xml:space="preserve">
+    <value>Searching...</value>
+  </data>
+  <data name="Search_SearchCancelled" xml:space="preserve">
+    <value>Search cancelled.</value>
+  </data>
+  <data name="Search_QueryOrIndexEmpty" xml:space="preserve">
+    <value>Search query or index name can't be empty.</value>
+  </data>
+  <data name="Search_ResultFormat" xml:space="preserve">
+    <value>Successful: {0}, Desc: {1}, Fetch Count: {2}.</value>
+  </data>
+  <data name="Search_OpenSettingsFailed" xml:space="preserve">
+    <value>Open settings failed: {0}</value>
+  </data>
+  
+  <!-- Search Options -->
+  <data name="Search_Top100" xml:space="preserve">
+    <value>Top 100</value>
+  </data>
+  <data name="Search_Top200" xml:space="preserve">
+    <value>Top 200</value>
+  </data>
+  <data name="Search_Top500" xml:space="preserve">
+    <value>Top 500</value>
+  </data>
+  <data name="Search_Top1000" xml:space="preserve">
+    <value>Top 1000</value>
+  </data>
+  <data name="Search_Top10000" xml:space="preserve">
+    <value>Top 10000</value>
+  </data>
+</root>

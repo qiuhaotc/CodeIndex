@@ -61,6 +61,15 @@
         </Compile>
     </ItemGroup>
     <ItemGroup>
+        <EmbeddedResource Update="Resources\Strings.resx">
+            <Generator>PublicResXFileCodeGenerator</Generator>
+            <LastGenOutput>Strings.Designer.cs</LastGenOutput>
+        </EmbeddedResource>
+        <EmbeddedResource Update="Resources\Strings.zh-CN.resx">
+            <DependentUpon>Strings.resx</DependentUpon>
+        </EmbeddedResource>
+    </ItemGroup>
+    <ItemGroup>
         <Content Include="..\..\doc\Extension-Icon.png">
             <Link>Resources\Extension-Icon.png</Link>
             <IncludeInVSIX>true</IncludeInVSIX>
@@ -127,6 +136,13 @@
     </ItemGroup>
     <ItemGroup>
         <WCFMetadata Include="Connected Services\" />
+    </ItemGroup>
+    <ItemGroup>
+      <Compile Update="Resources\Strings.Designer.cs">
+        <DesignTime>True</DesignTime>
+        <AutoGen>True</AutoGen>
+        <DependentUpon>Strings.resx</DependentUpon>
+      </Compile>
     </ItemGroup>
     <!-- Suppress MSB4011 duplicate import warning locally (benign; caused by SDK + VSIX target chain) -->
     <PropertyGroup>

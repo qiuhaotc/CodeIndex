@@ -126,6 +126,10 @@ Latest improvements to the Visual Studio extension
   - Replaced WinForms dialog with Vista IFileOpenDialog (better UX); removed System.Windows.Forms dependency.
 - Theme-Aware UI
   - Buttons/styles now use Visual Studio dynamic theme brushes (light/dark/HC) instead of hardcoded colors.
+- Internationalization (i18n)
+  - Full multi-language support with automatic VS language detection.
+  - Currently supports English and Simplified Chinese (易于扩展其他语言).
+  - All UI elements (windows, buttons, messages) fully localized.
 - Quick Navigation Buttons
   - Open buttons beside Local & Remote URLs (auto prepend http:// when missing).
 - Responsive Async Commands
