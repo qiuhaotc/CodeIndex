@@ -10,18 +10,20 @@ using System.Diagnostics;
 using System.Linq; // For FirstOrDefault
 using System.IO.Compression; // For Zip extraction
 using System.Collections.Generic; // For Queue in log tail
+using CodeIndex.VisualStudioExtension.Services;
 
 namespace CodeIndex.VisualStudioExtension.Models
 {
     public class SettingsViewModel : INotifyPropertyChanged
     {
         // 简单扩展帮助方法
-        // 放在类内部避免额外文件；.NET Framework 无 StartProcess 扩展
+        // 放在类内部避免额外文件;.NET Framework 无 StartProcess 扩展
         Process StartProcess(ProcessStartInfo psi)
         {
             return Process.Start(psi);
         }
         readonly UserSettings settings;
+        readonly LocalizationService localization = LocalizationService.Instance;
         bool isBusy;
         double downloadProgress; // 0-100
         string healthStatus = "Unknown"; // Started / Stopped / Error / Unknown
@@ -39,7 +41,7 @@ namespace CodeIndex.VisualStudioExtension.Models
             IsLocalMode = settings.Mode == ServerMode.Local;
             IsRemoteMode = settings.Mode == ServerMode.Remote;
 
-            // 打开设置界面立即触发一次健康检查（异步，不阻塞 UI）
+            // 打开设置界面立即触发一次健康检查(异步,不阻塞 UI)
             if (IsLocalMode && !string.IsNullOrWhiteSpace(LocalServiceUrl))
             {
                 _ = CheckHealthAsync();
@@ -92,11 +94,28 @@ namespace CodeIndex.VisualStudioExtension.Models
 
         public string HealthStatus
         {
-            get => healthStatus;
+            get => TranslateHealthStatus(healthStatus);
             set { healthStatus = value; Raise(); Raise(nameof(IsServerRunning)); RefreshButtonsState(); }
         }
 
-        public bool IsServerRunning => string.Equals(HealthStatus, "Started", StringComparison.OrdinalIgnoreCase);
+        private string TranslateHealthStatus(string status)
+        {
+            switch (status?.ToLowerInvariant())
+            {
+                case "started":
+                    return localization.GetString("Health_Started");
+                case "stopped":
+                    return localization.GetString("Health_Stopped");
+                case "error":
+                    return localization.GetString("Health_Error");
+                case "unknown":
+                    return localization.GetString("Health_Unknown");
+                default:
+                    return status; // Return as-is for transient states like "Starting", "Stopping", "Restarting"
+            }
+        }
+
+        public bool IsServerRunning => string.Equals(healthStatus, "Started", StringComparison.OrdinalIgnoreCase);
 
         void RefreshButtonsState()
         {
@@ -115,7 +134,7 @@ namespace CodeIndex.VisualStudioExtension.Models
 
         public ICommand BrowseInstallPathCommand => new CommonCommand(_ =>
         {
-            var picked = FolderPickerHelper.PickFolder(LocalServerInstallPath, "Select Local Server Install Directory (CodeIndex.Server)");
+            var picked = FolderPickerHelper.PickFolder(LocalServerInstallPath, localization.GetString("Settings_SelectInstallDirectory"));
             if (!string.IsNullOrWhiteSpace(picked))
             {
                 LocalServerInstallPath = picked;
@@ -125,7 +144,7 @@ namespace CodeIndex.VisualStudioExtension.Models
 
         public ICommand BrowseDataDirCommand => new CommonCommand(_ =>
         {
-            var picked = FolderPickerHelper.PickFolder(LocalServerDataDirectory, "Select Local Server Data Directory (Index Storage)");
+            var picked = FolderPickerHelper.PickFolder(LocalServerDataDirectory, localization.GetString("Settings_SelectDataDirectory"));
             if (!string.IsNullOrWhiteSpace(picked))
             {
                 LocalServerDataDirectory = picked;
@@ -206,7 +225,7 @@ namespace CodeIndex.VisualStudioExtension.Models
                                     || !serverInstalled;
                 if (!needDownload)
                 {
-                    System.Windows.MessageBox.Show($"Already latest: {tag}", "CodeIndex", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
+                    System.Windows.MessageBox.Show($"{localization.GetString("Message_DownloadComplete")} {tag}", "CodeIndex", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
                     return;
                 }
 
@@ -240,7 +259,7 @@ namespace CodeIndex.VisualStudioExtension.Models
                 }
                 catch (Exception ex)
                 {
-                    System.Windows.MessageBox.Show("Download failed: " + ex.Message, "CodeIndex", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+                    System.Windows.MessageBox.Show(localization.GetString("Message_DownloadError", ex.Message), "CodeIndex", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
                     return;
                 }
 
@@ -273,13 +292,13 @@ namespace CodeIndex.VisualStudioExtension.Models
                 }
                 catch (Exception ex)
                 {
-                    System.Windows.MessageBox.Show("Extract failed: " + ex.Message, "CodeIndex", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+                    System.Windows.MessageBox.Show(localization.GetString("Message_ExtractError", ex.Message), "CodeIndex", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
                     return;
                 }
 
                 LocalServerVersion = tag;
                 Raise(nameof(LocalServerVersion));
-                System.Windows.MessageBox.Show($"Updated to {tag}", "CodeIndex", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
+                System.Windows.MessageBox.Show($"{localization.GetString("Message_DownloadComplete")} {tag}", "CodeIndex", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Information);
             }
             finally
             {
@@ -463,7 +482,7 @@ namespace CodeIndex.VisualStudioExtension.Models
             }
             catch (Exception ex)
             {
-                System.Windows.MessageBox.Show("Open failed: " + ex.Message, "CodeIndex", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+                System.Windows.MessageBox.Show(localization.GetString("Message_UrlOpenError", ex.Message), "CodeIndex", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
             }
         }
 
@@ -486,7 +505,7 @@ namespace CodeIndex.VisualStudioExtension.Models
             }
             catch (Exception ex)
             {
-                System.Windows.MessageBox.Show("Open failed: " + ex.Message, "CodeIndex", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+                System.Windows.MessageBox.Show(localization.GetString("Message_UrlOpenError", ex.Message), "CodeIndex", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
             }
         }
 

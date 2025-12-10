@@ -1,13 +1,14 @@
 ﻿using System;
 using System.Collections.Generic;
 using System.Linq;
+using System.Net.Http;
 using System.Threading;
 using System.Threading.Tasks;
-using System.Net.Http;
 using System.Windows.Input;
+using CodeIndex.VisualStudioExtension.Models;
+using CodeIndex.VisualStudioExtension.Services;
 using Microsoft.VisualStudio.Shell;
 using Microsoft.VisualStudio.Threading;
-using CodeIndex.VisualStudioExtension.Models;
 
 namespace CodeIndex.VisualStudioExtension
 {
@@ -17,6 +18,16 @@ namespace CodeIndex.VisualStudioExtension
         {
             userSettings = UserSettingsManager.Load();
             serviceUrl = userSettings.Mode == ServerMode.Local ? userSettings.LocalServiceUrl : userSettings.RemoteServiceUrl;
+
+            // 初始化 Options（在 LocalizationService 初始化后）
+            Options = new[]
+            {
+                new Item<int>(LocalizationService.Instance["Search_Top100"], 100),
+                new Item<int>(LocalizationService.Instance["Search_Top200"], 200),
+                new Item<int>(LocalizationService.Instance["Search_Top500"], 500),
+                new Item<int>(LocalizationService.Instance["Search_Top1000"], 1000),
+                new Item<int>(LocalizationService.Instance["Search_Top10000"], 10000)
+            };
 
             // 使用 VS 提供的 ThreadHelper.JoinableTaskFactory，避免 VSSDK005（不要自建 JoinableTaskContext）
             jtf = ThreadHelper.JoinableTaskFactory;
@@ -66,14 +77,14 @@ namespace CodeIndex.VisualStudioExtension
                     var ensure = await LocalServerLauncher.EnsureServerRunningAsync(userSettings, tokenToLoadIndexInfos.Token);
                     if (!ensure)
                     {
-                        ResultInfo = "Local server not started.";
+                        ResultInfo = LocalizationService.Instance["Search_LocalServerNotStarted"];
                         return;
                     }
                     else
                     {
                         // 本地服务器刚刚成功启动，强制刷新相关绑定（例如 ServiceUrl 显示）
                         NotifyPropertyChange(nameof(ServiceUrl));
-                        ResultInfo = "Local server started, loading indexes...";
+                        ResultInfo = LocalizationService.Instance["Search_LocalServerStartedLoadingIndexes"];
                     }
                     // 再次刷新 EffectiveServiceUrl 以防用户修改
                 }
@@ -95,7 +106,7 @@ namespace CodeIndex.VisualStudioExtension
             }
             catch (Exception ex)
             {
-                ResultInfo = "Exception Occur: " + ex;
+                ResultInfo = string.Format(LocalizationService.Instance["Search_ExceptionOccur"], ex);
             }
         }
 
@@ -132,7 +143,7 @@ namespace CodeIndex.VisualStudioExtension
                     }
                     catch (Exception ex)
                     {
-                        ResultInfo = "Exception Occur: " + ex;
+                        ResultInfo = string.Format(LocalizationService.Instance["Search_ExceptionOccur"], ex);
                     }
 
                     return new List<HintWord>();
@@ -155,14 +166,7 @@ namespace CodeIndex.VisualStudioExtension
 
         public List<HintWord> HintWords { get; set; }
 
-        public Item<int>[] Options { get; } = new[]
-        {
-            new Item<int>("Top 100", 100),
-            new Item<int>("Top 200", 200),
-            new Item<int>("Top 500", 500),
-            new Item<int>("Top 1000", 1000),
-            new Item<int>("Top 10000", 10000)
-        };
+        public Item<int>[] Options { get; private set; }
 
         public List<CodeSourceWithMatchedLine> SearchResults
         {
@@ -199,11 +203,11 @@ namespace CodeIndex.VisualStudioExtension
         ICommand searchIndexCommand;
         ICommand stopSearchCommand;
         ICommand refreshIndexCommand;
-    ICommand openSettingsCommand;
-    string serviceUrl;
-    readonly UserSettings userSettings;
-    JoinableTaskCollection trackedTasks; // 跟踪后台任务集合
-    JoinableTaskFactory jtf;             // VS 提供的 JoinableTaskFactory
+        ICommand openSettingsCommand;
+        string serviceUrl;
+        readonly UserSettings userSettings;
+        JoinableTaskCollection trackedTasks; // 跟踪后台任务集合
+        JoinableTaskFactory jtf;             // VS 提供的 JoinableTaskFactory
         List<CodeSourceWithMatchedLine> searchResults = new List<CodeSourceWithMatchedLine>();
         string resultInfo;
         CancellationTokenSource tokenSource;
@@ -290,7 +294,11 @@ namespace CodeIndex.VisualStudioExtension
             }
             catch (Exception ex)
             {
-                System.Windows.MessageBox.Show("Open settings failed: " + ex.Message, "CodeIndex", System.Windows.MessageBoxButton.OK, System.Windows.MessageBoxImage.Error);
+                System.Windows.MessageBox.Show(
+                    string.Format(LocalizationService.Instance["Search_OpenSettingsFailed"], ex.Message),
+                    "CodeIndex",
+                    System.Windows.MessageBoxButton.OK,
+                    System.Windows.MessageBoxImage.Error);
             }
         }
 
@@ -307,17 +315,17 @@ namespace CodeIndex.VisualStudioExtension
                     IsSearching = true;
                     tokenSource?.Dispose();
                     tokenSource = new CancellationTokenSource();
-                    ResultInfo = "Searching...";
+                    ResultInfo = LocalizationService.Instance["Search_Searching"];
 
                     await SearchCodeIndexCoreAsync();
                 }
                 catch (TaskCanceledException)
                 {
-                    ResultInfo = "Search cancelled.";
+                    ResultInfo = LocalizationService.Instance["Search_SearchCancelled"];
                 }
                 catch (Exception ex)
                 {
-                    ResultInfo = "Exception Occur: " + ex;
+                    ResultInfo = string.Format(LocalizationService.Instance["Search_ExceptionOccur"], ex);
                 }
                 finally
                 {
@@ -355,11 +363,15 @@ namespace CodeIndex.VisualStudioExtension
                     SearchResults.Clear();
                 }
 
-                ResultInfo = $"Successful: {result.Status.Success}, Desc: {result.Status.StatusDesc}, Fetch Count: {SearchResults.Count}.";
+                ResultInfo = string.Format(
+                    LocalizationService.Instance["Search_ResultFormat"],
+                    result.Status.Success,
+                    result.Status.StatusDesc,
+                    SearchResults.Count);
             }
             else
             {
-                ResultInfo = "Search query or index name can't be empty.";
+                ResultInfo = LocalizationService.Instance["Search_QueryOrIndexEmpty"];
             }
         }
 

@@ -1,0 +1,301 @@
+<?xml version="1.0" encoding="utf-8"?>
+<root>
+  <xsd:schema id="root" xmlns="" xmlns:xsd="http://www.w3.org/2001/XMLSchema" xmlns:msdata="urn:schemas-microsoft-com:xml-msdata">
+    <xsd:import namespace="http://www.w3.org/XML/1998/namespace" />
+    <xsd:element name="root" msdata:IsDataSet="true">
+      <xsd:complexType>
+        <xsd:choice maxOccurs="unbounded">
+          <xsd:element name="metadata">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" />
+              </xsd:sequence>
+              <xsd:attribute name="name" use="required" type="xsd:string" />
+              <xsd:attribute name="type" type="xsd:string" />
+              <xsd:attribute name="mimetype" type="xsd:string" />
+              <xsd:attribute ref="xml:space" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="assembly">
+            <xsd:complexType>
+              <xsd:attribute name="alias" type="xsd:string" />
+              <xsd:attribute name="name" type="xsd:string" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="data">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+                <xsd:element name="comment" type="xsd:string" minOccurs="0" msdata:Ordinal="2" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" msdata:Ordinal="1" />
+              <xsd:attribute name="type" type="xsd:string" msdata:Ordinal="3" />
+              <xsd:attribute name="mimetype" type="xsd:string" msdata:Ordinal="4" />
+              <xsd:attribute ref="xml:space" msdata:Ordinal="5" />
+            </xsd:complexType>
+          </xsd:element>
+          <xsd:element name="resheader">
+            <xsd:complexType>
+              <xsd:sequence>
+                <xsd:element name="value" type="xsd:string" minOccurs="0" msdata:Ordinal="1" />
+              </xsd:sequence>
+              <xsd:attribute name="name" type="xsd:string" use="required" />
+            </xsd:complexType>
+          </xsd:element>
+        </xsd:choice>
+      </xsd:complexType>
+    </xsd:element>
+  </xsd:schema>
+  <resheader name="resmimetype">
+    <value>text/microsoft-resx</value>
+  </resheader>
+  <resheader name="version">
+    <value>2.0</value>
+  </resheader>
+  <resheader name="reader">
+    <value>System.Resources.ResXResourceReader, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  <resheader name="writer">
+    <value>System.Resources.ResXResourceWriter, System.Windows.Forms, Version=4.0.0.0, Culture=neutral, PublicKeyToken=b77a5c561934e089</value>
+  </resheader>
+  
+  <!-- Window Title -->
+  <data name="Settings_WindowTitle" xml:space="preserve">
+    <value>CodeIndex 设置</value>
+  </data>
+  
+  <!-- Server Mode -->
+  <data name="Settings_ServerMode" xml:space="preserve">
+    <value>服务器模式</value>
+  </data>
+  <data name="Settings_Remote" xml:space="preserve">
+    <value>远程</value>
+  </data>
+  <data name="Settings_Local" xml:space="preserve">
+    <value>本地</value>
+  </data>
+  
+  <!-- Remote Server -->
+  <data name="Settings_RemoteServer" xml:space="preserve">
+    <value>远程服务器</value>
+  </data>
+  <data name="Settings_RemoteServiceUrl" xml:space="preserve">
+    <value>远程服务地址：</value>
+  </data>
+  
+  <!-- Local Server -->
+  <data name="Settings_LocalServer" xml:space="preserve">
+    <value>本地服务器</value>
+  </data>
+  <data name="Settings_LocalServiceUrl" xml:space="preserve">
+    <value>本地服务地址：</value>
+  </data>
+  <data name="Settings_InstallPath" xml:space="preserve">
+    <value>安装路径：</value>
+  </data>
+  <data name="Settings_DataDirectory" xml:space="preserve">
+    <value>数据目录：</value>
+  </data>
+  <data name="Settings_InstalledVersion" xml:space="preserve">
+    <value>已安装版本：</value>
+  </data>
+  <data name="Settings_LatestLogLines" xml:space="preserve">
+    <value>最新 100 行日志</value>
+  </data>
+  
+  <!-- Buttons -->
+  <data name="Settings_Open" xml:space="preserve">
+    <value>打开</value>
+  </data>
+  <data name="Settings_Browse" xml:space="preserve">
+    <value>浏览</value>
+  </data>
+  <data name="Settings_DownloadUpdate" xml:space="preserve">
+    <value>下载/更新</value>
+  </data>
+  <data name="Settings_Check" xml:space="preserve">
+    <value>检查</value>
+  </data>
+  <data name="Settings_Start" xml:space="preserve">
+    <value>启动</value>
+  </data>
+  <data name="Settings_Stop" xml:space="preserve">
+    <value>停止</value>
+  </data>
+  <data name="Settings_Restart" xml:space="preserve">
+    <value>重启</value>
+  </data>
+  <data name="Settings_RefreshLog" xml:space="preserve">
+    <value>刷新日志</value>
+  </data>
+  <data name="Settings_Save" xml:space="preserve">
+    <value>保存</value>
+  </data>
+  <data name="Settings_Cancel" xml:space="preserve">
+    <value>取消</value>
+  </data>
+  
+  <!-- Status Labels -->
+  <data name="Settings_Health" xml:space="preserve">
+    <value>健康状态：</value>
+  </data>
+  <data name="Settings_Download" xml:space="preserve">
+    <value>下载进度：</value>
+  </data>
+  
+  <!-- Health Status Values -->
+  <data name="Health_Started" xml:space="preserve">
+    <value>已启动</value>
+  </data>
+  <data name="Health_Stopped" xml:space="preserve">
+    <value>已停止</value>
+  </data>
+  <data name="Health_Error" xml:space="preserve">
+    <value>错误</value>
+  </data>
+  <data name="Health_Unknown" xml:space="preserve">
+    <value>未知</value>
+  </data>
+  
+  <!-- Folder Picker Titles -->
+  <data name="Settings_SelectInstallDirectory" xml:space="preserve">
+    <value>选择本地服务器安装目录</value>
+  </data>
+  <data name="Settings_SelectDataDirectory" xml:space="preserve">
+    <value>选择本地服务器数据目录</value>
+  </data>
+  
+  <!-- Messages -->
+  <data name="Message_SaveSuccess" xml:space="preserve">
+    <value>设置已成功保存。</value>
+  </data>
+  <data name="Message_UrlOpenError" xml:space="preserve">
+    <value>打开链接失败：{0}</value>
+  </data>
+  <data name="Message_DownloadComplete" xml:space="preserve">
+    <value>下载完成。</value>
+  </data>
+  <data name="Message_DownloadError" xml:space="preserve">
+    <value>下载失败：{0}</value>
+  </data>
+  <data name="Message_ExtractError" xml:space="preserve">
+    <value>解压失败：{0}</value>
+  </data>
+  <data name="Message_ServerStarted" xml:space="preserve">
+    <value>服务器启动成功。</value>
+  </data>
+  <data name="Message_ServerStopped" xml:space="preserve">
+    <value>服务器已成功停止。</value>
+  </data>
+  <data name="Message_ServerError" xml:space="preserve">
+    <value>服务器操作失败：{0}</value>
+  </data>
+  <data name="Message_FileNotLocal" xml:space="preserve">
+    <value>此文件不在本地。是否要在 Web 门户中打开它？</value>
+  </data>
+  <data name="Message_FileNotLocalTitle" xml:space="preserve">
+    <value>文件未找到</value>
+  </data>
+  
+  <!-- Search Control -->
+  <data name="Search_Content" xml:space="preserve">
+    <value>内容：</value>
+  </data>
+  <data name="Search_CaseSensitive" xml:space="preserve">
+    <value>区分大小写</value>
+  </data>
+  <data name="Search_PhaseQuery" xml:space="preserve">
+    <value>短语查询</value>
+  </data>
+  <data name="Search_FileName" xml:space="preserve">
+    <value>文件名：</value>
+  </data>
+  <data name="Search_FileExtension" xml:space="preserve">
+    <value>文件扩展名：</value>
+  </data>
+  <data name="Search_FileLocation" xml:space="preserve">
+    <value>文件位置：</value>
+  </data>
+  <data name="Search_ShowResults" xml:space="preserve">
+    <value>显示结果：</value>
+  </data>
+  <data name="Search_Search" xml:space="preserve">
+    <value>搜索</value>
+  </data>
+  <data name="Search_StopSearch" xml:space="preserve">
+    <value>停止搜索</value>
+  </data>
+  <data name="Search_Index" xml:space="preserve">
+    <value>索引：</value>
+  </data>
+  <data name="Search_RefreshIndex" xml:space="preserve">
+    <value>刷新索引</value>
+  </data>
+  <data name="Search_Settings" xml:space="preserve">
+    <value>设置</value>
+  </data>
+  <data name="Search_ResultInfo" xml:space="preserve">
+    <value>结果信息：</value>
+  </data>
+  <data name="Search_HintWords" xml:space="preserve">
+    <value>提示词：</value>
+  </data>
+  <data name="Search_ColumnName" xml:space="preserve">
+    <value>名称</value>
+  </data>
+  <data name="Search_ColumnExtension" xml:space="preserve">
+    <value>扩展名</value>
+  </data>
+  <data name="Search_ColumnMatchedLine" xml:space="preserve">
+    <value>匹配行</value>
+  </data>
+  <data name="Search_ColumnContent" xml:space="preserve">
+    <value>内容</value>
+  </data>
+  <data name="Search_ColumnPath" xml:space="preserve">
+    <value>路径</value>
+  </data>
+  
+  <!-- Search ViewModel Messages -->
+  <data name="Search_LocalServerNotStarted" xml:space="preserve">
+    <value>本地服务器未启动。</value>
+  </data>
+  <data name="Search_LocalServerStartedLoadingIndexes" xml:space="preserve">
+    <value>本地服务器已启动，正在加载索引...</value>
+  </data>
+  <data name="Search_ExceptionOccur" xml:space="preserve">
+    <value>发生异常：{0}</value>
+  </data>
+  <data name="Search_Searching" xml:space="preserve">
+    <value>正在搜索...</value>
+  </data>
+  <data name="Search_SearchCancelled" xml:space="preserve">
+    <value>搜索已取消。</value>
+  </data>
+  <data name="Search_QueryOrIndexEmpty" xml:space="preserve">
+    <value>搜索查询或索引名称不能为空。</value>
+  </data>
+  <data name="Search_ResultFormat" xml:space="preserve">
+    <value>成功：{0}，描述：{1}，获取数量：{2}。</value>
+  </data>
+  <data name="Search_OpenSettingsFailed" xml:space="preserve">
+    <value>打开设置失败：{0}</value>
+  </data>
+  
+  <!-- Search Options -->
+  <data name="Search_Top100" xml:space="preserve">
+    <value>前 100 条</value>
+  </data>
+  <data name="Search_Top200" xml:space="preserve">
+    <value>前 200 条</value>
+  </data>
+  <data name="Search_Top500" xml:space="preserve">
+    <value>前 500 条</value>
+  </data>
+  <data name="Search_Top1000" xml:space="preserve">
+    <value>前 1000 条</value>
+  </data>
+  <data name="Search_Top10000" xml:space="preserve">
+    <value>前 10000 条</value>
+  </data>
+</root>

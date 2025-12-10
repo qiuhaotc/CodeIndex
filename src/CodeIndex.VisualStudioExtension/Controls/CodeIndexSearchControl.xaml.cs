@@ -1,8 +1,11 @@
-﻿using System.IO;
+﻿using System;
+using System.IO;
 using System.Windows.Controls;
 using System.Windows.Input;
+using CodeIndex.VisualStudioExtension.Resources;
 using EnvDTE;
 using Microsoft.VisualStudio.Shell;
+using Microsoft.VisualStudio.Shell.Interop;
 
 namespace CodeIndex.VisualStudioExtension
 {
@@ -63,7 +66,15 @@ namespace CodeIndex.VisualStudioExtension
                 else
                 {
                     // TODO: Download to local to open
-                    if (System.Windows.MessageBox.Show("This file is not on your local, do you want to open it in the web portal?", "Info", System.Windows.MessageBoxButton.YesNo) == System.Windows.MessageBoxResult.Yes)
+                    var result = VsShellUtilities.ShowMessageBox(
+                        ServiceProvider.GlobalProvider,
+                        Strings.Message_FileNotLocal,
+                        Strings.Message_FileNotLocalTitle,
+                        OLEMSGICON.OLEMSGICON_QUERY,
+                        OLEMSGBUTTON.OLEMSGBUTTON_YESNO,
+                        OLEMSGDEFBUTTON.OLEMSGDEFBUTTON_FIRST);
+
+                    if (result == 6) // IDYES
                     {
                         System.Diagnostics.Process.Start($"{SearchViewModel.ServiceUrl}/Details/{codeSourceWithMatchedLine.CodeSource.CodePK}/{SearchViewModel.IndexPk}/{System.Web.HttpUtility.UrlEncode(SearchViewModel.Content)}/{SearchViewModel.CaseSensitive}/{SearchViewModel.PhaseQuery}");
                     }
